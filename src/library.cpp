@@ -2,6 +2,7 @@
 
 #include <iostream>
 
-void hello() {
+
+void bnmf_algs::hello(int x) {
     std::cout << "Hello, World!" << x << std::endl;
 }
