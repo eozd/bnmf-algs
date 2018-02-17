@@ -12,6 +12,6 @@ namespace bnmf_algs {
      *
      * @param a Example parameter.
      */
-    void hello(int x);
+    int hello(int x);
 }
 

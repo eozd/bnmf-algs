@@ -6,3 +6,6 @@ set(CMAKE_CXX_STANDARD 17)
 include_directories("include")
 
 add_library(bnmf_algs SHARED src/library.cpp include/library.hpp)
+
+add_executable (tests test/test_example.cpp test/include_catch.cpp)
+target_link_libraries(tests bnmf_algs)
