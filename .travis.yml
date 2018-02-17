@@ -1,0 +1,42 @@
+language: cpp
+matrix:
+    include:
+    # works on Precise and Trusty
+        - os: linux
+          addons:
+            apt:
+              sources:
+                - ubuntu-toolchain-r-test
+              packages:
+                - g++-5
+          env:
+             - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+
+        # works on Precise and Trusty
+        - os: linux
+          addons:
+            apt:
+              sources:
+                - ubuntu-toolchain-r-test
+              packages:
+                - g++-6
+          env:
+            - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+
+        # works on Precise and Trusty
+        - os: linux
+          addons:
+            apt:
+              sources:
+                - ubuntu-toolchain-r-test
+              packages:
+                - g++-7
+          env:
+            - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
+
+script:
+    - mkdir -p build
+    - cd build
+    - cmake -DCMAKE_CXX_COMPILER=${CXX} ..
+    - make
+    - ./tests
