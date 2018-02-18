@@ -1,2 +1,2 @@
 ignore:
-    - "test/catch2.hpp"  # ignore catch2.hpp test suite
+    - "test"  # do not include test files to code coverage report
