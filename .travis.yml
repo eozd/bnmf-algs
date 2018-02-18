@@ -1,36 +1,50 @@
+sudo: required
 language: cpp
 matrix:
     include:
-    # works on Precise and Trusty
+        # GCC 5
         - os: linux
           addons:
             apt:
               sources:
                 - ubuntu-toolchain-r-test
+                - sourceline: 'ppa:tsvetko.tsvetkov/trusty-backports'
               packages:
                 - g++-5
+                - libeigen3-dev
+                # GSL
+                - libgsl2
+                - libgsl-dev
           env:
              - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
-
-        # works on Precise and Trusty
+        # GCC 6
         - os: linux
           addons:
             apt:
               sources:
                 - ubuntu-toolchain-r-test
+                - sourceline: 'ppa:tsvetko.tsvetkov/trusty-backports'
               packages:
                 - g++-6
+                - libeigen3-dev
+                # GSL
+                - libgsl2
+                - libgsl-dev
           env:
             - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
-
-        # works on Precise and Trusty
+        # GCC 7
         - os: linux
           addons:
             apt:
               sources:
                 - ubuntu-toolchain-r-test
+                - sourceline: 'ppa:tsvetko.tsvetkov/trusty-backports'
               packages:
                 - g++-7
+                - libeigen3-dev
+                # GSL
+                - libgsl2
+                - libgsl-dev
           env:
             - MATRIX_EVAL="CC=gcc-7 && CXX=g++-7"
 
