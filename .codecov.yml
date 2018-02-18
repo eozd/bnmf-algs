@@ -1,0 +1,2 @@
+ignore:
+    - "test/catch2.hpp"  # ignore catch2.hpp test suite
