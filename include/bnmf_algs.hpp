@@ -23,13 +23,15 @@ namespace bnmf_algs {
      * @cite lee-seung-algs.
      *
      * @param X (m x n) matrix nonnegative matrix.
-     * @param r Inner dimension of the factorization.
-     * @param max_iter Maximum number of iterations. By default,
-     * the algorithm runs until convergence.
+     * @param r Inner dimension of the factorization. Must be positive.
+     * @param max_iter Maximum number of iterations. If set to 0, the algorithm runs until convergence. Must be nonnegative.
+     * @param epsilon For consecutive steps \f$ i \f$ and \f$ i+1 \f$, if \f$ |X-WH|_{i+1} - |X-WH|_i \leq epsilon \f$, the algorithm terminates. Must be nonnegative.
+     *
+     * @remark The algorithm terminates when one of the termination conditions related to max_iter and epsilon is satisfied.
      * @return std::pair of W and H matrices.
      *
      * @author Esref Ozdemir
      */
-    std::pair<Eigen::MatrixXd, Eigen::MatrixXd> nmf_euclidean(const Eigen::MatrixXd& X, long r, int max_iter=-1);
+    std::pair<Eigen::MatrixXd, Eigen::MatrixXd> nmf_euclidean(const Eigen::MatrixXd& X, long r, int max_iter=1000, double epsilon=std::numeric_limits<double>::epsilon());
 }
 
