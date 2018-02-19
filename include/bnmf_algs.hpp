@@ -20,6 +20,13 @@ namespace bnmf_algs {
     };
 
     /**
+     * Matrix used in the computations.
+     *
+     * @TODO: Templatize the matrix elements (int, double, float, etc.)
+     */
+    using Matrix = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+
+    /**
      * @brief Compute nonnegative matrix factorization of a matrix using
      * Euclidean distance.
      *
@@ -47,10 +54,10 @@ namespace bnmf_algs {
      *
      * @author Esref Ozdemir
      */
-    std::pair<Eigen::MatrixXd, Eigen::MatrixXd> nmf(const Eigen::MatrixXd& X,
-                                                    long r,
-                                                    NMFVariant variant,
-                                                    int max_iter=1000,
-                                                    double epsilon=std::numeric_limits<double>::epsilon());
+    std::pair<Matrix, Matrix> nmf(const Matrix& X,
+                                  long r,
+                                  NMFVariant variant,
+                                  int max_iter=250,
+                                  double epsilon=std::numeric_limits<double>::epsilon());
 }
 

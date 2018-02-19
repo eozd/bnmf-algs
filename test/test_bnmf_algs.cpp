@@ -9,8 +9,8 @@ using namespace bnmf_algs;
 TEST_CASE("Euclidean NMF constraint checks", "nmf") {
     int m = 50, n = 10, r = 5;
 
-    MatrixXd X = MatrixXd::Random(m, n) + MatrixXd::Ones(m, n);
-    MatrixXd W, H;
+    bnmf_algs::Matrix X = bnmf_algs::Matrix::Random(m, n) + bnmf_algs::Matrix::Ones(m, n);
+    bnmf_algs::Matrix W, H;
     std::tie(W, H) = nmf(X, r, NMFVariant::Euclidean);
 
     SECTION("Check returned matrices' shapes", "shape") {
@@ -28,7 +28,7 @@ TEST_CASE("Euclidean NMF constraint checks", "nmf") {
 
 TEST_CASE("Euclidean NMF invalid parameters", "nmf") {
     int m = 500, n = 400, r = 20;
-    MatrixXd X = MatrixXd::Zero(m, n);
+    bnmf_algs::Matrix X = bnmf_algs::Matrix::Zero(m, n);
 
     SECTION("Negative X", "negative-matrix") {
         X(0, 2) = -0.002;
@@ -54,8 +54,8 @@ TEST_CASE("Euclidean NMF degenerate cases", "degenerate") {
 
     SECTION("X == 0", "zero-matrix") {
 
-        MatrixXd X = MatrixXd::Zero(m, n);
-        MatrixXd W, H;
+        bnmf_algs::Matrix X = bnmf_algs::Matrix::Zero(m, n);
+        bnmf_algs::Matrix W, H;
         std::tie(W, H) = nmf(X, r, NMFVariant::Euclidean, 200);
 
         REQUIRE(W.isZero(0));
