@@ -3,7 +3,9 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <chrono>
 
+using namespace std::chrono;
 using namespace Eigen;
 using namespace bnmf_algs;
 
@@ -13,6 +15,57 @@ TEST_CASE("Euclidean NMF constraint checks", "nmf") {
     bnmf_algs::Matrix X = bnmf_algs::Matrix::Random(m, n) + bnmf_algs::Matrix::Ones(m, n);
     bnmf_algs::Matrix W, H;
     std::tie(W, H) = nmf(X, r, NMFVariant::Euclidean);
+
+    SECTION("Check returned matrices' shapes", "shape") {
+        REQUIRE(W.rows() == m);
+        REQUIRE(W.cols() == r);
+        REQUIRE(H.rows() == r);
+        REQUIRE(H.cols() == n);
+    }
+
+    SECTION("Check that returned matrices are nonnegative", "signs") {
+        REQUIRE(W.minCoeff() >= 0);
+        REQUIRE(H.minCoeff() >= 0);
+    }
+}
+
+// TODO: Need to check if errors are monotonically decreasing. For this, we may
+// need to refactor all NMF related functions, add some more information related
+// functionality and create a class or something similar.
+TEST_CASE("Euclidean NMF small matrix convergence check", "nmf") {
+    int m = 50, n = 10, r = 10;
+
+    bnmf_algs::Matrix X = bnmf_algs::Matrix::Random(m, n) + bnmf_algs::Matrix::Ones(m, n);
+    bnmf_algs::Matrix W, H;
+
+    auto before = high_resolution_clock::now();
+    std::tie(W, H) = nmf(X, r, NMFVariant::Euclidean, 100000000, 1);
+    auto after = high_resolution_clock::now();
+
+    milliseconds elapsed = duration_cast<milliseconds>(after - before);
+    REQUIRE(elapsed.count() <= 1000);
+}
+
+TEST_CASE("KL NMF small matrix convergence check", "nmf") {
+    int m = 50, n = 10, r = 10;
+
+    bnmf_algs::Matrix X = bnmf_algs::Matrix::Random(m, n) + bnmf_algs::Matrix::Ones(m, n);
+    bnmf_algs::Matrix W, H;
+
+    auto before = high_resolution_clock::now();
+    std::tie(W, H) = nmf(X, r, NMFVariant::KL, 100000000, 1);
+    auto after = high_resolution_clock::now();
+
+    milliseconds elapsed = duration_cast<milliseconds>(after - before);
+    REQUIRE(elapsed.count() <= 1000);
+}
+
+TEST_CASE("KL NMF constraint checks", "nmf") {
+    int m = 50, n = 10, r = 5;
+
+    bnmf_algs::Matrix X = bnmf_algs::Matrix::Random(m, n) + bnmf_algs::Matrix::Ones(m, n);
+    bnmf_algs::Matrix W, H;
+    std::tie(W, H) = nmf(X, r, NMFVariant::KL);
 
     SECTION("Check returned matrices' shapes", "shape") {
         REQUIRE(W.rows() == m);
