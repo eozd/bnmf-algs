@@ -3,7 +3,6 @@
 #include <stdexcept>
 #include <limits>
 #include <cmath>
-#include <iostream>
 
 /**
  * Check that given parameters satisfy the constraints as specified in bnmf_algs::nmf.
@@ -72,7 +71,7 @@ std::pair<bnmf_algs::Matrix, bnmf_algs::Matrix> bnmf_algs::nmf(const bnmf_algs::
 
     double cost = 0., prev_cost;
     bool until_convergence = (max_iter == 0);
-    bnmf_algs::Matrix numer, denom, curr_approx;
+    bnmf_algs::Matrix numer, denom, curr_approx, frac;
     while (until_convergence || max_iter-- > 0) {
         curr_approx = W*H;
 
@@ -93,13 +92,27 @@ std::pair<bnmf_algs::Matrix, bnmf_algs::Matrix> bnmf_algs::nmf(const bnmf_algs::
         if (variant == NMFVariant::Euclidean) {
             numer = (W.transpose()*X).eval();
             denom = (W.transpose()*curr_approx).eval();
-            for (int i = 0; i < r; ++i) {
-                for (int j = 0; j < n; ++j) {
-                    H(i, j) *= numer(i, j)/denom(i, j);
+            for (int a = 0; a < r; ++a) {
+                for (int mu = 0; mu < n; ++mu) {
+                    H(a, mu) *= numer(a, mu)/denom(a, mu);
                 }
             }
         } else if (variant == NMFVariant::KL) {
+            frac = X.cwiseQuotient(curr_approx);
+            for (int a = 0; a < r; ++a) {
+                double denom_sum = 0;
+                for (int i = 0; i < m; ++i) {
+                    denom_sum += W(i, a);
+                }
 
+                for (int mu = 0; mu < n; ++mu) {
+                    double numer_sum = 0;
+                    for (int i = 0; i < m; ++i) {
+                        numer_sum += W(i, a)*frac(i, mu);
+                    }
+                    H(a, mu) *= numer_sum/denom_sum;
+                }
+            }
         }
 
         // W update
@@ -112,7 +125,18 @@ std::pair<bnmf_algs::Matrix, bnmf_algs::Matrix> bnmf_algs::nmf(const bnmf_algs::
                 }
             }
         } else if (variant == NMFVariant::KL) {
+            frac = X.cwiseQuotient(W*H);
+            for (int i = 0; i < m; ++i) {
+                for (int a = 0; a < r; ++a) {
 
+                    double numer_sum = 0, denom_sum = 0;
+                    for (int mu = 0; mu < n; ++mu) {
+                        numer_sum += H(a, mu)*frac(i, mu);
+                        denom_sum += H(a, mu);
+                    }
+                    W(i, a) *= numer_sum/denom_sum;
+                }
+            }
         }
     }
     return {W, H};
