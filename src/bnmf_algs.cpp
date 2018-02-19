@@ -23,37 +23,28 @@ void nmf_check_parameters(const bnmf_algs::Matrix& X, long r, int max_iter, doub
     }
 }
 
-/**
- * Compute the Euclidean cost as defined in \cite lee-seung-algs.
- *
- * @param X Original data matrix.
- * @param WH Approximation matrix.
- *
- * @return Euclidean cost.
- */
-double euclidean_cost(const bnmf_algs::Matrix& X, const bnmf_algs::Matrix& WH) {
+double bnmf_algs::euclidean_cost(const bnmf_algs::Matrix& A, const bnmf_algs::Matrix& B) {
     double cost = 0;
-    for (int i = 0; i < X.rows(); ++i) {
-        for (int j = 0; j < X.cols(); ++j) {
-            cost += std::pow(X(i, j) - WH(i, j) , 2);
+    for (int i = 0; i < A.rows(); ++i) {
+        for (int j = 0; j < A.cols(); ++j) {
+            cost += std::pow(A(i, j) - B(i, j) , 2);
         }
     }
     return cost;
 }
 
-/**
- * Compute the KL-divergence cost as defined in \cite lee-seung-algs.
- *
- * @param X Original data matrix.
- * @param WH  Approximation matrix.
- *
- * @return KL-divergence.
- */
-double kl_cost(const bnmf_algs::Matrix& X, const bnmf_algs::Matrix& WH) {
+double bnmf_algs::kl_cost(const bnmf_algs::Matrix& X, const bnmf_algs::Matrix& WH) {
     double cost = 0;
+    double x_elem, wh_elem;
     for (int i = 0; i < X.rows(); ++i) {
         for (int j = 0; j < X.cols(); ++j) {
-            cost += X(i, j)*std::log(X(i, j)/WH(i, j)) + WH(i, j) - X(i, j);
+            x_elem = X(i, j);
+            wh_elem = WH(i, j);
+            cost += wh_elem - x_elem;
+            if (std::abs(x_elem) > std::numeric_limits<double>::epsilon() &&
+                    std::abs(wh_elem) > std::numeric_limits<double>::epsilon()) {
+                cost += X(i, j)*std::log(X(i, j)/WH(i, j));
+            }
         }
     }
     return cost;
@@ -88,9 +79,9 @@ std::pair<bnmf_algs::Matrix, bnmf_algs::Matrix> bnmf_algs::nmf(const bnmf_algs::
         // update cost
         prev_cost = cost;
         if (variant == NMFVariant::Euclidean) {
-            cost = euclidean_cost(X, curr_approx);
+            cost = bnmf_algs::euclidean_cost(X, curr_approx);
         } else if (variant == NMFVariant::KL) {
-            cost = kl_cost(X, curr_approx);
+            cost = bnmf_algs::kl_cost(X, curr_approx);
         }
 
         // check cost convergence

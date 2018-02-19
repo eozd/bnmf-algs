@@ -59,5 +59,46 @@ namespace bnmf_algs {
                                   NMFVariant variant,
                                   int max_iter=250,
                                   double epsilon=std::numeric_limits<double>::epsilon());
+
+    /**
+     * Compute the Euclidean cost as defined in \cite lee-seung-algs.
+     *
+     * Euclidean cost is defined as
+     *
+     * \f$ \sum_{ij} (A_{ij} - B_{ij})^2 \f$
+     *
+     * for matrices A and B of the same shape.
+     *
+     * @param A First matrix.
+     * @param B Second matrix.
+     *
+     * @return Euclidean cost between A and B.
+     *
+     * @remark If matrices A and B have different shape, the result is undefined.
+     * @author Esref Ozdemir
+     */
+    double euclidean_cost(const bnmf_algs::Matrix& A, const bnmf_algs::Matrix& B);
+
+    /**
+     * Compute the KL-divergence cost as defined in \cite lee-seung-algs.
+     *
+     * This function computes the KL-divergence cost from A to B which is defined
+     * as
+     *
+     * \f$ \sum_{ij} \big( A_{ij}log(\frac{A_{ij}}{B_{ij}}) - A_{ij} + B_{ij} \big)\f$
+     *
+     * for matrices A and B of the same shape. If \f$ A_{ij} = 0 \f$ or
+     * \f$ B_{ij} = 0\f$, then the first term in the equation is not calculated
+     * for that element pair.
+     *
+     * @param A First matrix.
+     * @param B Second matrix.
+     *
+     * @return KL-divergence cost from A to B.
+     *
+     * @remark If matrices A and B have different shape, the result is undefined.
+     * @author Esref Ozdemir
+     */
+    double kl_cost(const bnmf_algs::Matrix& A, const bnmf_algs::Matrix& B);
 }
 
