@@ -4,9 +4,9 @@
 #include <limits>
 
 /**
- * Check that given parameters satisfy the constraints as specified in @ref bnmf_algs::nmf_euclidean.
+ * Check that given parameters satisfy the constraints as specified in bnmf_algs::nmf.
  */
-void check_parameters(const Eigen::MatrixXd& X, long r, int max_iter, double epsilon) {
+void nmf_check_parameters(const Eigen::MatrixXd& X, long r, int max_iter, double epsilon) {
     if ((X.array() < 0).any()) {
         throw std::invalid_argument("X matrix has negative entries");
     }
@@ -21,12 +21,12 @@ void check_parameters(const Eigen::MatrixXd& X, long r, int max_iter, double eps
     }
 }
 
-std::pair<Eigen::MatrixXd, Eigen::MatrixXd> bnmf_algs::nmf_euclidean(const Eigen::MatrixXd& X, long r, int max_iter, double epsilon) {
+std::pair<Eigen::MatrixXd, Eigen::MatrixXd> bnmf_algs::nmf(const Eigen::MatrixXd& X, long r, bnmf_algs::NMFVariant variant, int max_iter, double epsilon) {
     using namespace Eigen;
     const long m = X.rows();
     const long n = X.cols();
 
-    check_parameters(X, r, max_iter, epsilon);
+    nmf_check_parameters(X, r, max_iter, epsilon);
 
     // special case (X == 0)
     if (X.maxCoeff() == 0.0) {
@@ -38,16 +38,16 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> bnmf_algs::nmf_euclidean(const Eigen
     MatrixXd H = MatrixXd::Random(r, n) + MatrixXd::Ones(r, n);
 
     double cost = 0., prev_cost;
-    bool no_stop = max_iter == 0;
-    while (no_stop || max_iter-- > 0) {
+    bool until_convergence = (max_iter == 0);
+    while (until_convergence || max_iter-- > 0) {
         MatrixXd curr_approx = W*H;
 
-        // update costs
+        // update cost
         prev_cost = cost;
         cost = (X - curr_approx).norm();
 
         // check cost convergence
-        if (std::abs(cost - prev_cost) < epsilon) {
+        if (std::abs(cost - prev_cost) <= epsilon) {
             break;
         }
         // H update
@@ -61,7 +61,7 @@ std::pair<Eigen::MatrixXd, Eigen::MatrixXd> bnmf_algs::nmf_euclidean(const Eigen
 
         // W update
         numer = X*H.transpose();
-        denom = W*H*H.transpose();
+        denom = W*(H*H.transpose());
         for (int j = 0; j < r; ++j) {
             for (int i = 0; i < m; ++i) {
                 W(i, j) *= numer(i, j)/denom(i, j);
