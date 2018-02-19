@@ -8,6 +8,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -g -O0 -fprofile-arcs -ftest-coverage")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgcov")
 
+# Optimized build
+# TODO: Use Debug and Release build types instead of commenting
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -O3")
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}")
+
 include_directories("include")
 
 find_package(GSL REQUIRED)
@@ -20,3 +25,6 @@ target_link_libraries(bnmf_algs gsl gslcblas)
 
 add_executable (tests test/test_bnmf_algs.cpp test/include_catch.cpp)
 target_link_libraries(tests bnmf_algs)
+
+#add_executable(dataset_nmf src/main.cpp)
+#target_link_libraries(dataset_nmf bnmf_algs)
