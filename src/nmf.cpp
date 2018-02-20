@@ -1,4 +1,4 @@
-#include "bnmf_algs.hpp"
+#include "nmf.hpp"
 
 #include <stdexcept>
 #include <limits>

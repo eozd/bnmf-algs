@@ -1,5 +1,5 @@
 #include "catch2.hpp"
-#include "bnmf_algs.hpp"
+#include "nmf.hpp"
 #include <cmath>
 #include <fstream>
 #include <iostream>
@@ -29,9 +29,11 @@ TEST_CASE("Euclidean NMF constraint checks", "nmf") {
     }
 }
 
-// TODO: Need to check if errors are monotonically decreasing. For this, we may
-// need to refactor all NMF related functions, add some more information related
-// functionality and create a class or something similar.
+/**
+ * @todo Need to check if errors are monotonically decreasing. For this, we may
+ * need to refactor all NMF related functions, add some more information related
+ * functionality and create a class or something similar.
+ */
 TEST_CASE("Euclidean NMF small matrix convergence check", "nmf") {
     int m = 50, n = 10, r = 10;
 

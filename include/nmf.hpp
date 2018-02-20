@@ -3,6 +3,8 @@
 #include <utility>
 #include <Eigen/Dense>
 
+#include "defs.hpp"
+
 /**
  * @brief Main namespace for bnmf-algs library
  */
@@ -18,13 +20,6 @@ namespace bnmf_algs {
         Euclidean ///< NMF using Euclidean distance as error measure.
                   ///< See \cite lee-seung-algs.
     };
-
-    /**
-     * Matrix used in the computations.
-     *
-     * @TODO: Templatize the matrix elements (int, double, float, etc.)
-     */
-    using Matrix = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
     /**
      * @brief Compute nonnegative matrix factorization of a matrix.
