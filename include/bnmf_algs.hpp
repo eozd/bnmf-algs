@@ -4,12 +4,12 @@
 #include <Eigen/Dense>
 
 /**
- * bnmf_algs namespace
+ * @brief Main namespace for bnmf-algs library
  */
 namespace bnmf_algs {
 
     /**
-     * Nonnegative matrix factorization variant.
+     * @brief Nonnegative matrix factorization variant.
      */
     enum class NMFVariant {
         KL,       ///< NMF using Kullback-Leibler divergence as error measure.
@@ -27,8 +27,7 @@ namespace bnmf_algs {
     using Matrix = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
     /**
-     * @brief Compute nonnegative matrix factorization of a matrix using
-     * Euclidean distance.
+     * @brief Compute nonnegative matrix factorization of a matrix.
      *
      * According to the NMF model, nonnegative matrix X is factorized into two
      * nonnegative matrices W and H such that
