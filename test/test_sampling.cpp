@@ -1,3 +1,5 @@
+#include <random>
+
 #include "sampling.hpp"
 #include "catch2.hpp"
 
@@ -56,7 +58,44 @@ TEST_CASE("Parameter checks for sample_S using prior matrices", "sample_S") {
 }
 
 TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters", "bnmf_priors") {
-    //std::tuple
+    // result matrices
+    int x = 7, y = 4, z = 8;
+    shape<3> tensor_shape{x, y, z};
+    matrix_t W, H;
+    vector_t L;
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(5, 10);
+
+    // parameters
+    double a = 5, b = 4;
+    std::vector<double> alpha(x);
+    std::vector<double> beta(z);
+    for (int i = 0; i < x; ++i) {
+        alpha[i] = dis(gen);
+    }
+    for (int i = 0; i < z; ++i) {
+        beta[i] = dis(gen);
+    }
+
+    std::tie(W, H, L) = bnmf_priors(tensor_shape, a, b, alpha, beta);
+
+    SECTION("All entries of W, H, L are nonnegative", "nonnegative") {
+        REQUIRE((W.array() >= 0).all());
+        REQUIRE((H.array() >= 0).all());
+        REQUIRE((L.array() >= 0).all());
+    }
+
+    SECTION("Columns of W and H sum to 1", "normalization") {
+        auto W_col_sums = W.colwise().sum().eval();
+        REQUIRE(W_col_sums.minCoeff() == Approx(1));
+        REQUIRE(W_col_sums.maxCoeff() == Approx(1));
+
+        auto H_col_sums = H.colwise().sum().eval();
+        REQUIRE(H_col_sums.minCoeff() == Approx(1));
+        REQUIRE(H_col_sums.maxCoeff() == Approx(1));
+    }
 }
 
 TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
@@ -107,4 +146,8 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
             REQUIRE(sum == Approx(0));
         }
     }
+}
+
+TEST_CASE("Algorithm checks for getting a sample from distribution parameters", "bnmf_priors sample_S") {
+    // TODO: Implement (First need to understand the constraints on S)
 }

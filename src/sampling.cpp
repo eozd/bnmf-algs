@@ -12,6 +12,8 @@
  * @param x First dimension.
  * @param y Second dimension.
  * @param z Third dimension.
+ *
+ * @author Esref Ozdemir
  */
 void ensure_positive_dimensions(long x, long y, long z) {
     if (x <= 0 || y <= 0 || z <= 0) {
@@ -34,6 +36,8 @@ void ensure_positive_dimensions(long x, long y, long z) {
  * @param prior_W Prior matrix \f$W\f$.
  * @param prior_H Prior matrix \f$H\f$.
  * @param prior_L Prior vector \f$L\f$.
+ *
+ * @author Esref Ozdemir
  */
 void ensure_compatible_dimensions(const bnmf_algs::matrix_t& prior_W,
                                   const bnmf_algs::matrix_t& prior_H,
@@ -67,6 +71,8 @@ void ensure_compatible_dimensions(const bnmf_algs::matrix_t& prior_W,
  *
  * @throws std::invalid_argument If the number of Dirichlet parameters is not
  * equal to corresponding dimensions.
+ *
+ * @author Esref Ozdemir
  */
 void ensure_compatible_dirichlet_parameters(long x,
                                             long z,

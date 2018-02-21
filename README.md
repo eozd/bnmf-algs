@@ -34,7 +34,7 @@ To generate the doxygen documentation, run
 doxygen doc/Doxyfile
 ```
 in the project root directory. Then, you can view the documentation in HTML
-format by opening ```doc/index.html``` using your browser.
+format by opening ```doc/html/index.html``` using your browser.
 
 You can also view the documentation [online](https://eozd.github.io/bnmf-algs/).
 However, currently this documentation is not automatically updated; hence, it may
