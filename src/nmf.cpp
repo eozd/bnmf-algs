@@ -5,7 +5,11 @@
 #include <cmath>
 
 /**
- * Check that given parameters satisfy the constraints as specified in bnmf_algs::nmf.
+ * @brief Check that given parameters satisfy the constraints as specified in
+ * bnmf_algs::nmf.
+ *
+ * @throws std::invalid_argument If the parameters do not satisfy the conditions
+ * specifid in bnmf_algs::nmf.
  */
 void nmf_check_parameters(const bnmf_algs::matrix_t& X, long r, int max_iter, double epsilon) {
     if ((X.array() < 0).any()) {
