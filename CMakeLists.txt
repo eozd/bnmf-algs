@@ -19,7 +19,7 @@ find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${GSL_INCLUDE_DIRS})
 
-add_library(bnmf_algs SHARED src/nmf.cpp include/nmf.hpp include/defs.hpp include/sampling.hpp)
+add_library(bnmf_algs SHARED src/nmf.cpp include/nmf.hpp include/defs.hpp include/sampling.hpp src/sampling.cpp include/wrappers.hpp src/wrappers.cpp)
 target_link_libraries(bnmf_algs gsl gslcblas)
 
 add_executable (tests test/test_nmf.cpp test/include_catch.cpp)
