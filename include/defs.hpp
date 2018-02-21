@@ -8,5 +8,5 @@ namespace bnmf_algs {
      *
      * @todo Templatize the matrix elements (int, double, float, etc.)
      */
-    using Matrix = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+    using matrix_t = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 }

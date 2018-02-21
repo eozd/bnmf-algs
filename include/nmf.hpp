@@ -48,11 +48,11 @@ namespace bnmf_algs {
      *
      * @author Esref Ozdemir
      */
-    std::pair<Matrix, Matrix> nmf(const Matrix& X,
-                                  long r,
-                                  NMFVariant variant,
-                                  int max_iter=250,
-                                  double epsilon=std::numeric_limits<double>::epsilon());
+    std::pair<matrix_t, matrix_t> nmf(const matrix_t& X,
+                                      long r,
+                                      NMFVariant variant,
+                                      int max_iter=250,
+                                      double epsilon=std::numeric_limits<double>::epsilon());
 
     /**
      * Compute the Euclidean cost as defined in \cite lee-seung-algs.
@@ -71,7 +71,7 @@ namespace bnmf_algs {
      * @remark If matrices A and B have different shape, the result is undefined.
      * @author Esref Ozdemir
      */
-    double euclidean_cost(const bnmf_algs::Matrix& A, const bnmf_algs::Matrix& B);
+    double euclidean_cost(const matrix_t& A, const matrix_t& B);
 
     /**
      * Compute the KL-divergence cost as defined in \cite lee-seung-algs.
@@ -93,6 +93,6 @@ namespace bnmf_algs {
      * @remark If matrices A and B have different shape, the result is undefined.
      * @author Esref Ozdemir
      */
-    double kl_cost(const bnmf_algs::Matrix& A, const bnmf_algs::Matrix& B);
+    double kl_cost(const matrix_t& A, const matrix_t& B);
 }
 
