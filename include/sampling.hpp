@@ -1,12 +1,13 @@
 #pragma once
 
 #include <vector>
+#include <tuple>
 #include "defs.hpp"
 
 namespace bnmf_algs {
     /**
-     * @brief Sample a tensor S from Bayesian NMF generative model using
-     * distribution parameters.
+     * @brief Return prior matrices W, H and vector L according to the Bayesian
+     * NMF generative model using distribution parameters.
      *
      * According to the generative Bayesian NMF model \cite kurutmazbayesian,
      *
@@ -19,18 +20,18 @@ namespace bnmf_algs {
      * @param alpha Parameter vector of Dirichlet prior for matrix \f$W\f$ of size \f$x\f$.
      * @param beta Parameter vector of Dirichlet prior for matrix \f$H\f$ of size \f$z\f$.
      *
-     * @return A sample tensor from the generative model of shape \f$x \times y \times z\f$.
+     * @return std::tuple of \f$<W_{x \times z}, H_{z \times y}, L_y>\f$.
      *
      * @remark Number of alpha parameters must be \f$x\f$.
      * @remark Number of beta parameters must be \f$z\f$.
      *
      * @author Esref Ozdemir
      */
-    tensor3d_t sample_S(const std::tuple<long, long, long>& tensor_shape,
-                        double a,
-                        double b,
-                        const std::vector<double>& alpha,
-                        const std::vector<double>& beta);
+    std::tuple<matrix_t, matrix_t, vector_t> bnmf_priors(const std::tuple<long, long, long>& tensor_shape,
+                                                         double a,
+                                                         double b,
+                                                         const std::vector<double>& alpha,
+                                                         const std::vector<double>& beta);
 
     /**
      * @brief Sample a tensor S from generative Bayesian NMF model using the

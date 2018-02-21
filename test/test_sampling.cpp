@@ -4,36 +4,36 @@
 
 using namespace bnmf_algs;
 
-TEST_CASE("Parameter checks for sample_S using distribution parameters", "sample_S") {
+TEST_CASE("Parameter checks for bnmf_priors", "bnmf_priors") {
     int x = 5, y = 3, z = 2;
     int a = 3, b = 2;
     std::tuple<int, int, int> shape{x, y, z};
     std::vector<double> alpha(x);
     std::vector<double> beta(z);
 
-    REQUIRE_NOTHROW(sample_S(shape, a, b, alpha, beta));
+    REQUIRE_NOTHROW(bnmf_priors(shape, a, b, alpha, beta));
 
     std::get<0>(shape)++;
-    REQUIRE_THROWS(sample_S(shape, a, b, alpha, beta));
+    REQUIRE_THROWS(bnmf_priors(shape, a, b, alpha, beta));
 
     alpha.resize(std::get<0>(shape));
-    REQUIRE_NOTHROW(sample_S(shape, a, b, alpha, beta));
+    REQUIRE_NOTHROW(bnmf_priors(shape, a, b, alpha, beta));
 
     beta.resize(z + 2);
-    REQUIRE_THROWS(sample_S(shape, a, b, alpha, beta));
+    REQUIRE_THROWS(bnmf_priors(shape, a, b, alpha, beta));
 
     std::get<2>(shape) += 2;
     std::get<1>(shape) = 0;
-    REQUIRE_THROWS(sample_S(shape, a, b, alpha, beta));
+    REQUIRE_THROWS(bnmf_priors(shape, a, b, alpha, beta));
 
     std::get<0>(shape) = -1;
     std::get<1>(shape) = 1;
-    REQUIRE_THROWS(sample_S(shape, a, b, alpha, beta));
+    REQUIRE_THROWS(bnmf_priors(shape, a, b, alpha, beta));
 
     std::get<0>(shape) = 2;
     std::get<1>(shape) = 1;
     std::get<2>(shape) = 0;
-    REQUIRE_THROWS(sample_S(shape, a, b, alpha, beta));
+    REQUIRE_THROWS(bnmf_priors(shape, a, b, alpha, beta));
 }
 
 TEST_CASE("Parameter checks for sample_S using prior matrices", "sample_S") {
@@ -55,7 +55,7 @@ TEST_CASE("Parameter checks for sample_S using prior matrices", "sample_S") {
     REQUIRE_NOTHROW(sample_S(W, H, L));
 }
 
-TEST_CASE("Algorithm checks for sample_S using distribution parameters", "sample_S") {
+TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters", "bnmf_priors") {
 }
 
 TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
