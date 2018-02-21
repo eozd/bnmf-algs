@@ -55,7 +55,7 @@ namespace bnmf_algs {
                                       double epsilon=std::numeric_limits<double>::epsilon());
 
     /**
-     * Compute the Euclidean cost as defined in \cite lee-seung-algs.
+     * @brief Compute the Euclidean cost as defined in \cite lee-seung-algs.
      *
      * Euclidean cost is defined as
      *
@@ -74,7 +74,7 @@ namespace bnmf_algs {
     double euclidean_cost(const matrix_t& A, const matrix_t& B);
 
     /**
-     * Compute the KL-divergence cost as defined in \cite lee-seung-algs.
+     * @brief Compute the KL-divergence cost as defined in \cite lee-seung-algs.
      *
      * This function computes the KL-divergence cost from A to B which is defined
      * as
