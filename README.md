@@ -9,7 +9,7 @@ in C++.
 ### Requirements
 1. cmake 3.2.2 and above
 2. g++ 5 and above
-3. Eigen 3.2.0 and above
+3. Eigen 3.3.0 and above
 4. GSL 2.1 and above
 
 ### Building
