@@ -9,6 +9,7 @@ matrix:
               sources:
                 - ubuntu-toolchain-r-test
                 - sourceline: 'ppa:tsvetko.tsvetkov/trusty-backports'
+                - sourceline: 'ppa:nschloe/eigen-backports'
               packages:
                 - g++-5
                 - libeigen3-dev
@@ -26,6 +27,7 @@ matrix:
               sources:
                 - ubuntu-toolchain-r-test
                 - sourceline: 'ppa:tsvetko.tsvetkov/trusty-backports'
+                - sourceline: 'ppa:nschloe/eigen-backports'
               packages:
                 - g++-6
                 - libeigen3-dev
@@ -43,6 +45,7 @@ matrix:
               sources:
                 - ubuntu-toolchain-r-test
                 - sourceline: 'ppa:tsvetko.tsvetkov/trusty-backports'
+                - sourceline: 'ppa:nschloe/eigen-backports'
               packages:
                 - g++-7
                 - libeigen3-dev
