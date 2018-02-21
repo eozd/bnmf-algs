@@ -88,13 +88,12 @@ void ensure_compatible_dirichlet_parameters(long x,
 }
 
 std::tuple<bnmf_algs::matrix_t, bnmf_algs::matrix_t, bnmf_algs::vector_t>
-bnmf_algs::bnmf_priors(const std::tuple<long, long, long>& tensor_shape,
+bnmf_algs::bnmf_priors(const shape<3>& tensor_shape,
                        double a,
                        double b,
                        const std::vector<double>& alpha,
                        const std::vector<double>& beta) {
-    long x, y, z;
-    std::tie(x, y, z) = tensor_shape;
+    long x = tensor_shape[0], y = tensor_shape[1], z = tensor_shape[2];
     // TODO: Preprocesor options to disable checks
     ensure_positive_dimensions(x, y, z);
     ensure_compatible_dirichlet_parameters(x, z, alpha, beta);

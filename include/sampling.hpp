@@ -27,7 +27,7 @@ namespace bnmf_algs {
      *
      * @author Esref Ozdemir
      */
-    std::tuple<matrix_t, matrix_t, vector_t> bnmf_priors(const std::tuple<long, long, long>& tensor_shape,
+    std::tuple<matrix_t, matrix_t, vector_t> bnmf_priors(const shape<3>& tensor_shape,
                                                          double a,
                                                          double b,
                                                          const std::vector<double>& alpha,

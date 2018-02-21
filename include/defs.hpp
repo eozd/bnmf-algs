@@ -23,4 +23,14 @@ namespace bnmf_algs {
      * @todo Templatize the tensor elements (int, double, float, etc.)
      */
     using tensor3d_t = Eigen::Tensor<double, 3, Eigen::RowMajor>;
+
+    /**
+     * @brief Shape of vectors, matrices, tensors, etc.
+     *
+     * @tparam N Number of dimensions.
+     *
+     * @remark Number of dimensions must be known at compile-time.
+     */
+    template <size_t N>
+    using shape =  std::array<long, N>;
 }

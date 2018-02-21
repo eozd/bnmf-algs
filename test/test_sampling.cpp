@@ -7,33 +7,33 @@ using namespace bnmf_algs;
 TEST_CASE("Parameter checks for bnmf_priors", "bnmf_priors") {
     int x = 5, y = 3, z = 2;
     int a = 3, b = 2;
-    std::tuple<int, int, int> shape{x, y, z};
+    shape<3> tensor_shape{x, y, z};
     std::vector<double> alpha(x);
     std::vector<double> beta(z);
 
-    REQUIRE_NOTHROW(bnmf_priors(shape, a, b, alpha, beta));
+    REQUIRE_NOTHROW(bnmf_priors(tensor_shape, a, b, alpha, beta));
 
-    std::get<0>(shape)++;
-    REQUIRE_THROWS(bnmf_priors(shape, a, b, alpha, beta));
+    tensor_shape[0]++;
+    REQUIRE_THROWS(bnmf_priors(tensor_shape, a, b, alpha, beta));
 
-    alpha.resize(std::get<0>(shape));
-    REQUIRE_NOTHROW(bnmf_priors(shape, a, b, alpha, beta));
+    alpha.resize(tensor_shape[0]);
+    REQUIRE_NOTHROW(bnmf_priors(tensor_shape, a, b, alpha, beta));
 
     beta.resize(z + 2);
-    REQUIRE_THROWS(bnmf_priors(shape, a, b, alpha, beta));
+    REQUIRE_THROWS(bnmf_priors(tensor_shape, a, b, alpha, beta));
 
-    std::get<2>(shape) += 2;
-    std::get<1>(shape) = 0;
-    REQUIRE_THROWS(bnmf_priors(shape, a, b, alpha, beta));
+    tensor_shape[2] += 2;
+    tensor_shape[1] = 0;
+    REQUIRE_THROWS(bnmf_priors(tensor_shape, a, b, alpha, beta));
 
-    std::get<0>(shape) = -1;
-    std::get<1>(shape) = 1;
-    REQUIRE_THROWS(bnmf_priors(shape, a, b, alpha, beta));
+    tensor_shape[0] = -1;
+    tensor_shape[1] = 1;
+    REQUIRE_THROWS(bnmf_priors(tensor_shape, a, b, alpha, beta));
 
-    std::get<0>(shape) = 2;
-    std::get<1>(shape) = 1;
-    std::get<2>(shape) = 0;
-    REQUIRE_THROWS(bnmf_priors(shape, a, b, alpha, beta));
+    tensor_shape[0] = 2;
+    tensor_shape[1] = 1;
+    tensor_shape[2] = 0;
+    REQUIRE_THROWS(bnmf_priors(tensor_shape, a, b, alpha, beta));
 }
 
 TEST_CASE("Parameter checks for sample_S using prior matrices", "sample_S") {
@@ -56,6 +56,7 @@ TEST_CASE("Parameter checks for sample_S using prior matrices", "sample_S") {
 }
 
 TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters", "bnmf_priors") {
+    //std::tuple
 }
 
 TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
@@ -81,25 +82,29 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
         matrix_t W = (matrix_t::Random(x, z) + matrix_t::Constant(x, z, scale))*scale;
         matrix_t H = (matrix_t::Random(z, y) + matrix_t::Constant(z, y, scale))*scale;
         vector_t L = (vector_t::Random(y) + vector_t::Constant(y, scale))*scale;
+        tensor3d_t S = sample_S(W, H, L);
 
         // TODO: How to check if the result comes from Poisson with certain mean
-        tensor3d_t S = sample_S(W, H, L);
-        // nonnegativity check
-        bool nonnegative = true;
-        for (int i = 0; i < x; ++i)
-            for (int j = 0; j < y; ++j)
-                for (int k = 0; k < z; ++k)
-                    if (S(i, j, k) < 0)
-                        nonnegative = false;
-        REQUIRE(nonnegative);
-        // integer check
-        tensor3d_t S_round = S.round();
-        double sum = 0;
-        for (int i = 0; i < x; ++i)
-            for (int j = 0; j < y; ++j)
-                for (int k = 0; k < z; ++k)
-                    sum += (std::abs(S(i, j, k) - S_round(i, j, k)));
+        SECTION("Nonnegativity check", "nonnegativity") {
+            bool nonnegative = true;
+            for (int i = 0; i < x; ++i)
+                for (int j = 0; j < y; ++j)
+                    for (int k = 0; k < z; ++k)
+                        if (S(i, j, k) < 0)
+                            nonnegative = false;
+            REQUIRE(nonnegative);
+        }
 
-        REQUIRE(sum == Approx(0));
+        // TODO: This will be deprecated once the return value of sample_S will be an integer tensor as it should be
+        SECTION("Check if matrix is integer valued", "integer") {
+            tensor3d_t S_round = S.round();
+            double sum = 0;
+            for (int i = 0; i < x; ++i)
+                for (int j = 0; j < y; ++j)
+                    for (int k = 0; k < z; ++k)
+                        sum += (std::abs(S(i, j, k) - S_round(i, j, k)));
+
+            REQUIRE(sum == Approx(0));
+        }
     }
 }
