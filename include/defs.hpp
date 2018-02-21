@@ -9,7 +9,7 @@ namespace bnmf_algs {
      *
      * @todo Templatize the vector elements (int, double, float, etc.)
      */
-    using vector_t = Eigen::Matrix<double, Eigen::Dynamic, 1, Eigen::RowMajor>;
+    using vector_t = Eigen::Matrix<double, 1, Eigen::Dynamic, Eigen::RowMajor>;
     /**
      * @brief Matrix type used in the computations.
      *
@@ -22,5 +22,5 @@ namespace bnmf_algs {
      *
      * @todo Templatize the tensor elements (int, double, float, etc.)
      */
-    using tensor_t = Eigen::Tensor<double, Eigen::Dynamic, Eigen::RowMajor>;
+    using tensor3d_t = Eigen::Tensor<double, 3, Eigen::RowMajor>;
 }
