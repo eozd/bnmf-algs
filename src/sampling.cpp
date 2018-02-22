@@ -156,6 +156,15 @@ bnmf_algs::tensor3d_t bnmf_algs::sample_S(const matrix_t& prior_W,
     return sample;
 }
 
+/**
+ * @brief Compute the first term of the sum when calculating log marginal of S.
+ *
+ * @param S Tensor S.
+ * @param alpha Parameter vector of Dirichlet prior for matrix \f$W\f$ of size
+ * \f$x\f$.
+ *
+ * @return Value of the first term
+ */
 static double compute_first_term(const bnmf_algs::tensor3d_t& S,
                                  const std::vector<double>& alpha) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
@@ -171,8 +180,9 @@ static double compute_first_term(const bnmf_algs::tensor3d_t& S,
     for (int k = 0; k < z; ++k) {
         double sum = 0;
         for (int i = 0; i < x; ++i) {
+            sum += alpha[i];
             for (int j = 0; j < y; ++j) {
-                sum += alpha[i] + S(i, j, k);
+                sum += S(i, j, k);
             }
         }
         first -= gsl_sf_lngamma(sum);
@@ -188,6 +198,15 @@ static double compute_first_term(const bnmf_algs::tensor3d_t& S,
     return first;
 }
 
+/**
+ * @brief Compute the second term of the sum when calculating log marginal of S.
+ *
+ * @param S Tensor S.
+ * @param beta Parameter vector of Dirichlet prior for matrix \f$H\f$ of size
+ * \f$z\f$.
+ *
+ * @return Value of the second term
+ */
 static double compute_second_term(const bnmf_algs::tensor3d_t& S,
                                   const std::vector<double>& beta) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
@@ -202,9 +221,10 @@ static double compute_second_term(const bnmf_algs::tensor3d_t& S,
     double second = log_gamma_sum * y - sum_log_gamma * y;
     for (int j = 0; j < y; ++j) {
         double sum = 0;
-        for (int i = 0; i < x; ++i) {
-            for (int k = 0; k < z; ++k) {
-                sum += beta[k] + S(i, j, k);
+        for (int k = 0; k < z; ++k) {
+            sum += beta[k];
+            for (int i = 0; i < x; ++i) {
+                sum += S(i, j, k);
             }
         }
         second -= gsl_sf_lngamma(sum);
@@ -220,6 +240,15 @@ static double compute_second_term(const bnmf_algs::tensor3d_t& S,
     return second;
 }
 
+/**
+ * @brief Compute the third term of the sum when calculating log marginal of S.
+ *
+ * @param S Tensor S.
+ * @param a Shape parameter of Gamma distribution.
+ * @param b Rate parameter of Gamma distribution.
+ *
+ * @return Value of the third term
+ */
 static double compute_third_term(const bnmf_algs::tensor3d_t& S, double a,
                                  double b) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
@@ -241,6 +270,13 @@ static double compute_third_term(const bnmf_algs::tensor3d_t& S, double a,
     return third;
 }
 
+/**
+ * @brief Compute the fourth term of the sum when calculating log marginal of S.
+ *
+ * @param S Tensor S.
+ *
+ * @return Value of the fourth term
+ */
 static double compute_fourth_term(const bnmf_algs::tensor3d_t& S) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
