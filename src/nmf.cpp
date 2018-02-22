@@ -11,7 +11,7 @@
  * @throws std::invalid_argument If the parameters do not satisfy the conditions
  * specifid in bnmf_algs::nmf.
  */
-void nmf_check_parameters(const bnmf_algs::matrix_t& X, long r, int max_iter, double epsilon) {
+static void nmf_check_parameters(const bnmf_algs::matrix_t& X, long r, int max_iter, double epsilon) {
     if ((X.array() < 0).any()) {
         throw std::invalid_argument("X matrix has negative entries");
     }

@@ -1,4 +1,5 @@
 #include <gsl/gsl_randist.h>
+#include <gsl/gsl_sf_gamma.h>
 #include <iostream>
 
 #include "sampling.hpp"
@@ -15,7 +16,7 @@
  *
  * @author Esref Ozdemir
  */
-void ensure_positive_dimensions(long x, long y, long z) {
+static void ensure_positive_dimensions(long x, long y, long z) {
     if (x <= 0 || y <= 0 || z <= 0) {
         throw std::invalid_argument("Non-positive shape: (" +
                                     std::to_string(x) + ", " +
@@ -39,9 +40,9 @@ void ensure_positive_dimensions(long x, long y, long z) {
  *
  * @author Esref Ozdemir
  */
-void ensure_compatible_dimensions(const bnmf_algs::matrix_t& prior_W,
-                                  const bnmf_algs::matrix_t& prior_H,
-                                  const bnmf_algs::vector_t& prior_L) {
+static void ensure_compatible_dimensions(const bnmf_algs::matrix_t& prior_W,
+                                          const bnmf_algs::matrix_t& prior_H,
+                                          const bnmf_algs::vector_t& prior_L) {
     if (prior_W.cols() != prior_H.rows()) {
         throw std::invalid_argument("Incompatible dimensions: W=(" +
                                             std::to_string(prior_W.rows()) +
@@ -74,10 +75,10 @@ void ensure_compatible_dimensions(const bnmf_algs::matrix_t& prior_W,
  *
  * @author Esref Ozdemir
  */
-void ensure_compatible_dirichlet_parameters(long x,
-                                            long z,
-                                            const std::vector<double>& alpha,
-                                            const std::vector<double>& beta) {
+static void ensure_compatible_dirichlet_parameters(long x,
+                                                    long z,
+                                                    const std::vector<double>& alpha,
+                                                    const std::vector<double>& beta) {
     if (alpha.size() != x) {
         throw std::invalid_argument("Number of dirichlet parameters alpha (" +
                                             std::to_string(alpha.size()) +
@@ -157,4 +158,111 @@ bnmf_algs::tensor3d_t bnmf_algs::sample_S(const matrix_t& prior_W,
         }
     }
     return sample;
+}
+
+static double compute_first_term(const bnmf_algs::tensor3d_t& S,
+                                  const std::vector<double>& alpha) {
+    long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
+
+    double log_gamma_sum = gsl_sf_lngamma(std::accumulate(alpha.begin(), alpha.end(), 0.0));
+    double sum_log_gamma = 0;
+    std::for_each(alpha.begin(), alpha.end(), [&sum_log_gamma] (double alpha_i) {
+        sum_log_gamma += gsl_sf_lngamma(alpha_i);
+    });
+
+    double first = log_gamma_sum*z - sum_log_gamma*z;
+    for (int k = 0; k < z; ++k) {
+        double sum = 0;
+        for (int i = 0; i < x; ++i) {
+            for (int j = 0; j < y; ++j) {
+                sum += alpha[i] + S(i, j, k);
+            }
+        }
+        first -= gsl_sf_lngamma(sum);
+
+        for (int i = 0; i < x; ++i) {
+            sum = alpha[i];
+            for (int j = 0; j < y; ++j) {
+                sum += S(i, j, k);
+            }
+            first += gsl_sf_lngamma(sum);
+        }
+    }
+    return first;
+}
+
+static double compute_second_term(const bnmf_algs::tensor3d_t& S,
+                                   const std::vector<double>& beta) {
+    long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
+
+    double log_gamma_sum = gsl_sf_lngamma(std::accumulate(beta.begin(), beta.end(), 0.0));
+    double sum_log_gamma = 0;
+    std::for_each(beta.begin(), beta.end(), [&sum_log_gamma] (double beta_k) {
+        sum_log_gamma += gsl_sf_lngamma(beta_k);
+    });
+
+    double second = log_gamma_sum*y - sum_log_gamma*y;
+    for (int j = 0; j < y; ++j) {
+        double sum = 0;
+        for (int i = 0; i < x; ++i) {
+            for (int k = 0; k < z; ++k) {
+                sum += beta[k] + S(i, j, k);
+            }
+        }
+        second -= gsl_sf_lngamma(sum);
+
+        for (int k = 0; k < z; ++k) {
+            sum = beta[k];
+            for (int i = 0; i < x; ++i) {
+                sum += S(i, j, k);
+            }
+            second += gsl_sf_lngamma(sum);
+        }
+    }
+    return second;
+}
+
+static double compute_third_term(const bnmf_algs::tensor3d_t& S, double a, double b) {
+    long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
+
+    double log_gamma = -gsl_sf_lngamma(a);
+    double a_log_b = a*std::log(b);
+
+    double third = log_gamma*y + a_log_b*y;
+    for (int j = 0; j < y; ++j) {
+        double sum = a;
+        for (int i = 0; i < x; ++i) {
+            for (int k = 0; k < z; ++k) {
+                sum += S(i, j, k);
+            }
+        }
+        third += gsl_sf_lngamma(sum);
+        third -= sum*std::log(b + 1);
+    }
+    return third;
+}
+
+static double compute_fourth_term(const bnmf_algs::tensor3d_t& S) {
+    long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
+
+    double fourth = 0;
+    for (int i = 0; i < x; ++i) {
+        for (int j = 0; j < y; ++j) {
+            for (int k = 0; k < z; ++k) {
+                fourth += gsl_sf_lngamma(S(i, j, k) + 1);
+            }
+        }
+    }
+    return fourth;
+}
+
+double bnmf_algs::log_marginal_S(const tensor3d_t& S,
+                                 double a,
+                                 double b,
+                                 const std::vector<double>& alpha,
+                                 const std::vector<double>& beta) {
+    return compute_first_term(S, alpha)
+          + compute_second_term(S, beta)
+          + compute_third_term(S, a, b)
+          - compute_fourth_term(S);
 }
