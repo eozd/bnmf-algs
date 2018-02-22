@@ -1,8 +1,8 @@
 #include "nmf.hpp"
 
-#include <stdexcept>
-#include <limits>
 #include <cmath>
+#include <limits>
+#include <stdexcept>
 
 /**
  * @brief Check that given parameters satisfy the constraints as specified in
@@ -10,8 +10,11 @@
  *
  * @throws std::invalid_argument If the parameters do not satisfy the conditions
  * specifid in bnmf_algs::nmf.
+ *
+ * @author Esref Ozdemir
  */
-static void nmf_check_parameters(const bnmf_algs::matrix_t& X, long r, int max_iter, double epsilon) {
+static void nmf_check_parameters(const bnmf_algs::matrix_t& X, long r,
+                                 int max_iter, double epsilon) {
     if ((X.array() < 0).any()) {
         throw std::invalid_argument("X matrix has negative entries");
     }
@@ -30,7 +33,7 @@ double bnmf_algs::euclidean_cost(const matrix_t& A, const matrix_t& B) {
     double cost = 0;
     for (int i = 0; i < A.rows(); ++i) {
         for (int j = 0; j < A.cols(); ++j) {
-            cost += std::pow(A(i, j) - B(i, j) , 2);
+            cost += std::pow(A(i, j) - B(i, j), 2);
         }
     }
     return cost;
@@ -45,19 +48,17 @@ double bnmf_algs::kl_cost(const matrix_t& X, const matrix_t& WH) {
             wh_elem = WH(i, j);
             cost += wh_elem - x_elem;
             if (std::abs(x_elem) > std::numeric_limits<double>::epsilon() &&
-                    std::abs(wh_elem) > std::numeric_limits<double>::epsilon()) {
-                cost += X(i, j)*std::log(X(i, j)/WH(i, j));
+                std::abs(wh_elem) > std::numeric_limits<double>::epsilon()) {
+                cost += X(i, j) * std::log(X(i, j) / WH(i, j));
             }
         }
     }
     return cost;
 }
 
-std::pair<bnmf_algs::matrix_t, bnmf_algs::matrix_t> bnmf_algs::nmf(const matrix_t& X,
-                                                                   long r,
-                                                                   bnmf_algs::NMFVariant variant,
-                                                                   int max_iter,
-                                                                   double epsilon) {
+std::pair<bnmf_algs::matrix_t, bnmf_algs::matrix_t>
+bnmf_algs::nmf(const matrix_t& X, long r, bnmf_algs::NMFVariant variant,
+               int max_iter, double epsilon) {
     using namespace Eigen;
     const long m = X.rows();
     const long n = X.cols();
@@ -77,7 +78,7 @@ std::pair<bnmf_algs::matrix_t, bnmf_algs::matrix_t> bnmf_algs::nmf(const matrix_
     bool until_convergence = (max_iter == 0);
     matrix_t numer, denom, curr_approx, frac;
     while (until_convergence || max_iter-- > 0) {
-        curr_approx = W*H;
+        curr_approx = W * H;
 
         // update cost
         prev_cost = cost;
@@ -94,11 +95,11 @@ std::pair<bnmf_algs::matrix_t, bnmf_algs::matrix_t> bnmf_algs::nmf(const matrix_
 
         // H update
         if (variant == NMFVariant::Euclidean) {
-            numer = (W.transpose()*X).eval();
-            denom = (W.transpose()*curr_approx).eval();
+            numer = (W.transpose() * X).eval();
+            denom = (W.transpose() * curr_approx).eval();
             for (int a = 0; a < r; ++a) {
                 for (int mu = 0; mu < n; ++mu) {
-                    H(a, mu) *= numer(a, mu)/denom(a, mu);
+                    H(a, mu) *= numer(a, mu) / denom(a, mu);
                 }
             }
         } else if (variant == NMFVariant::KL) {
@@ -112,33 +113,33 @@ std::pair<bnmf_algs::matrix_t, bnmf_algs::matrix_t> bnmf_algs::nmf(const matrix_
                 for (int mu = 0; mu < n; ++mu) {
                     double numer_sum = 0;
                     for (int i = 0; i < m; ++i) {
-                        numer_sum += W(i, a)*frac(i, mu);
+                        numer_sum += W(i, a) * frac(i, mu);
                     }
-                    H(a, mu) *= numer_sum/denom_sum;
+                    H(a, mu) *= numer_sum / denom_sum;
                 }
             }
         }
 
         // W update
         if (variant == NMFVariant::Euclidean) {
-            numer = (X*H.transpose()).eval();
-            denom = (W*(H*H.transpose())).eval();
+            numer = (X * H.transpose()).eval();
+            denom = (W * (H * H.transpose())).eval();
             for (int i = 0; i < m; ++i) {
                 for (int j = 0; j < r; ++j) {
-                    W(i, j) *= numer(i, j)/denom(i, j);
+                    W(i, j) *= numer(i, j) / denom(i, j);
                 }
             }
         } else if (variant == NMFVariant::KL) {
-            frac = X.cwiseQuotient(W*H);
+            frac = X.cwiseQuotient(W * H);
             for (int i = 0; i < m; ++i) {
                 for (int a = 0; a < r; ++a) {
 
                     double numer_sum = 0, denom_sum = 0;
                     for (int mu = 0; mu < n; ++mu) {
-                        numer_sum += H(a, mu)*frac(i, mu);
+                        numer_sum += H(a, mu) * frac(i, mu);
                         denom_sum += H(a, mu);
                     }
-                    W(i, a) *= numer_sum/denom_sum;
+                    W(i, a) *= numer_sum / denom_sum;
                 }
             }
         }

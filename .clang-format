@@ -1,0 +1,9 @@
+# A simple clang-format file for the DKM project to keep whitespace formatting consistent
+
+# General settings
+BasedOnStyle: LLVM
+IndentWidth: 4
+
+Language: Cpp
+DerivePointerAlignment: false
+PointerAlignment: Left

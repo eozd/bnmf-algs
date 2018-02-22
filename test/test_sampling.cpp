@@ -1,8 +1,7 @@
 #include <random>
 
-#include "sampling.hpp"
 #include "catch2.hpp"
-
+#include "sampling.hpp"
 
 using namespace bnmf_algs;
 
@@ -57,7 +56,8 @@ TEST_CASE("Parameter checks for sample_S using prior matrices", "sample_S") {
     REQUIRE_NOTHROW(sample_S(W, H, L));
 }
 
-TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters", "bnmf_priors") {
+TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters",
+          "bnmf_priors") {
     // result matrices
     int x = 7, y = 4, z = 8;
     shape<3> tensor_shape{x, y, z};
@@ -118,9 +118,12 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
 
     SECTION("Custom matrices", "custom_matrices") {
         double scale = 5;
-        matrix_t W = (matrix_t::Random(x, z) + matrix_t::Constant(x, z, scale))*scale;
-        matrix_t H = (matrix_t::Random(z, y) + matrix_t::Constant(z, y, scale))*scale;
-        vector_t L = (vector_t::Random(y) + vector_t::Constant(y, scale))*scale;
+        matrix_t W =
+            (matrix_t::Random(x, z) + matrix_t::Constant(x, z, scale)) * scale;
+        matrix_t H =
+            (matrix_t::Random(z, y) + matrix_t::Constant(z, y, scale)) * scale;
+        vector_t L =
+            (vector_t::Random(y) + vector_t::Constant(y, scale)) * scale;
         tensor3d_t S = sample_S(W, H, L);
 
         // TODO: How to check if the result comes from Poisson with certain mean
@@ -134,7 +137,8 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
             REQUIRE(nonnegative);
         }
 
-        // TODO: This will be deprecated once the return value of sample_S will be an integer tensor as it should be
+        // TODO: This will be deprecated once the return value of sample_S will
+        // be an integer tensor as it should be
         SECTION("Check if matrix is integer valued", "integer") {
             tensor3d_t S_round = S.round();
             double sum = 0;
@@ -148,6 +152,7 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
     }
 }
 
-TEST_CASE("Algorithm checks for getting a sample from distribution parameters", "bnmf_priors sample_S") {
+TEST_CASE("Algorithm checks for getting a sample from distribution parameters",
+          "bnmf_priors sample_S") {
     // TODO: Implement (First need to understand the constraints on S)
 }

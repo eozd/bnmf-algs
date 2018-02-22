@@ -1,9 +1,9 @@
 #include "catch2.hpp"
 #include "nmf.hpp"
+#include <chrono>
 #include <cmath>
 #include <fstream>
 #include <iostream>
-#include <chrono>
 
 using namespace std::chrono;
 using namespace Eigen;
@@ -129,7 +129,7 @@ TEST_CASE("Euclidean distance tests", "euclidean_cost") {
 
     SECTION("One of the matrices is 0", "zero_matrix") {
         matrix_t Y = matrix_t::Zero(m, n);
-        double x_norm_squared = X.norm()*X.norm();
+        double x_norm_squared = X.norm() * X.norm();
         REQUIRE(bnmf_algs::euclidean_cost(X, Y) == Approx(x_norm_squared));
         REQUIRE(bnmf_algs::euclidean_cost(Y, X) == Approx(x_norm_squared));
     }
@@ -137,7 +137,7 @@ TEST_CASE("Euclidean distance tests", "euclidean_cost") {
     SECTION("Two random matrices", "random_matrices") {
         matrix_t Y = matrix_t::Random(m, n);
         double norm = (X - Y).norm();
-        double norm_squared = norm*norm;
+        double norm_squared = norm * norm;
         REQUIRE(bnmf_algs::euclidean_cost(X, Y) == Approx(norm_squared));
         REQUIRE(bnmf_algs::euclidean_cost(Y, X) == Approx(norm_squared));
     }
@@ -163,12 +163,12 @@ TEST_CASE("KL-divergence cost tests", "kl_cost") {
 
     SECTION("General correctness", "correctness") {
         matrix_t Z(3, 2);
-        Z << 0.16012694, 0.71662857, 0.11937736,
-                0.43474739, 0.7392143, 0.86325228;
+        Z << 0.16012694, 0.71662857, 0.11937736, 0.43474739, 0.7392143,
+            0.86325228;
 
         matrix_t Y(3, 2);
-        Y << 0.75314334, 0.7584056, 0.54661004,
-                0.23851888, 0.75112086, 0.2180139;
+        Y << 0.75314334, 0.7584056, 0.54661004, 0.23851888, 0.75112086,
+            0.2180139;
 
         REQUIRE(bnmf_algs::kl_cost(Z, Y) == Approx(1.19944962));
     }
