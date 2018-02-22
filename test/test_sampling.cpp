@@ -2,10 +2,13 @@
 
 #include "catch2.hpp"
 #include "sampling.hpp"
+#include "util.hpp"
+#include <iostream>
 
 using namespace bnmf_algs;
+using namespace bnmf_algs::util;
 
-TEST_CASE("Parameter checks for bnmf_priors", "bnmf_priors") {
+TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
     int x = 5, y = 3, z = 2;
     int a = 3, b = 2;
     shape<3> tensor_shape{x, y, z};
@@ -37,7 +40,7 @@ TEST_CASE("Parameter checks for bnmf_priors", "bnmf_priors") {
     REQUIRE_THROWS(bnmf_priors(tensor_shape, a, b, alpha, beta));
 }
 
-TEST_CASE("Parameter checks for sample_S using prior matrices", "sample_S") {
+TEST_CASE("Parameter checks for sample_S using prior matrices", "[sample_S]") {
     int x = 10, y = 8, z = 5;
     matrix_t W = matrix_t::Ones(x, z);
     matrix_t H = matrix_t::Ones(z, y);
@@ -57,7 +60,7 @@ TEST_CASE("Parameter checks for sample_S using prior matrices", "sample_S") {
 }
 
 TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters",
-          "bnmf_priors") {
+          "[bnmf_priors]") {
     // result matrices
     int x = 7, y = 4, z = 8;
     shape<3> tensor_shape{x, y, z};
@@ -81,13 +84,13 @@ TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters",
 
     std::tie(W, H, L) = bnmf_priors(tensor_shape, a, b, alpha, beta);
 
-    SECTION("All entries of W, H, L are nonnegative", "nonnegative") {
+    SECTION("All entries of W, H, L are nonnegative") {
         REQUIRE((W.array() >= 0).all());
         REQUIRE((H.array() >= 0).all());
         REQUIRE((L.array() >= 0).all());
     }
 
-    SECTION("Columns of W and H sum to 1", "normalization") {
+    SECTION("Columns of W and H sum to 1") {
         auto W_col_sums = W.colwise().sum().eval();
         REQUIRE(W_col_sums.minCoeff() == Approx(1));
         REQUIRE(W_col_sums.maxCoeff() == Approx(1));
@@ -98,10 +101,10 @@ TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters",
     }
 }
 
-TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
+TEST_CASE("Algorithm checks for sample_S using prior matrices", "[sample_S]") {
     int x = 10, y = 8, z = 5;
 
-    SECTION("Zero matrices", "zero_matrices") {
+    SECTION("Zero matrices") {
         matrix_t W = matrix_t::Zero(x, z);
         matrix_t H = matrix_t::Zero(z, y);
         vector_t L = vector_t::Ones(y);
@@ -116,7 +119,7 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
         REQUIRE(sum == Approx(0));
     }
 
-    SECTION("Custom matrices", "custom_matrices") {
+    SECTION("Custom matrices") {
         double scale = 5;
         matrix_t W =
             (matrix_t::Random(x, z) + matrix_t::Constant(x, z, scale)) * scale;
@@ -127,7 +130,7 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
         tensor3d_t S = sample_S(W, H, L);
 
         // TODO: How to check if the result comes from Poisson with certain mean
-        SECTION("Nonnegativity check", "nonnegativity") {
+        SECTION("Nonnegativity check") {
             bool nonnegative = true;
             for (int i = 0; i < x; ++i)
                 for (int j = 0; j < y; ++j)
@@ -139,7 +142,7 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
 
         // TODO: This will be deprecated once the return value of sample_S will
         // be an integer tensor as it should be
-        SECTION("Check if matrix is integer valued", "integer") {
+        SECTION("Check if matrix is integer valued") {
             tensor3d_t S_round = S.round();
             double sum = 0;
             for (int i = 0; i < x; ++i)
@@ -153,6 +156,52 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "sample_S") {
 }
 
 TEST_CASE("Algorithm checks for getting a sample from distribution parameters",
-          "bnmf_priors sample_S") {
+          "[bnmf_priors] [sample_S]") {
     // TODO: Implement (First need to understand the constraints on S)
+}
+
+TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
+    int x = 7, y = 4, z = 8;
+    shape<3> tensor_shape{x, y, z};
+
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(5, 10);
+
+    // parameters
+    double a = 100, b = 1;
+    std::vector<double> alpha(x);
+    std::vector<double> beta(z);
+    for (int i = 0; i < x; ++i) {
+        alpha[i] = 0.05;
+    }
+    for (int i = 0; i < z - 1; ++i) {
+        beta[i] = 10;
+    }
+    beta[z - 1] = 60;
+
+    tensor3d_t S = call(sample_S, bnmf_priors(tensor_shape, a, b, alpha, beta));
+
+    SECTION("Changing original parameters results in lower likelihoods") {
+        double original_log_marginal = log_marginal_S(S, a, b, alpha, beta);
+
+        // change parameters
+        a = 200;
+        b = 10;
+        double altered_log_marginal = log_marginal_S(S, a, b, alpha, beta);
+
+        // Original likelihood must be higher
+        REQUIRE(original_log_marginal > altered_log_marginal);
+
+        // back to the original parameters; change alpha beta
+        a = 100, b = 1;
+        for (int i = 0; i < x; ++i) {
+            alpha[i] = 0.2;
+        }
+        for (int i = 0; i < z; ++i) {
+            beta[i] = 5;
+        }
+        // Original likelihood must be higher
+        REQUIRE(original_log_marginal > altered_log_marginal);
+    }
 }

@@ -9,21 +9,21 @@ using namespace std::chrono;
 using namespace Eigen;
 using namespace bnmf_algs;
 
-TEST_CASE("Euclidean NMF constraint checks", "nmf") {
+TEST_CASE("Euclidean NMF constraint checks", "[nmf]") {
     int m = 50, n = 10, r = 5;
 
     matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
     matrix_t W, H;
     std::tie(W, H) = nmf(X, r, NMFVariant::Euclidean);
 
-    SECTION("Check returned matrices' shapes", "shape") {
+    SECTION("Check returned matrices' shapes") {
         REQUIRE(W.rows() == m);
         REQUIRE(W.cols() == r);
         REQUIRE(H.rows() == r);
         REQUIRE(H.cols() == n);
     }
 
-    SECTION("Check that returned matrices are nonnegative", "signs") {
+    SECTION("Check that returned matrices are nonnegative") {
         REQUIRE(W.minCoeff() >= 0);
         REQUIRE(H.minCoeff() >= 0);
     }
@@ -34,7 +34,7 @@ TEST_CASE("Euclidean NMF constraint checks", "nmf") {
  * need to refactor all NMF related functions, add some more information related
  * functionality and create a class or something similar.
  */
-TEST_CASE("Euclidean NMF small matrix convergence check", "nmf") {
+TEST_CASE("Euclidean NMF small matrix convergence check", "[nmf]") {
     int m = 50, n = 10, r = 10;
 
     matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
@@ -48,7 +48,7 @@ TEST_CASE("Euclidean NMF small matrix convergence check", "nmf") {
     REQUIRE(elapsed.count() <= 1000);
 }
 
-TEST_CASE("KL NMF small matrix convergence check", "nmf") {
+TEST_CASE("KL NMF small matrix convergence check", "[nmf]") {
     int m = 50, n = 10, r = 10;
 
     matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
@@ -62,53 +62,53 @@ TEST_CASE("KL NMF small matrix convergence check", "nmf") {
     REQUIRE(elapsed.count() <= 1000);
 }
 
-TEST_CASE("KL NMF constraint checks", "nmf") {
+TEST_CASE("KL NMF constraint checks", "[nmf]") {
     int m = 50, n = 10, r = 5;
 
     matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
     matrix_t W, H;
     std::tie(W, H) = nmf(X, r, NMFVariant::KL);
 
-    SECTION("Check returned matrices' shapes", "shape") {
+    SECTION("Check returned matrices' shapes") {
         REQUIRE(W.rows() == m);
         REQUIRE(W.cols() == r);
         REQUIRE(H.rows() == r);
         REQUIRE(H.cols() == n);
     }
 
-    SECTION("Check that returned matrices are nonnegative", "signs") {
+    SECTION("Check that returned matrices are nonnegative") {
         REQUIRE(W.minCoeff() >= 0);
         REQUIRE(H.minCoeff() >= 0);
     }
 }
 
-TEST_CASE("Euclidean NMF invalid parameters", "nmf") {
+TEST_CASE("Euclidean NMF invalid parameters", "[nmf]") {
     int m = 500, n = 400, r = 20;
     matrix_t X = matrix_t::Zero(m, n);
 
-    SECTION("Negative X", "negative_matrix") {
+    SECTION("Negative X") {
         X(0, 2) = -0.002;
         REQUIRE_THROWS(nmf(X, r, NMFVariant::Euclidean));
     }
 
-    SECTION("Invalid inner dimension", "r") {
+    SECTION("Invalid inner dimension") {
         REQUIRE_THROWS(nmf(X, 0, NMFVariant::Euclidean));
         REQUIRE_THROWS(nmf(X, -1, NMFVariant::Euclidean));
     }
 
-    SECTION("Invalid max iter", "max_iter") {
+    SECTION("Invalid max iter") {
         REQUIRE_THROWS(nmf(X, r, NMFVariant::Euclidean, -1));
     }
 
-    SECTION("Invalid epsilon", "epsilon") {
+    SECTION("Invalid epsilon") {
         REQUIRE_THROWS(nmf(X, r, NMFVariant::Euclidean, 102, -0.00000001));
     }
 }
 
-TEST_CASE("Euclidean NMF degenerate cases", "degenerate") {
+TEST_CASE("Euclidean NMF degenerate cases", "[degenerate]") {
     int m = 500, n = 400, r = 20;
 
-    SECTION("X == 0", "zero-matrix") {
+    SECTION("X == 0") {
 
         matrix_t X = matrix_t::Zero(m, n);
         matrix_t W, H;
@@ -119,22 +119,22 @@ TEST_CASE("Euclidean NMF degenerate cases", "degenerate") {
     }
 }
 
-TEST_CASE("Euclidean distance tests", "euclidean_cost") {
+TEST_CASE("Euclidean distance tests", "[euclidean_cost]") {
     int m = 100, n = 40;
     matrix_t X = matrix_t::Random(m, n);
 
-    SECTION("Same matrices have 0 distance", "same_matrices") {
+    SECTION("Same matrices have 0 distance") {
         REQUIRE(bnmf_algs::euclidean_cost(X, X) == Approx(0.0));
     }
 
-    SECTION("One of the matrices is 0", "zero_matrix") {
+    SECTION("One of the matrices is 0") {
         matrix_t Y = matrix_t::Zero(m, n);
         double x_norm_squared = X.norm() * X.norm();
         REQUIRE(bnmf_algs::euclidean_cost(X, Y) == Approx(x_norm_squared));
         REQUIRE(bnmf_algs::euclidean_cost(Y, X) == Approx(x_norm_squared));
     }
 
-    SECTION("Two random matrices", "random_matrices") {
+    SECTION("Two random matrices") {
         matrix_t Y = matrix_t::Random(m, n);
         double norm = (X - Y).norm();
         double norm_squared = norm * norm;
@@ -143,15 +143,15 @@ TEST_CASE("Euclidean distance tests", "euclidean_cost") {
     }
 }
 
-TEST_CASE("KL-divergence cost tests", "kl_cost") {
+TEST_CASE("KL-divergence cost tests", "[kl_cost]") {
     int m = 100, n = 40;
     matrix_t X = matrix_t::Random(m, n);
 
-    SECTION("Same matrices have 0 divergence", "same_matrices") {
+    SECTION("Same matrices have 0 divergence") {
         REQUIRE(bnmf_algs::kl_cost(X, X) == Approx(0.0));
     }
 
-    SECTION("At least one of the matrices is 0", "zero_matrix") {
+    SECTION("At least one of the matrices is 0") {
         matrix_t Y = X;
         X = matrix_t::Zero(m, n);
         REQUIRE(!std::isnan(bnmf_algs::kl_cost(X, Y)));
@@ -161,7 +161,7 @@ TEST_CASE("KL-divergence cost tests", "kl_cost") {
         REQUIRE(!std::isnan(bnmf_algs::kl_cost(Y, X)));
     }
 
-    SECTION("General correctness", "correctness") {
+    SECTION("General correctness") {
         matrix_t Z(3, 2);
         Z << 0.16012694, 0.71662857, 0.11937736, 0.43474739, 0.7392143,
             0.86325228;

@@ -3,14 +3,13 @@
 
 using namespace bnmf_algs;
 
-TEST_CASE("Correct wrapper creation checks", "gsl_rng_wrapper") {
-    SECTION("Check if we get a nullptr after normal construction", "nullptr") {
+TEST_CASE("Correct wrapper creation checks", "[gsl_rng_wrapper]") {
+    SECTION("Check if we get a nullptr after normal construction") {
         auto rand_gen = make_gsl_rng(gsl_rng_taus);
         REQUIRE(rand_gen.get() != nullptr);
     }
 
-    SECTION("Check if we can use the generator after normal construction",
-            "rng") {
+    SECTION("Check if we can use the generator after normal construction") {
         auto rand_gen = make_gsl_rng(gsl_rng_uni);
         int a = 5, b = 10;
         double rand_num = gsl_ran_flat(rand_gen.get(), a, b);

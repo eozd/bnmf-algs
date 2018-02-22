@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -g -O0 -fprofile-arcs -ftest-coverage")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -pedantic -g -O0 -fprofile-arcs -ftest-coverage")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgcov")
 
 # Optimized build
@@ -19,10 +19,10 @@ find_package(Eigen3 REQUIRED)
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${GSL_INCLUDE_DIRS})
 
-add_library(bnmf_algs SHARED src/nmf.cpp include/nmf.hpp include/defs.hpp include/sampling.hpp src/sampling.cpp include/wrappers.hpp src/wrappers.cpp)
+add_library(bnmf_algs SHARED src/nmf.cpp include/nmf.hpp include/defs.hpp include/sampling.hpp src/sampling.cpp include/wrappers.hpp src/wrappers.cpp include/util.hpp)
 target_link_libraries(bnmf_algs gsl gslcblas)
 
-add_executable (tests test/test_nmf.cpp test/include_catch.cpp test/test_wrappers.cpp test/test_sampling.cpp)
+add_executable (tests test/test_nmf.cpp test/include_catch.cpp test/test_wrappers.cpp test/test_sampling.cpp test/test_util.cpp)
 target_link_libraries(tests bnmf_algs)
 
 #add_executable(dataset_nmf src/main.cpp)
