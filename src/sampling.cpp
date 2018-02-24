@@ -180,7 +180,7 @@ static double compute_first_term(const bnmf_algs::tensor3d_t& S,
     for (int k = 0; k < z; ++k) {
         double sum = 0;
         for (int i = 0; i < x; ++i) {
-            sum += alpha[i] * y;
+            sum += alpha[i];
             for (int j = 0; j < y; ++j) {
                 sum += S(i, j, k);
             }
@@ -222,7 +222,7 @@ static double compute_second_term(const bnmf_algs::tensor3d_t& S,
     for (int j = 0; j < y; ++j) {
         double sum = 0;
         for (int k = 0; k < z; ++k) {
-            sum += beta[k] * x;
+            sum += beta[k];
             for (int i = 0; i < x; ++i) {
                 sum += S(i, j, k);
             }

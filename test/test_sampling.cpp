@@ -161,24 +161,19 @@ TEST_CASE("Algorithm checks for getting a sample from distribution parameters",
 }
 
 TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
-    int x = 7, y = 4, z = 8;
+    int x = 8, y = 10, z = 2;
     shape<3> tensor_shape{x, y, z};
 
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(5, 10);
-
     // parameters
-    double a = 100, b = 1;
+    double a = 40, b = 1;
     std::vector<double> alpha(x);
     std::vector<double> beta(z);
     for (int i = 0; i < x; ++i) {
-        alpha[i] = 0.05;
+        alpha[i] = 1;
     }
-    for (int i = 0; i < z - 1; ++i) {
-        beta[i] = 10;
+    for (int i = 0; i < z; ++i) {
+        beta[i] = 1;
     }
-    beta[z - 1] = 60;
 
     tensor3d_t S = call(sample_S, bnmf_priors(tensor_shape, a, b, alpha, beta));
 
@@ -201,6 +196,7 @@ TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
         for (int i = 0; i < z; ++i) {
             beta[i] = 5;
         }
+        altered_log_marginal = log_marginal_S(S, a, b, alpha, beta);
         // Original likelihood must be higher
         REQUIRE(original_log_marginal > altered_log_marginal);
     }
