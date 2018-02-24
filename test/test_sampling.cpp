@@ -201,3 +201,34 @@ TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
         REQUIRE(original_log_marginal > altered_log_marginal);
     }
 }
+
+TEST_CASE("Test sparseness", "[sparseness]") {
+    int x = 5, y = 5, z = 5;
+    shape<3> tensor_shape{x, y, z};
+
+    SECTION("Zero tensor") {
+        tensor3d_t S(x, y, z);
+        S.setZero();
+        REQUIRE(sparseness(S) == std::numeric_limits<double>::max());
+    }
+
+    SECTION("Matrix with a single nonzero element") {
+        tensor3d_t S(x, y, z);
+        S.setZero();
+        S(0, 0, 0) = 240;
+        REQUIRE(sparseness(S) == Approx(1));
+    }
+
+    SECTION("Matrix with all ones") {
+        tensor3d_t S(x, y, z);
+        for (int i = 0; i < x; ++i) {
+            for (int j = 0; j < y; ++j) {
+                for (int k = 0; k < z; ++k) {
+                    S(i, j, k) = 1;
+                }
+            }
+        }
+        double result = sparseness(S);
+        REQUIRE(Approx(result).margin(std::numeric_limits<double>::epsilon()) == 0);
+    }
+}

@@ -79,4 +79,30 @@ tensor3d_t sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
 double log_marginal_S(const tensor3d_t& S, double a, double b,
                       const std::vector<double>& alpha,
                       const std::vector<double>& beta);
+
+/**
+ * @brief Compute the sparseness of the given 3D tensor.
+ *
+ * Sparseness of a 3D tensor \f$S_{x \times y \times z}\f$ is defined as
+ *
+ * \f[
+ * \frac{\sqrt{xyz} - S_{+++}/\|S\|_F}{\sqrt{xyz} - 1}
+ * \f]
+ *
+ * where \f$\|S\|_F = \sqrt{\sum_{ijk}(S_{ijk})^2}\f$ is the Frobenius norm of
+ * tensor \f$S\f$ and \f$S_{+++} = \sum_{ijk}S_{ijk}\f$ is the sum of elements
+ * of \f$S\f$.
+ *
+ * @param S 3D tensor \f$S\f$.
+ *
+ * @return Sparseness of \f$S\f$.
+ *
+ * @remark If all elements of \f$S\f$ are 0, then the function returns
+ * std::numeric_limits<double>::max().
+ *
+ * @todo Move this method to somewhere else; it is not exactly related to
+ * sampling
+ *
+ */
+double sparseness(const tensor3d_t& S);
 } // namespace bnmf_algs
