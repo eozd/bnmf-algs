@@ -212,14 +212,14 @@ TEST_CASE("Test sparseness", "[sparseness]") {
         REQUIRE(sparseness(S) == std::numeric_limits<double>::max());
     }
 
-    SECTION("Matrix with a single nonzero element") {
+    SECTION("Tensor with a single nonzero element") {
         tensor3d_t S(x, y, z);
         S.setZero();
         S(0, 0, 0) = 240;
         REQUIRE(sparseness(S) == Approx(1));
     }
 
-    SECTION("Matrix with all ones") {
+    SECTION("Tensor with all ones") {
         tensor3d_t S(x, y, z);
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
