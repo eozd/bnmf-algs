@@ -8,20 +8,18 @@
 /**
  * @brief Check if any of the dimensions is non-positive.
  *
- * @throws std::invalid_argument if any of the dimensions is non-positive.
- *
  * @param x First dimension.
  * @param y Second dimension.
  * @param z Third dimension.
  *
- * @author Esref Ozdemir
+ * @return Error message. If there isn't any error, returns "".
  */
-static void ensure_positive_dimensions(long x, long y, long z) {
+static std::string ensure_positive_dimensions(long x, long y, long z) {
     if (x <= 0 || y <= 0 || z <= 0) {
-        throw std::invalid_argument(
-            "Non-positive shape: (" + std::to_string(x) + ", " +
-            std::to_string(y) + ", " + std::to_string(z) + ")");
+            return "Non-positive shape: (" + std::to_string(x) + ", " +
+            std::to_string(y) + ", " + std::to_string(z) + ")";
     }
+    return "";
 }
 
 /**
@@ -31,31 +29,29 @@ static void ensure_positive_dimensions(long x, long y, long z) {
  * \f$H\f$ is an \f$z \times y\f$ matrix and \f$L\f$ is a vector of size
  * \f$y\f$.
  *
- * @throws std::invalid_argument if the dimensions are not compatible with BNMF
- * model.
- *
  * @param prior_W Prior matrix \f$W\f$.
  * @param prior_H Prior matrix \f$H\f$.
  * @param prior_L Prior vector \f$L\f$.
  *
- * @author Esref Ozdemir
+ * @return Error message. If there isn't any error, returns "".
  */
-static void ensure_compatible_dimensions(const bnmf_algs::matrix_t& prior_W,
+static std::string ensure_compatible_dimensions(const bnmf_algs::matrix_t& prior_W,
                                          const bnmf_algs::matrix_t& prior_H,
                                          const bnmf_algs::vector_t& prior_L) {
     if (prior_W.cols() != prior_H.rows()) {
-        throw std::invalid_argument("Incompatible dimensions: W=(" +
+        return "Incompatible dimensions: W=(" +
                                     std::to_string(prior_W.rows()) + ", " +
                                     std::to_string(prior_W.cols()) + ") H=(" +
                                     std::to_string(prior_H.rows()) + ", " +
-                                    std::to_string(prior_H.cols()) + ")");
+                                    std::to_string(prior_H.cols()) + ")";
     }
     if (prior_H.cols() != prior_L.cols()) {
-        throw std::invalid_argument("Incompatible dimensions: H=(" +
+        return "Incompatible dimensions: H=(" +
                                     std::to_string(prior_H.rows()) + ", " +
                                     std::to_string(prior_H.cols()) + ") L=(" +
-                                    std::to_string(prior_L.cols()) + ")");
+                                    std::to_string(prior_L.cols()) + ")";
     }
+    return "";
 }
 
 /**
@@ -67,27 +63,25 @@ static void ensure_compatible_dimensions(const bnmf_algs::matrix_t& prior_W,
  * @param alpha Dirichlet parameters for \f$W\f$.
  * @param beta Dirichlet parameters for \f$H\f$.
  *
- * @throws std::invalid_argument If the number of Dirichlet parameters is not
- * equal to corresponding dimensions.
- *
- * @author Esref Ozdemir
+ * @return Error message. If there isn't any errors, returns "".
  */
-static void
+static std::string
 ensure_compatible_dirichlet_parameters(long x, long z,
                                        const std::vector<double>& alpha,
                                        const std::vector<double>& beta) {
     if (alpha.size() != x) {
-        throw std::invalid_argument("Number of dirichlet parameters alpha (" +
+        return "Number of dirichlet parameters alpha (" +
                                     std::to_string(alpha.size()) +
                                     ") not equal to x (" + std::to_string(x) +
-                                    ")");
+                                    ")";
     }
     if (beta.size() != z) {
-        throw std::invalid_argument("Number of dirichlet parameters beta (" +
+        return "Number of dirichlet parameters beta (" +
                                     std::to_string(beta.size()) +
                                     ") not equal to z (" + std::to_string(z) +
-                                    ")");
+                                    ")";
     }
+    return "";
 }
 
 std::tuple<bnmf_algs::matrix_t, bnmf_algs::matrix_t, bnmf_algs::vector_t>
@@ -96,8 +90,16 @@ bnmf_algs::bnmf_priors(const shape<3>& tensor_shape, double a, double b,
                        const std::vector<double>& beta) {
     long x = tensor_shape[0], y = tensor_shape[1], z = tensor_shape[2];
     // TODO: Preprocesor options to disable checks
-    ensure_positive_dimensions(x, y, z);
-    ensure_compatible_dirichlet_parameters(x, z, alpha, beta);
+    {
+        auto error_msg = ensure_positive_dimensions(x, y, z);
+        if (error_msg != "") {
+            throw std::invalid_argument(error_msg);
+        }
+        error_msg = ensure_compatible_dirichlet_parameters(x, z, alpha, beta);
+        if (error_msg != "") {
+            throw std::invalid_argument(error_msg);
+        }
+    }
 
     auto rand_gen = make_gsl_rng(gsl_rng_taus);
     // generate prior_L
@@ -138,8 +140,12 @@ bnmf_algs::tensor3d_t bnmf_algs::sample_S(const matrix_t& prior_W,
     long y = prior_L.cols();
     long z = prior_H.rows();
     // TODO: Preprocesor options to disable checks
-    ensure_positive_dimensions(x, y, z);
-    ensure_compatible_dimensions(prior_W, prior_H, prior_L);
+    {
+        auto error_msg = ensure_compatible_dimensions(prior_W, prior_H, prior_L);
+        if (error_msg != "") {
+            throw std::invalid_argument(error_msg);
+        }
+    }
 
     // TODO: Is it OK to construct this rng object every time?
     auto rand_gen = make_gsl_rng(gsl_rng_taus);
@@ -294,6 +300,13 @@ static double compute_fourth_term(const bnmf_algs::tensor3d_t& S) {
 double bnmf_algs::log_marginal_S(const tensor3d_t& S, double a, double b,
                                  const std::vector<double>& alpha,
                                  const std::vector<double>& beta) {
+    if (alpha.size() != S.dimension(0)) {
+        throw std::invalid_argument("Number of alpha parameters must be equal to S.dimension(0)");
+    }
+    if (beta.size() != S.dimension(2)) {
+        throw std::invalid_argument("Number of beta parameters must be equal to S.dimension(2)");
+    }
+
     return compute_first_term(S, alpha) + compute_second_term(S, beta) +
            compute_third_term(S, a, b) - compute_fourth_term(S);
 }

@@ -160,6 +160,26 @@ TEST_CASE("Algorithm checks for getting a sample from distribution parameters",
     // TODO: Implement (First need to understand the constraints on S)
 }
 
+TEST_CASE("Parameter checks on log marginal of S", "[log_marginal_S]") {
+    int x = 5, y = 4, z = 8;
+    double a = 1, b = 1;
+    tensor3d_t S(x, y, z);
+    std::vector<double> alpha(x, 1);
+    std::vector<double> beta(z, 1);
+
+    REQUIRE_NOTHROW(log_marginal_S(S, a, b, alpha, beta));
+
+    alpha.resize(x + 1);
+    REQUIRE_THROWS(log_marginal_S(S, a, b, alpha, beta));
+
+    alpha.resize(x);
+    beta.resize(z + 1);
+    REQUIRE_THROWS(log_marginal_S(S, a, b, alpha, beta));
+
+    alpha.resize(x + 1);
+    REQUIRE_THROWS(log_marginal_S(S, a, b, alpha, beta));
+}
+
 TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
     int x = 8, y = 10, z = 2;
     shape<3> tensor_shape{x, y, z};

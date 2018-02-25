@@ -9,8 +9,6 @@
  *
  * Given input file must contain each row of the matrix on a separated line.
  * Each entry in a row must be separated using a single space character.
- *
- * @Author Esref Ozdemir
  */
 int main() {
     // TODO: Get the file name from console arguments

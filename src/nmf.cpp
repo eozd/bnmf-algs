@@ -8,25 +8,23 @@
  * @brief Check that given parameters satisfy the constraints as specified in
  * bnmf_algs::nmf.
  *
- * @throws std::invalid_argument If the parameters do not satisfy the conditions
- * specifid in bnmf_algs::nmf.
- *
- * @author Esref Ozdemir
+ * @return Error message. If there isn't any error, then returns "".
  */
-static void nmf_check_parameters(const bnmf_algs::matrix_t& X, long r,
+static std::string nmf_check_parameters(const bnmf_algs::matrix_t& X, long r,
                                  int max_iter, double epsilon) {
     if ((X.array() < 0).any()) {
-        throw std::invalid_argument("X matrix has negative entries");
+        return "X matrix has negative entries";
     }
     if (r <= 0) {
-        throw std::invalid_argument("r must be positive");
+        return "r must be positive";
     }
     if (max_iter < 0) {
-        throw std::invalid_argument("max_iter must be nonnegative");
+        return "max_iter must be nonnegative";
     }
     if (epsilon < 0) {
-        throw std::invalid_argument("epsilon must be nonnegitave");
+        return "epsilon must be nonnegitave";
     }
+    return "";
 }
 
 double bnmf_algs::euclidean_cost(const matrix_t& A, const matrix_t& B) {
@@ -63,7 +61,12 @@ bnmf_algs::nmf(const matrix_t& X, long r, bnmf_algs::NMFVariant variant,
     const long m = X.rows();
     const long n = X.cols();
 
-    nmf_check_parameters(X, r, max_iter, epsilon);
+    {
+        auto error_msg = nmf_check_parameters(X, r, max_iter, epsilon);
+        if (error_msg != "") {
+            throw std::invalid_argument(error_msg);
+        }
+    }
 
     // special case (X == 0)
     if (X.isZero(0)) {

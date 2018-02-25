@@ -24,10 +24,9 @@ namespace bnmf_algs {
  *
  * @return std::tuple of \f$<W_{x \times z}, H_{z \times y}, L_y>\f$.
  *
- * @remark Number of alpha parameters must be \f$x\f$.
- * @remark Number of beta parameters must be \f$z\f$.
- *
- * @author Esref Ozdemir
+ * @throws std::invalid_argument if tensor_shape contains a nonpositive element,
+ * if number of alpha parameters is not \f$x\f$, if number of beta parameters is
+ * not \f$z\f$.
  */
 std::tuple<matrix_t, matrix_t, vector_t>
 bnmf_priors(const shape<3>& tensor_shape, double a, double b,
@@ -48,7 +47,9 @@ bnmf_priors(const shape<3>& tensor_shape, double a, double b,
  * @return A sample tensor of size \f$x \times y \times z\f$ from
  * generative Bayesian NMF model.
  *
- * @author Esref Ozdemir
+ * @throws std::invalid_argument if number of columns of prior_W is not equal to
+ * number of rows of prior_H, if number of columns of prior_L is not equal to
+ * number of columns of prior_L
  */
 tensor3d_t sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
                     const vector_t& prior_L);
@@ -71,10 +72,8 @@ tensor3d_t sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
  *
  * @return log marginal \f$\log{p(S)}\f$.
  *
- * @remark Number of alpha parameters must be \f$x\f$.
- * @remark Number of beta parameters must be \f$z\f$.
- *
- * @author Esref Ozdemir
+ * @throws std::invalid_argument if number of alpha parameters is not equal to
+ * S.dimension(0), if number of beta parameters is not equal to S.dimension(2).
  */
 double log_marginal_S(const tensor3d_t& S, double a, double b,
                       const std::vector<double>& alpha,
@@ -102,7 +101,6 @@ double log_marginal_S(const tensor3d_t& S, double a, double b,
  *
  * @todo Move this method to somewhere else; it is not exactly related to
  * sampling
- *
  */
 double sparseness(const tensor3d_t& S);
 } // namespace bnmf_algs

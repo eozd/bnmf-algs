@@ -36,6 +36,9 @@ namespace bnmf_algs {
  *
  * @return Tensor \f$S\f$ of size \f$x \times y \times z\f$ where \f$X =
  * S_{ij+}\f$.
+ *
+ * @throws std::invalid_argument if matrix \f$X\f$ is not nonnegative, if size
+ * of alpha is not \f$x\f$, if size of beta is not \f$z\f$.
  */
 tensor3d_t seq_greedy_bld(const matrix_t& X, size_t z,
                           const std::vector<double>& alpha,

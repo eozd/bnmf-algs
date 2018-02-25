@@ -46,7 +46,8 @@ enum class NMFVariant {
  *          conditions related to max_iter and epsilon is satisfied.
  * @return std::pair of W and H matrices.
  *
- * @author Esref Ozdemir
+ * @throws std::invalid_argument if \f$X\f$ is not nonnegative, if r is not
+ * positive, if max_iter is not nonnegative, epsilon is not nonnegative
  */
 std::pair<matrix_t, matrix_t>
 nmf(const matrix_t& X, long r, NMFVariant variant, int max_iter = 250,
@@ -67,7 +68,6 @@ nmf(const matrix_t& X, long r, NMFVariant variant, int max_iter = 250,
  * @return Euclidean cost between A and B.
  *
  * @remark If matrices A and B have different shape, the result is undefined.
- * @author Esref Ozdemir
  */
 double euclidean_cost(const matrix_t& A, const matrix_t& B);
 
@@ -90,8 +90,6 @@ double euclidean_cost(const matrix_t& A, const matrix_t& B);
  * @return KL-divergence cost from A to B.
  *
  * @remark If matrices A and B have different shape, the result is undefined.
- * @author Esref Ozdemir
  */
 double kl_cost(const matrix_t& A, const matrix_t& B);
 } // namespace bnmf_algs
-
