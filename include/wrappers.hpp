@@ -39,7 +39,8 @@ gsl_rng_wrapper make_gsl_rng(const gsl_rng_type* T);
  * "
  *
  * @param K Number of objects to choose from.
- * @param P Pointer to an array containing the probability of \f$i^{th}\f$ item at P[i].
+ * @param P Pointer to an array containing the probability of \f$i^{th}\f$ item
+ * at P[i].
  *
  * @return gsl_ran_discrete_wrapper wrapping a gsl_ran_discrete_t object.
  *
