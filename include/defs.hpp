@@ -39,5 +39,5 @@ using tensor0d_t = Eigen::Tensor<double, 0, Eigen::RowMajor>;
  *
  * @remark Number of dimensions must be known at compile-time.
  */
-template <size_t N> using shape = std::array<long, N>;
+template <size_t N> using shape = std::array<size_t, N>;
 } // namespace bnmf_algs

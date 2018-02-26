@@ -8,30 +8,24 @@
 namespace bnmf_algs {
 /**
  * @brief Return prior matrices W, H and vector L according to the Bayesian
- * NMF generative model using distribution parameters.
+ * NMF allocation model using distribution parameters.
  *
- * According to the generative Bayesian NMF model \cite kurutmazbayesian,
+ * According to the Bayesian NMF allocation model \cite kurutmazbayesian,
  *
  * \f$L_j \sim \mathcal{G}(a, b) \qquad W_{:k} \sim \mathcal{D}(\alpha)
  * \qquad H_{:j} \sim \mathcal{D}(\beta)\f$.
  *
  * @param tensor_shape Shape of the sample tensor \f$x \times y \times z\f$.
- * @param a Shape parameter of Gamma distribution.
- * @param b Rate parameter of Gamma distribution.
- * @param alpha Parameter vector of Dirichlet prior for matrix \f$W\f$ of size
- * \f$x\f$.
- * @param beta Parameter vector of Dirichlet prior for matrix \f$H\f$ of size
- * \f$z\f$.
+ * @param model_params Allocation Model parameters. See
+ * bnmf_algs::AllocModelParams.
  *
  * @return std::tuple of \f$<W_{x \times z}, H_{z \times y}, L_y>\f$.
  *
- * @throws std::invalid_argument if tensor_shape contains a nonpositive element,
- * if number of alpha parameters is not \f$x\f$, if number of beta parameters is
- * not \f$z\f$.
+ * @throws std::invalid_argument if number of alpha parameters is not \f$x\f$,
+ * if number of beta parameters is not \f$z\f$.
  */
 std::tuple<matrix_t, matrix_t, vector_t>
-bnmf_priors(const shape<3>& tensor_shape, double a, double b,
-            const std::vector<double>& alpha, const std::vector<double>& beta);
+bnmf_priors(const shape<3>& tensor_shape, const AllocModelParams& model_params);
 
 /**
  * @brief Sample a tensor S from generative Bayesian NMF model using the

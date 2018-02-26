@@ -6,23 +6,6 @@
 #include "wrappers.hpp"
 
 /**
- * @brief Check if any of the dimensions is non-positive.
- *
- * @param x First dimension.
- * @param y Second dimension.
- * @param z Third dimension.
- *
- * @return Error message. If there isn't any error, returns "".
- */
-static std::string ensure_positive_dimensions(long x, long y, long z) {
-    if (x <= 0 || y <= 0 || z <= 0) {
-            return "Non-positive shape: (" + std::to_string(x) + ", " +
-            std::to_string(y) + ", " + std::to_string(z) + ")";
-    }
-    return "";
-}
-
-/**
  * @brief Check if shapes of \f$W\f$, \f$H\f$ and \f$L\f$ is incompatible.
  *
  * According to the BNMF model, \f$W\f$ is an \f$x \times y\f$ matrix,
@@ -35,21 +18,20 @@ static std::string ensure_positive_dimensions(long x, long y, long z) {
  *
  * @return Error message. If there isn't any error, returns "".
  */
-static std::string ensure_compatible_dimensions(const bnmf_algs::matrix_t& prior_W,
-                                         const bnmf_algs::matrix_t& prior_H,
-                                         const bnmf_algs::vector_t& prior_L) {
+static std::string
+ensure_compatible_dimensions(const bnmf_algs::matrix_t& prior_W,
+                             const bnmf_algs::matrix_t& prior_H,
+                             const bnmf_algs::vector_t& prior_L) {
     if (prior_W.cols() != prior_H.rows()) {
-        return "Incompatible dimensions: W=(" +
-                                    std::to_string(prior_W.rows()) + ", " +
-                                    std::to_string(prior_W.cols()) + ") H=(" +
-                                    std::to_string(prior_H.rows()) + ", " +
-                                    std::to_string(prior_H.cols()) + ")";
+        return "Incompatible dimensions: W=(" + std::to_string(prior_W.rows()) +
+               ", " + std::to_string(prior_W.cols()) + ") H=(" +
+               std::to_string(prior_H.rows()) + ", " +
+               std::to_string(prior_H.cols()) + ")";
     }
     if (prior_H.cols() != prior_L.cols()) {
-        return "Incompatible dimensions: H=(" +
-                                    std::to_string(prior_H.rows()) + ", " +
-                                    std::to_string(prior_H.cols()) + ") L=(" +
-                                    std::to_string(prior_L.cols()) + ")";
+        return "Incompatible dimensions: H=(" + std::to_string(prior_H.rows()) +
+               ", " + std::to_string(prior_H.cols()) + ") L=(" +
+               std::to_string(prior_L.cols()) + ")";
     }
     return "";
 }

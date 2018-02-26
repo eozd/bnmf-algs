@@ -35,7 +35,7 @@ enum class NMFVariant {
  * @param r Inner dimension of the factorization. Must be positive.
  * @param variant NMF variant. See enum bnmf_algs::NMFVariant.
  * @param max_iter Maximum number of iterations. If set to 0, the algorithm
- *                  runs until convergence. Must be nonnegative.
+ *                  runs until convergence.
  * @param epsilon Convergence measure. For steps
  *                 \f$ i \f$ and \f$ i+1 \f$, if
  *                 \f$ |X-WH|_{i+1} - |X-WH|_i \leq epsilon \f$, the
@@ -50,7 +50,7 @@ enum class NMFVariant {
  * positive, if max_iter is not nonnegative, epsilon is not nonnegative
  */
 std::pair<matrix_t, matrix_t>
-nmf(const matrix_t& X, long r, NMFVariant variant, int max_iter = 250,
+nmf(const matrix_t& X, size_t r, NMFVariant variant, size_t max_iter = 250,
     double epsilon = std::numeric_limits<double>::epsilon());
 
 /**

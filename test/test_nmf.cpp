@@ -93,11 +93,6 @@ TEST_CASE("Euclidean NMF invalid parameters", "[nmf]") {
 
     SECTION("Invalid inner dimension") {
         REQUIRE_THROWS(nmf(X, 0, NMFVariant::Euclidean));
-        REQUIRE_THROWS(nmf(X, -1, NMFVariant::Euclidean));
-    }
-
-    SECTION("Invalid max iter") {
-        REQUIRE_THROWS(nmf(X, r, NMFVariant::Euclidean, -1));
     }
 
     SECTION("Invalid epsilon") {

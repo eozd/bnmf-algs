@@ -10,19 +10,16 @@
  *
  * @return Error message. If there isn't any error, then returns "".
  */
-static std::string nmf_check_parameters(const bnmf_algs::matrix_t& X, long r,
-                                 int max_iter, double epsilon) {
+static std::string nmf_check_parameters(const bnmf_algs::matrix_t& X, size_t r,
+                                        double epsilon) {
     if ((X.array() < 0).any()) {
         return "X matrix has negative entries";
     }
-    if (r <= 0) {
+    if (r == 0) {
         return "r must be positive";
     }
-    if (max_iter < 0) {
-        return "max_iter must be nonnegative";
-    }
     if (epsilon < 0) {
-        return "epsilon must be nonnegitave";
+        return "epsilon must be nonnegative";
     }
     return "";
 }
@@ -55,14 +52,14 @@ double bnmf_algs::kl_cost(const matrix_t& X, const matrix_t& WH) {
 }
 
 std::pair<bnmf_algs::matrix_t, bnmf_algs::matrix_t>
-bnmf_algs::nmf(const matrix_t& X, long r, bnmf_algs::NMFVariant variant,
-               int max_iter, double epsilon) {
+bnmf_algs::nmf(const matrix_t& X, size_t r, bnmf_algs::NMFVariant variant,
+               size_t max_iter, double epsilon) {
     using namespace Eigen;
     const long m = X.rows();
     const long n = X.cols();
 
     {
-        auto error_msg = nmf_check_parameters(X, r, max_iter, epsilon);
+        auto error_msg = nmf_check_parameters(X, r, epsilon);
         if (error_msg != "") {
             throw std::invalid_argument(error_msg);
         }
