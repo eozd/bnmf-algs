@@ -96,6 +96,13 @@ bnmf_algs::bld_fact(const tensor3d_t& S, const AllocModelParams& model_params,
                     double epsilon) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
+    if (model_params.alpha.size() != x) {
+        throw std::invalid_argument("Number of alpha parameters must be equal to S.dimension(0)");
+    }
+    if (model_params.beta.size() != z) {
+        throw std::invalid_argument("Number of beta parameters must be equal to S.dimension(1)");
+    }
+
     Eigen::Tensor<double, 2, Eigen::RowMajor> S_ipk =
         S.sum(Eigen::array<int, 1>({1}));
     Eigen::Tensor<double, 2, Eigen::RowMajor> S_pjk =
@@ -107,8 +114,8 @@ bnmf_algs::bld_fact(const tensor3d_t& S, const AllocModelParams& model_params,
     matrix_t H(z, y);
     vector_t L(y);
 
-    vector_t W_colsum(z, 0);
-    vector_t H_colsum(y, 0);
+    vector_t W_colsum = vector_t::Zero(z);
+    vector_t H_colsum = vector_t::Zero(y);
     for (int i = 0; i < x; ++i) {
         for (int k = 0; k < z; ++k) {
             W(i, k) = model_params.alpha[i] + S_ipk(i, k) - 1;
