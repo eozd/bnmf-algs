@@ -90,3 +90,52 @@ bnmf_algs::seq_greedy_bld(const matrix_t& X, size_t z,
 
     return S;
 }
+
+std::tuple<bnmf_algs::matrix_t, bnmf_algs::matrix_t, bnmf_algs::vector_t>
+bnmf_algs::bld_fact(const tensor3d_t& S, const AllocModelParams& model_params,
+                    double epsilon) {
+    long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
+
+    Eigen::Tensor<double, 2, Eigen::RowMajor> S_ipk =
+        S.sum(Eigen::array<int, 1>({1}));
+    Eigen::Tensor<double, 2, Eigen::RowMajor> S_pjk =
+        S.sum(Eigen::array<int, 1>({0}));
+    Eigen::Tensor<double, 1, Eigen::RowMajor> S_pjp =
+        S.sum(Eigen::array<int, 2>({0, 2}));
+
+    matrix_t W(x, z);
+    matrix_t H(z, y);
+    vector_t L(y);
+
+    vector_t W_colsum(z, 0);
+    vector_t H_colsum(y, 0);
+    for (int i = 0; i < x; ++i) {
+        for (int k = 0; k < z; ++k) {
+            W(i, k) = model_params.alpha[i] + S_ipk(i, k) - 1;
+            W_colsum(k) += W(i, k);
+        }
+    }
+    for (int k = 0; k < z; ++k) {
+        for (int j = 0; j < y; ++j) {
+            H(k, j) = model_params.beta[k] + S_pjk(j, k) - 1;
+            H_colsum(j) += H(k, j);
+        }
+    }
+    for (int j = 0; j < y; ++j) {
+        L(j) = (model_params.a + S_pjp(j) - 1) / (model_params.b + 1 + epsilon);
+    }
+
+    // normalize
+    for (int i = 0; i < x; ++i) {
+        for (int k = 0; k < z; ++k) {
+            W(i, k) /= (W_colsum(k) + epsilon);
+        }
+    }
+    for (int k = 0; k < z; ++k) {
+        for (int j = 0; j < y; ++j) {
+            H(k, j) /= (H_colsum(j) + epsilon);
+        }
+    }
+
+    return {W, H, L};
+};
