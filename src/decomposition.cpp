@@ -1,6 +1,6 @@
 #include "decomposition.hpp"
 #include "wrappers.hpp"
-#include <algorithm>
+#include <gsl/gsl_sf_psi.h>
 
 /**
  * @brief Do parameter checks on seq_greedy_bld parameters and return error
@@ -146,8 +146,63 @@ bnmf_algs::bld_fact(const tensord<3>& S, const AllocModelParams& model_params,
     return std::make_tuple(W, H, L);
 };
 
-bnmf_algs::tensor3d_t bnmf_algs::bld_mult(const matrix_t& X, size_t z,
+bnmf_algs::tensord<3> bnmf_algs::bld_mult(const matrix_t& X, size_t z,
                                           const AllocModelParams& model_params,
                                           size_t max_iter, double eps) {
+    long x = X.rows(), y = X.cols();
+    tensord<3> S(x, y, z);
 
+    // initialize tensor S
+    {
+        auto rand_gen = make_gsl_rng(gsl_rng_taus);
+        std::vector<double> dirichlet_params(z, 1);
+        std::vector<double> dirichlet_variates(z);
+        for (int i = 0; i < x; ++i) {
+            for (int j = 0; j < y; ++j) {
+                gsl_ran_dirichlet(rand_gen.get(), z, dirichlet_params.data(),
+                                  dirichlet_variates.data());
+                for (int k = 0; k < z; ++k) {
+                    S(i, j, k) = X(i, j) * dirichlet_variates[k];
+                }
+            }
+        }
+    }
+
+    tensord<2> S_ipk(x, z);  // S_{i+k}
+    tensord<2> S_pjk(y, z);  // S_{+jk}
+    matrix_t alpha_eph(x, z);
+    matrix_t beta_eph(y, z);
+    tensord<3> grad_plus(x, y, z);
+    tensord<3> grad_minus(x, y, z);
+    auto psi = gsl_sf_psi;
+    for (int eph = 0; eph < max_iter; ++eph) {
+        // update S_ipk, S_pjk
+        S_ipk = S.sum(shape<1>({1}));
+        S_pjk = S.sum(shape<1>({0}));
+        // update alpha_eph, beta_eph
+        for (int i = 0; i < x; ++i) {
+            for (int k = 0; k < z; ++k) {
+                alpha_eph(i, k) = model_params.alpha[i] + S_ipk(i, k);
+            }
+        }
+        for (int j = 0; j < y; ++j) {
+            for (int k = 0; k < z; ++k) {
+                beta_eph(j, k) = model_params.beta[k] + S_pjk(j, k);
+            }
+        }
+        // update grad_plus, grad_minus
+        for (int i = 0; i < x; ++i) {
+            for (int j = 0; j < y; ++j) {
+                for (int k = 0; k < z; ++k) {
+                    grad_plus(i, j, k) =
+                        psi(beta_eph(j, k)) - psi(S(i, j, k) + 1);
+                    // todo: update grad_minus
+                }
+            }
+        }
+
+        //todo: update S
+    }
+
+    return S;
 }
