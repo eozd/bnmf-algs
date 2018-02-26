@@ -22,7 +22,7 @@ include_directories(${GSL_INCLUDE_DIRS})
 add_library(bnmf_algs SHARED src/nmf.cpp include/nmf.hpp include/defs.hpp include/sampling.hpp src/sampling.cpp include/wrappers.hpp src/wrappers.cpp include/util.hpp include/decomposition.hpp src/decomposition.cpp include/alloc_model_params.hpp src/alloc_model_params.cpp)
 target_link_libraries(bnmf_algs gsl gslcblas)
 
-add_executable (tests test/test_nmf.cpp test/include_catch.cpp test/test_wrappers.cpp test/test_sampling.cpp test/test_util.cpp test/test_decomposition.cpp)
+add_executable (tests test/test_nmf.cpp test/include_catch.cpp test/test_wrappers.cpp test/test_sampling.cpp test/test_util.cpp test/test_decomposition.cpp test/test_alloc_model_params.cpp)
 target_link_libraries(tests bnmf_algs)
 
 #add_executable(dataset_nmf src/main.cpp)
