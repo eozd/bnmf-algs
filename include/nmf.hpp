@@ -36,22 +36,22 @@ enum class NMFVariant {
  * @param variant NMF variant. See enum bnmf_algs::NMFVariant.
  * @param max_iter Maximum number of iterations. If set to 0, the algorithm
  *                  runs until convergence.
- * @param epsilon Convergence measure. For steps
+ * @param tolerance Convergence measure. For steps
  *                 \f$ i \f$ and \f$ i+1 \f$, if
- *                 \f$ |X-WH|_{i+1} - |X-WH|_i \leq epsilon \f$, the
+ *                 \f$ |X-WH|_{i+1} - |X-WH|_i \leq tolerance \f$, the
  *                 algorithm is assumed to have converged. Must be
  *                 nonnegative.
  *
  * @remark The algorithm terminates when at least one of the termination
- *          conditions related to max_iter and epsilon is satisfied.
+ *          conditions related to max_iter and tolerance is satisfied.
  * @return std::pair of W and H matrices.
  *
  * @throws std::invalid_argument if \f$X\f$ is not nonnegative, if r is not
  * positive, if max_iter is not nonnegative, epsilon is not nonnegative
  */
 std::pair<matrix_t, matrix_t>
-nmf(const matrix_t& X, size_t r, NMFVariant variant, size_t max_iter = 250,
-    double epsilon = std::numeric_limits<double>::epsilon());
+nmf(const matrix_t& X, size_t r, NMFVariant variant, size_t max_iter = 1000,
+    double tolerance = std::numeric_limits<double>::epsilon());
 
 /**
  * @brief Compute the Euclidean cost as defined in \cite lee-seung-algs.

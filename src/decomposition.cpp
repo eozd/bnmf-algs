@@ -93,7 +93,7 @@ bnmf_algs::seq_greedy_bld(const matrix_t& X, size_t z,
 
 std::tuple<bnmf_algs::matrix_t, bnmf_algs::matrix_t, bnmf_algs::vector_t>
 bnmf_algs::bld_fact(const tensor3d_t& S, const AllocModelParams& model_params,
-                    double epsilon) {
+                    double eps) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
     if (model_params.alpha.size() != x) {
@@ -129,20 +129,20 @@ bnmf_algs::bld_fact(const tensor3d_t& S, const AllocModelParams& model_params,
         }
     }
     for (int j = 0; j < y; ++j) {
-        L(j) = (model_params.a + S_pjp(j) - 1) / (model_params.b + 1 + epsilon);
+        L(j) = (model_params.a + S_pjp(j) - 1) / (model_params.b + 1 + eps);
     }
 
     // normalize
     for (int i = 0; i < x; ++i) {
         for (int k = 0; k < z; ++k) {
-            W(i, k) /= (W_colsum(k) + epsilon);
+            W(i, k) /= (W_colsum(k) + eps);
         }
     }
     for (int k = 0; k < z; ++k) {
         for (int j = 0; j < y; ++j) {
-            H(k, j) /= (H_colsum(j) + epsilon);
+            H(k, j) /= (H_colsum(j) + eps);
         }
     }
 
-    return {W, H, L};
+    return std::make_tuple(W, H, L);
 };

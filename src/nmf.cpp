@@ -53,13 +53,13 @@ double bnmf_algs::kl_cost(const matrix_t& X, const matrix_t& WH) {
 
 std::pair<bnmf_algs::matrix_t, bnmf_algs::matrix_t>
 bnmf_algs::nmf(const matrix_t& X, size_t r, bnmf_algs::NMFVariant variant,
-               size_t max_iter, double epsilon) {
+               size_t max_iter, double tolerance) {
     using namespace Eigen;
     const long m = X.rows();
     const long n = X.cols();
 
     {
-        auto error_msg = nmf_check_parameters(X, r, epsilon);
+        auto error_msg = nmf_check_parameters(X, r, tolerance);
         if (error_msg != "") {
             throw std::invalid_argument(error_msg);
         }
@@ -89,7 +89,7 @@ bnmf_algs::nmf(const matrix_t& X, size_t r, bnmf_algs::NMFVariant variant,
         }
 
         // check cost convergence
-        if (std::abs(cost - prev_cost) <= epsilon) {
+        if (std::abs(cost - prev_cost) <= tolerance) {
             break;
         }
 
@@ -144,5 +144,5 @@ bnmf_algs::nmf(const matrix_t& X, size_t r, bnmf_algs::NMFVariant variant,
             }
         }
     }
-    return {W, H};
+    return std::make_pair(W, H);
 }

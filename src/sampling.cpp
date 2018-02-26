@@ -107,7 +107,7 @@ bnmf_algs::bnmf_priors(const shape<3>& tensor_shape,
         }
     }
 
-    return {prior_W, prior_H, prior_L};
+    return std::make_tuple(prior_W, prior_H, prior_L);
 }
 
 bnmf_algs::tensor3d_t bnmf_algs::sample_S(const matrix_t& prior_W,
