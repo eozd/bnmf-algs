@@ -97,10 +97,12 @@ bnmf_algs::bld_fact(const tensor3d_t& S, const AllocModelParams& model_params,
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
     if (model_params.alpha.size() != x) {
-        throw std::invalid_argument("Number of alpha parameters must be equal to S.dimension(0)");
+        throw std::invalid_argument(
+            "Number of alpha parameters must be equal to S.dimension(0)");
     }
     if (model_params.beta.size() != z) {
-        throw std::invalid_argument("Number of beta parameters must be equal to S.dimension(1)");
+        throw std::invalid_argument(
+            "Number of beta parameters must be equal to S.dimension(1)");
     }
 
     Eigen::Tensor<double, 2, Eigen::RowMajor> S_ipk =
@@ -146,3 +148,9 @@ bnmf_algs::bld_fact(const tensor3d_t& S, const AllocModelParams& model_params,
 
     return std::make_tuple(W, H, L);
 };
+
+bnmf_algs::tensor3d_t bnmf_algs::bld_mult(const matrix_t& X, size_t z,
+                                          const AllocModelParams& model_params,
+                                          size_t max_iter, double eps) {
+
+}
