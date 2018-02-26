@@ -139,7 +139,7 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "[sample_S]") {
         matrix_t H = matrix_t::Zero(z, y);
         vector_t L = vector_t::Ones(y);
 
-        tensor3d_t S = sample_S(W, H, L);
+        tensord<3> S = sample_S(W, H, L);
         double sum = 0;
         for (int i = 0; i < x; ++i)
             for (int j = 0; j < y; ++j)
@@ -157,7 +157,7 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "[sample_S]") {
             (matrix_t::Random(z, y) + matrix_t::Constant(z, y, scale)) * scale;
         vector_t L =
             (vector_t::Random(y) + vector_t::Constant(y, scale)) * scale;
-        tensor3d_t S = sample_S(W, H, L);
+        tensord<3> S = sample_S(W, H, L);
 
         // TODO: How to check if the result comes from Poisson with certain mean
         SECTION("Nonnegativity check") {
@@ -173,7 +173,7 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "[sample_S]") {
         // TODO: This will be deprecated once the return value of sample_S will
         // be an integer tensor as it should be
         SECTION("Check if matrix is integer valued") {
-            tensor3d_t S_round = S.round();
+            tensord<3> S_round = S.round();
             double sum = 0;
             for (int i = 0; i < x; ++i)
                 for (int j = 0; j < y; ++j)
@@ -193,7 +193,7 @@ TEST_CASE("Algorithm checks for getting a sample from distribution parameters",
 TEST_CASE("Parameter checks on log marginal of S", "[log_marginal_S]") {
     int x = 5, y = 4, z = 8;
     shape<3> tensor_shape{x, y, z};
-    tensor3d_t S(x, y, z);
+    tensord<3> S(x, y, z);
     AllocModelParams model_params(tensor_shape);
 
     REQUIRE_NOTHROW(log_marginal_S(S, model_params));
@@ -225,7 +225,7 @@ TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
     }
     AllocModelParams model_params(a, b, alpha, beta);
 
-    tensor3d_t S = call(sample_S, bnmf_priors(tensor_shape, model_params));
+    tensord<3> S = call(sample_S, bnmf_priors(tensor_shape, model_params));
 
     SECTION("Changing original parameters results in lower likelihoods") {
         double original_log_marginal = log_marginal_S(S, model_params);
@@ -257,20 +257,20 @@ TEST_CASE("Test sparseness", "[sparseness]") {
     shape<3> tensor_shape{x, y, z};
 
     SECTION("Zero tensor") {
-        tensor3d_t S(x, y, z);
+        tensord<3> S(x, y, z);
         S.setZero();
         REQUIRE(sparseness(S) == std::numeric_limits<double>::max());
     }
 
     SECTION("Tensor with a single nonzero element") {
-        tensor3d_t S(x, y, z);
+        tensord<3> S(x, y, z);
         S.setZero();
         S(0, 0, 0) = 240;
         REQUIRE(sparseness(S) == Approx(1));
     }
 
     SECTION("Tensor with all ones") {
-        tensor3d_t S(x, y, z);
+        tensord<3> S(x, y, z);
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
                 for (int k = 0; k < z; ++k) {

@@ -110,7 +110,7 @@ bnmf_algs::bnmf_priors(const shape<3>& tensor_shape,
     return std::make_tuple(prior_W, prior_H, prior_L);
 }
 
-bnmf_algs::tensor3d_t bnmf_algs::sample_S(const matrix_t& prior_W,
+bnmf_algs::tensord<3> bnmf_algs::sample_S(const matrix_t& prior_W,
                                           const matrix_t& prior_H,
                                           const vector_t& prior_L) {
     long x = prior_W.rows();
@@ -127,7 +127,7 @@ bnmf_algs::tensor3d_t bnmf_algs::sample_S(const matrix_t& prior_W,
 
     // TODO: Is it OK to construct this rng object every time?
     auto rand_gen = make_gsl_rng(gsl_rng_taus);
-    tensor3d_t sample(x, y, z);
+    tensord<3> sample(x, y, z);
     double mu;
     for (int i = 0; i < x; ++i) {
         for (int j = 0; j < y; ++j) {
@@ -149,7 +149,7 @@ bnmf_algs::tensor3d_t bnmf_algs::sample_S(const matrix_t& prior_W,
  *
  * @return Value of the first term
  */
-static double compute_first_term(const bnmf_algs::tensor3d_t& S,
+static double compute_first_term(const bnmf_algs::tensord<3>& S,
                                  const std::vector<double>& alpha) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
@@ -191,7 +191,7 @@ static double compute_first_term(const bnmf_algs::tensor3d_t& S,
  *
  * @return Value of the second term
  */
-static double compute_second_term(const bnmf_algs::tensor3d_t& S,
+static double compute_second_term(const bnmf_algs::tensord<3>& S,
                                   const std::vector<double>& beta) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
@@ -233,7 +233,7 @@ static double compute_second_term(const bnmf_algs::tensor3d_t& S,
  *
  * @return Value of the third term
  */
-static double compute_third_term(const bnmf_algs::tensor3d_t& S, double a,
+static double compute_third_term(const bnmf_algs::tensord<3>& S, double a,
                                  double b) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
@@ -261,7 +261,7 @@ static double compute_third_term(const bnmf_algs::tensor3d_t& S, double a,
  *
  * @return Value of the fourth term
  */
-static double compute_fourth_term(const bnmf_algs::tensor3d_t& S) {
+static double compute_fourth_term(const bnmf_algs::tensord<3>& S) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
     double fourth = 0;
@@ -275,7 +275,7 @@ static double compute_fourth_term(const bnmf_algs::tensor3d_t& S) {
     return fourth;
 }
 
-double bnmf_algs::log_marginal_S(const tensor3d_t& S,
+double bnmf_algs::log_marginal_S(const tensord<3>& S,
                                  const AllocModelParams& model_params) {
     if (model_params.alpha.size() != S.dimension(0)) {
         throw std::invalid_argument(
@@ -292,7 +292,7 @@ double bnmf_algs::log_marginal_S(const tensor3d_t& S,
            compute_fourth_term(S);
 }
 
-double bnmf_algs::sparseness(const tensor3d_t& S) {
+double bnmf_algs::sparseness(const tensord<3>& S) {
     // TODO: implement a method to unpack std::array
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
     double sum = 0, squared_sum = 0;

@@ -38,7 +38,7 @@ namespace bnmf_algs {
  * @throws std::invalid_argument if matrix \f$X\f$ is not nonnegative, if size
  * of alpha is not \f$x\f$, if size of beta is not \f$z\f$.
  */
-tensor3d_t seq_greedy_bld(const matrix_t& X, size_t z,
+tensord<3> seq_greedy_bld(const matrix_t& X, size_t z,
                           const AllocModelParams& model_params);
 
 /**
@@ -63,7 +63,7 @@ tensor3d_t seq_greedy_bld(const matrix_t& X, size_t z,
  * vector \f$L_y\f$.
  */
 std::tuple<matrix_t, matrix_t, vector_t>
-bld_fact(const tensor3d_t& S, const AllocModelParams& model_params,
+bld_fact(const tensord<3>& S, const AllocModelParams& model_params,
          double eps = 1e-50);
 
 /**
@@ -103,7 +103,7 @@ bld_fact(const tensor3d_t& S, const AllocModelParams& model_params,
  * @throws std::invalid_argument if number of rows of X is not equal to number
  * of alpha parameters, if z is not equal to number of beta parameters.
  */
-tensor3d_t bld_mult(const matrix_t& X, size_t z,
+tensord<3> bld_mult(const matrix_t& X, size_t z,
                     const AllocModelParams& model_params,
                     size_t max_iter = 1000, double eps = 1e-50);
 } // namespace bnmf_algs

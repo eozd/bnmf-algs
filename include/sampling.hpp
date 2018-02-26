@@ -46,7 +46,7 @@ bnmf_priors(const shape<3>& tensor_shape, const AllocModelParams& model_params);
  * number of rows of prior_H, if number of columns of prior_L is not equal to
  * number of columns of prior_L
  */
-tensor3d_t sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
+tensord<3> sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
                     const vector_t& prior_L);
 
 /**
@@ -66,7 +66,7 @@ tensor3d_t sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
  * @throws std::invalid_argument if number of alpha parameters is not equal to
  * S.dimension(0), if number of beta parameters is not equal to S.dimension(2).
  */
-double log_marginal_S(const tensor3d_t& S,
+double log_marginal_S(const tensord<3>& S,
                       const AllocModelParams& model_params);
 
 /**
@@ -92,5 +92,5 @@ double log_marginal_S(const tensor3d_t& S,
  * @todo Move this method to somewhere else; it is not exactly related to
  * sampling
  */
-double sparseness(const tensor3d_t& S);
+double sparseness(const tensord<3>& S);
 } // namespace bnmf_algs

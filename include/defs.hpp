@@ -20,17 +20,15 @@ using matrix_t =
 
 /**
  * @brief Tensor type used in the computations.
- *
- * @todo Templatize the tensor elements (int, double, float, etc.)
  */
-using tensor3d_t = Eigen::Tensor<double, 3, Eigen::RowMajor>;
+template <typename Scalar, size_t N>
+using tensorx = Eigen::Tensor<Scalar, N, Eigen::RowMajor>;
 
 /**
- * @brief Tensory type used to assign the results of reductions on tensors.
- *
- * @todo Templatize the tensor elements
+ * @brief Tensor type specialization using double as Scalar value.
  */
-using tensor0d_t = Eigen::Tensor<double, 0, Eigen::RowMajor>;
+template <size_t N>
+using tensord = tensorx<double, N>;
 
 /**
  * @brief Shape of vectors, matrices, tensors, etc.

@@ -35,10 +35,10 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
         matrix_t X = matrix_t::Zero(x, y);
         AllocModelParams model_params(tensor_shape);
 
-        tensor3d_t S = seq_greedy_bld(X, z, model_params);
+        tensord<3> S = seq_greedy_bld(X, z, model_params);
 
-        tensor0d_t min = S.minimum();
-        tensor0d_t max = S.maximum();
+        tensord<0> min = S.minimum();
+        tensord<0> max = S.maximum();
         REQUIRE(min.coeff() == Approx(0));
         REQUIRE(max.coeff() == Approx(0));
     }
@@ -56,7 +56,7 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
                                       std::vector<double>(z, 1.0));
 
         // todo: how to test if the results are correct?
-        tensor3d_t S = seq_greedy_bld(X, z, model_params);
+        tensord<3> S = seq_greedy_bld(X, z, model_params);
         double log_marginal = log_marginal_S(S, model_params);
 
         REQUIRE(log_marginal >= -265);
@@ -67,7 +67,7 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
 TEST_CASE("Parameter checks on bld_fact", "[bld_fact]") {
     int x = 5, y = 8, z = 2;
     shape<3> tensor_shape{x, y, z};
-    tensor3d_t S(x, y, z);
+    tensord<3> S(x, y, z);
     S.setRandom();
     AllocModelParams model_params(tensor_shape);
 
@@ -90,7 +90,7 @@ TEST_CASE("Algorithm checks on bld_fact", "[bld_fact]") {
     AllocModelParams model_params(tensor_shape);
     model_params.a = 40;
     model_params.b = 1;
-    tensor3d_t S(x, y, z);
+    tensord<3> S(x, y, z);
     // S(:, :, 0)
 
     S.setValues({{{3., 0., 0.},

@@ -24,7 +24,7 @@ seq_greedy_bld_param_checks(const bnmf_algs::matrix_t& X, size_t z,
     return "";
 }
 
-bnmf_algs::tensor3d_t
+bnmf_algs::tensord<3>
 bnmf_algs::seq_greedy_bld(const matrix_t& X, size_t z,
                           const AllocModelParams& model_params) {
     {
@@ -52,7 +52,7 @@ bnmf_algs::seq_greedy_bld(const matrix_t& X, size_t z,
         }
     }
 
-    tensor3d_t S(x, y, z);
+    tensord<3> S(x, y, z);
     S.setZero();
     matrix_t S_ipk = matrix_t::Zero(x, z); // S_{i+k}
     vector_t S_ppk = vector_t::Zero(z);    // S_{++k}
@@ -92,7 +92,7 @@ bnmf_algs::seq_greedy_bld(const matrix_t& X, size_t z,
 }
 
 std::tuple<bnmf_algs::matrix_t, bnmf_algs::matrix_t, bnmf_algs::vector_t>
-bnmf_algs::bld_fact(const tensor3d_t& S, const AllocModelParams& model_params,
+bnmf_algs::bld_fact(const tensord<3>& S, const AllocModelParams& model_params,
                     double eps) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
@@ -105,12 +105,9 @@ bnmf_algs::bld_fact(const tensor3d_t& S, const AllocModelParams& model_params,
             "Number of beta parameters must be equal to S.dimension(1)");
     }
 
-    Eigen::Tensor<double, 2, Eigen::RowMajor> S_ipk =
-        S.sum(Eigen::array<int, 1>({1}));
-    Eigen::Tensor<double, 2, Eigen::RowMajor> S_pjk =
-        S.sum(Eigen::array<int, 1>({0}));
-    Eigen::Tensor<double, 1, Eigen::RowMajor> S_pjp =
-        S.sum(Eigen::array<int, 2>({0, 2}));
+    tensord<2> S_ipk = S.sum(shape<1>({1}));
+    tensord<2> S_pjk = S.sum(shape<1>({0}));
+    tensord<1> S_pjp = S.sum(shape<2>({0, 2}));
 
     matrix_t W(x, z);
     matrix_t H(z, y);
