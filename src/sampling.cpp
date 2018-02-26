@@ -71,31 +71,25 @@ ensure_compatible_dirichlet_parameters(long x, long z,
                                        const std::vector<double>& beta) {
     if (alpha.size() != x) {
         return "Number of dirichlet parameters alpha (" +
-                                    std::to_string(alpha.size()) +
-                                    ") not equal to x (" + std::to_string(x) +
-                                    ")";
+               std::to_string(alpha.size()) + ") not equal to x (" +
+               std::to_string(x) + ")";
     }
     if (beta.size() != z) {
         return "Number of dirichlet parameters beta (" +
-                                    std::to_string(beta.size()) +
-                                    ") not equal to z (" + std::to_string(z) +
-                                    ")";
+               std::to_string(beta.size()) + ") not equal to z (" +
+               std::to_string(z) + ")";
     }
     return "";
 }
 
 std::tuple<bnmf_algs::matrix_t, bnmf_algs::matrix_t, bnmf_algs::vector_t>
-bnmf_algs::bnmf_priors(const shape<3>& tensor_shape, double a, double b,
-                       const std::vector<double>& alpha,
-                       const std::vector<double>& beta) {
+bnmf_algs::bnmf_priors(const shape<3>& tensor_shape,
+                       const AllocModelParams& model_params) {
     long x = tensor_shape[0], y = tensor_shape[1], z = tensor_shape[2];
     // TODO: Preprocesor options to disable checks
     {
-        auto error_msg = ensure_positive_dimensions(x, y, z);
-        if (error_msg != "") {
-            throw std::invalid_argument(error_msg);
-        }
-        error_msg = ensure_compatible_dirichlet_parameters(x, z, alpha, beta);
+        auto error_msg = ensure_compatible_dirichlet_parameters(
+            x, z, model_params.alpha, model_params.beta);
         if (error_msg != "") {
             throw std::invalid_argument(error_msg);
         }
@@ -105,13 +99,14 @@ bnmf_algs::bnmf_priors(const shape<3>& tensor_shape, double a, double b,
     // generate prior_L
     vector_t prior_L(y);
     for (int i = 0; i < y; ++i) {
-        prior_L(i) = gsl_ran_gamma(rand_gen.get(), a, b);
+        prior_L(i) =
+            gsl_ran_gamma(rand_gen.get(), model_params.a, model_params.b);
     }
     // generate prior_W
     matrix_t prior_W(x, z);
     vector_t dirichlet_variates(x);
     for (int i = 0; i < z; ++i) {
-        gsl_ran_dirichlet(rand_gen.get(), x, alpha.data(),
+        gsl_ran_dirichlet(rand_gen.get(), x, model_params.alpha.data(),
                           dirichlet_variates.data());
 
         for (int j = 0; j < x; ++j) {
@@ -122,7 +117,7 @@ bnmf_algs::bnmf_priors(const shape<3>& tensor_shape, double a, double b,
     matrix_t prior_H(z, y);
     dirichlet_variates = vector_t(z);
     for (int i = 0; i < y; ++i) {
-        gsl_ran_dirichlet(rand_gen.get(), z, beta.data(),
+        gsl_ran_dirichlet(rand_gen.get(), z, model_params.beta.data(),
                           dirichlet_variates.data());
 
         for (int j = 0; j < z; ++j) {
@@ -141,7 +136,8 @@ bnmf_algs::tensor3d_t bnmf_algs::sample_S(const matrix_t& prior_W,
     long z = prior_H.rows();
     // TODO: Preprocesor options to disable checks
     {
-        auto error_msg = ensure_compatible_dimensions(prior_W, prior_H, prior_L);
+        auto error_msg =
+            ensure_compatible_dimensions(prior_W, prior_H, prior_L);
         if (error_msg != "") {
             throw std::invalid_argument(error_msg);
         }
@@ -297,18 +293,21 @@ static double compute_fourth_term(const bnmf_algs::tensor3d_t& S) {
     return fourth;
 }
 
-double bnmf_algs::log_marginal_S(const tensor3d_t& S, double a, double b,
-                                 const std::vector<double>& alpha,
-                                 const std::vector<double>& beta) {
-    if (alpha.size() != S.dimension(0)) {
-        throw std::invalid_argument("Number of alpha parameters must be equal to S.dimension(0)");
+double bnmf_algs::log_marginal_S(const tensor3d_t& S,
+                                 const AllocModelParams& model_params) {
+    if (model_params.alpha.size() != S.dimension(0)) {
+        throw std::invalid_argument(
+            "Number of alpha parameters must be equal to S.dimension(0)");
     }
-    if (beta.size() != S.dimension(2)) {
-        throw std::invalid_argument("Number of beta parameters must be equal to S.dimension(2)");
+    if (model_params.beta.size() != S.dimension(2)) {
+        throw std::invalid_argument(
+            "Number of beta parameters must be equal to S.dimension(2)");
     }
 
-    return compute_first_term(S, alpha) + compute_second_term(S, beta) +
-           compute_third_term(S, a, b) - compute_fourth_term(S);
+    return compute_first_term(S, model_params.alpha) +
+           compute_second_term(S, model_params.beta) +
+           compute_third_term(S, model_params.a, model_params.b) -
+           compute_fourth_term(S);
 }
 
 double bnmf_algs::sparseness(const tensor3d_t& S) {

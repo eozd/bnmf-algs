@@ -13,28 +13,29 @@ TEST_CASE("Parameter checks on seq_greedy_bld", "[seq_greedy_bld]") {
     matrix_t X = matrix_t::Random(x, y) + matrix_t::Constant(x, y, 5);
     std::vector<double> alpha(x, 1);
     std::vector<double> beta(z, 1);
+    AllocModelParams model_params(1, 1, alpha, beta);
 
-    REQUIRE_NOTHROW(seq_greedy_bld(X, z, alpha, beta));
+    REQUIRE_NOTHROW(seq_greedy_bld(X, z, model_params));
 
-    alpha.resize(x - 1);
-    REQUIRE_THROWS(seq_greedy_bld(X, z, alpha, beta));
+    model_params.alpha.resize(x - 1);
+    REQUIRE_THROWS(seq_greedy_bld(X, z, model_params));
 
-    alpha.resize(x);
-    beta.resize(z - 1);
-    REQUIRE_THROWS(seq_greedy_bld(X, z, alpha, beta));
+    model_params.alpha.resize(x);
+    model_params.beta.resize(z - 1);
+    REQUIRE_THROWS(seq_greedy_bld(X, z, model_params));
 
-    alpha.resize(x + 1);
-    REQUIRE_THROWS(seq_greedy_bld(X, z, alpha, beta));
+    model_params.alpha.resize(x + 1);
+    REQUIRE_THROWS(seq_greedy_bld(X, z, model_params));
 }
 
 TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
     long x = 8, y = 10, z = 3;
+    shape<3> tensor_shape{x, y, z};
     SECTION("Zero matrix") {
         matrix_t X = matrix_t::Zero(x, y);
-        std::vector<double> alpha(x, 1.0);
-        std::vector<double> beta(z, 1.0);
+        AllocModelParams model_params(tensor_shape);
 
-        tensor3d_t S = seq_greedy_bld(X, z, alpha, beta);
+        tensor3d_t S = seq_greedy_bld(X, z, model_params);
 
         tensor0d_t min = S.minimum();
         tensor0d_t max = S.maximum();
@@ -51,13 +52,12 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
             0., 5., 2., 8., 2., 3., 4., 1., 7., 13., 4., 1., 2., 4., 5., 3., 5.,
             1., 4., 1., 2., 4., 2., 0., 0., 1., 0., 0., 1., 0., 1., 2., 0., 1.;
 
-        std::vector<double> alpha(x, 1.0);
-        std::vector<double> beta(z, 1.0);
-        double a = 40, b = 1;
+        AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
+                                      std::vector<double>(z, 1.0));
 
         // todo: how to test if the results are correct?
-        tensor3d_t S = seq_greedy_bld(X, z, alpha, beta);
-        double log_marginal = log_marginal_S(S, a, b, alpha, beta);
+        tensor3d_t S = seq_greedy_bld(X, z, model_params);
+        double log_marginal = log_marginal_S(S, model_params);
 
         REQUIRE(log_marginal >= -265);
         REQUIRE(sparseness(S) >= 0.6);

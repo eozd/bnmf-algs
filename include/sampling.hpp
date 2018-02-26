@@ -1,5 +1,6 @@
 #pragma once
 
+#include "alloc_model_params.hpp"
 #include "defs.hpp"
 #include <tuple>
 #include <vector>
@@ -63,21 +64,16 @@ tensor3d_t sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
  * \f$\log{p(S)} = \log{p(W, H, L, S)} - \log{p(W, H, L | S)}\f$.
  *
  * @param S Tensor \f$S\f$ of size \f$x \times y \times z \f$.
- * @param a Shape parameter of Gamma distribution.
- * @param b Rate parameter of Gamma distribution.
- * @param alpha Parameter vector of Dirichlet prior for matrix \f$W\f$ of size
- * \f$x\f$.
- * @param beta Parameter vector of Dirichlet prior for matrix \f$H\f$ of size
- * \f$z\f$.
+ * @param model_params Allocation model parameters. See
+ * bnmf_algs::AllocModelParams.
  *
  * @return log marginal \f$\log{p(S)}\f$.
  *
  * @throws std::invalid_argument if number of alpha parameters is not equal to
  * S.dimension(0), if number of beta parameters is not equal to S.dimension(2).
  */
-double log_marginal_S(const tensor3d_t& S, double a, double b,
-                      const std::vector<double>& alpha,
-                      const std::vector<double>& beta);
+double log_marginal_S(const tensor3d_t& S,
+                      const AllocModelParams& model_params);
 
 /**
  * @brief Compute the sparseness of the given 3D tensor.

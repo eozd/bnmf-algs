@@ -1,9 +1,9 @@
 #pragma once
 
 #include "defs.hpp"
+#include "alloc_model_params.hpp"
 
 namespace bnmf_algs {
-
 /**
  * @brief Compute tensor \f$S\f$, the solution of BLD problem \cite
  * kurutmazbayesian, from matrix \f$X\f$ using sequential greedy method.
@@ -41,6 +41,5 @@ namespace bnmf_algs {
  * of alpha is not \f$x\f$, if size of beta is not \f$z\f$.
  */
 tensor3d_t seq_greedy_bld(const matrix_t& X, size_t z,
-                          const std::vector<double>& alpha,
-                          const std::vector<double>& beta);
+                          const AllocModelParams& model_params);
 } // namespace bnmf_algs

@@ -4,40 +4,69 @@
 #include "sampling.hpp"
 #include "util.hpp"
 #include <iostream>
+#include <utility>
+#include <bitset>
 
 using namespace bnmf_algs;
 using namespace bnmf_algs::util;
 
 TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
     int x = 5, y = 3, z = 2;
-    int a = 3, b = 2;
     shape<3> tensor_shape{x, y, z};
-    std::vector<double> alpha(x);
-    std::vector<double> beta(z);
+    AllocModelParams model_params(tensor_shape);
+    matrix_t W, H;
+    vector_t L;
 
-    REQUIRE_NOTHROW(bnmf_priors(tensor_shape, a, b, alpha, beta));
+    SECTION("Illegal parameters") {
+        REQUIRE_NOTHROW(bnmf_priors(tensor_shape, model_params));
 
-    tensor_shape[0]++;
-    REQUIRE_THROWS(bnmf_priors(tensor_shape, a, b, alpha, beta));
+        tensor_shape[0]++;
+        REQUIRE_THROWS(bnmf_priors(tensor_shape, model_params));
 
-    alpha.resize(tensor_shape[0]);
-    REQUIRE_NOTHROW(bnmf_priors(tensor_shape, a, b, alpha, beta));
+        model_params.alpha.resize(tensor_shape[0]);
+        REQUIRE_NOTHROW(bnmf_priors(tensor_shape, model_params));
 
-    beta.resize(z + 2);
-    REQUIRE_THROWS(bnmf_priors(tensor_shape, a, b, alpha, beta));
+        model_params.beta.resize(z + 2);
+        REQUIRE_THROWS(bnmf_priors(tensor_shape, model_params));
 
-    tensor_shape[2] += 2;
-    tensor_shape[1] = 0;
-    REQUIRE_THROWS(bnmf_priors(tensor_shape, a, b, alpha, beta));
+        tensor_shape[2] += 2;
+        tensor_shape[1] = 0;
+        REQUIRE_NOTHROW(bnmf_priors(tensor_shape, model_params));
 
-    tensor_shape[0] = -1;
-    tensor_shape[1] = 1;
-    REQUIRE_THROWS(bnmf_priors(tensor_shape, a, b, alpha, beta));
+        tensor_shape[0] = 2;
+        tensor_shape[1] = 1;
+        tensor_shape[2] = 0;
+        REQUIRE_THROWS(bnmf_priors(tensor_shape, model_params));
+    }
 
-    tensor_shape[0] = 2;
-    tensor_shape[1] = 1;
-    tensor_shape[2] = 0;
-    REQUIRE_THROWS(bnmf_priors(tensor_shape, a, b, alpha, beta));
+    SECTION("Shapes containing 0s") {
+        for (unsigned long long i = 0; i < 8; ++i) {
+            std::bitset<3> bits(i);
+            tensor_shape = shape<3>{static_cast<size_t>(bits[0]),
+                                    static_cast<size_t>(bits[1]),
+                                    static_cast<size_t>(bits[2])};
+            model_params.alpha.resize(tensor_shape[0]);
+            model_params.beta.resize(tensor_shape[2]);
+
+            std::tie(W, H, L) = bnmf_priors(tensor_shape, model_params);
+            REQUIRE(W.rows() == tensor_shape[0]);
+            REQUIRE(W.cols() == tensor_shape[2]);
+            REQUIRE(H.rows() == tensor_shape[2]);
+            REQUIRE(H.cols() == tensor_shape[1]);
+            REQUIRE(L.cols() == tensor_shape[1]);
+
+        }
+    }
+
+    SECTION("Returned matrices have correct shapes") {
+        std::tie(W, H, L) = bnmf_priors(tensor_shape, model_params);
+
+        REQUIRE(W.rows() == tensor_shape[0]);
+        REQUIRE(W.cols() == tensor_shape[2]);
+        REQUIRE(H.rows() == tensor_shape[2]);
+        REQUIRE(H.cols() == tensor_shape[1]);
+        REQUIRE(L.cols() == tensor_shape[1]);
+    }
 }
 
 TEST_CASE("Parameter checks for sample_S using prior matrices", "[sample_S]") {
@@ -81,8 +110,9 @@ TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters",
     for (int i = 0; i < z; ++i) {
         beta[i] = dis(gen);
     }
+    AllocModelParams model_params(a, b, alpha, beta);
 
-    std::tie(W, H, L) = bnmf_priors(tensor_shape, a, b, alpha, beta);
+    std::tie(W, H, L) = bnmf_priors(tensor_shape, model_params);
 
     SECTION("All entries of W, H, L are nonnegative") {
         REQUIRE((W.array() >= 0).all());
@@ -162,22 +192,21 @@ TEST_CASE("Algorithm checks for getting a sample from distribution parameters",
 
 TEST_CASE("Parameter checks on log marginal of S", "[log_marginal_S]") {
     int x = 5, y = 4, z = 8;
-    double a = 1, b = 1;
+    shape<3> tensor_shape{x, y, z};
     tensor3d_t S(x, y, z);
-    std::vector<double> alpha(x, 1);
-    std::vector<double> beta(z, 1);
+    AllocModelParams model_params(tensor_shape);
 
-    REQUIRE_NOTHROW(log_marginal_S(S, a, b, alpha, beta));
+    REQUIRE_NOTHROW(log_marginal_S(S, model_params));
 
-    alpha.resize(x + 1);
-    REQUIRE_THROWS(log_marginal_S(S, a, b, alpha, beta));
+    model_params.alpha.resize(x + 1);
+    REQUIRE_THROWS(log_marginal_S(S, model_params));
 
-    alpha.resize(x);
-    beta.resize(z + 1);
-    REQUIRE_THROWS(log_marginal_S(S, a, b, alpha, beta));
+    model_params.alpha.resize(x);
+    model_params.beta.resize(z + 1);
+    REQUIRE_THROWS(log_marginal_S(S, model_params));
 
-    alpha.resize(x + 1);
-    REQUIRE_THROWS(log_marginal_S(S, a, b, alpha, beta));
+    model_params.alpha.resize(x + 1);
+    REQUIRE_THROWS(log_marginal_S(S, model_params));
 }
 
 TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
@@ -194,29 +223,30 @@ TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
     for (int i = 0; i < z; ++i) {
         beta[i] = 1;
     }
+    AllocModelParams model_params(a, b, alpha, beta);
 
-    tensor3d_t S = call(sample_S, bnmf_priors(tensor_shape, a, b, alpha, beta));
+    tensor3d_t S = call(sample_S, bnmf_priors(tensor_shape, model_params));
 
     SECTION("Changing original parameters results in lower likelihoods") {
-        double original_log_marginal = log_marginal_S(S, a, b, alpha, beta);
+        double original_log_marginal = log_marginal_S(S, model_params);
 
         // change parameters
-        a = 200;
-        b = 10;
-        double altered_log_marginal = log_marginal_S(S, a, b, alpha, beta);
+        model_params.a = 200;
+        model_params.b = 10;
+        double altered_log_marginal = log_marginal_S(S, model_params);
 
         // Original likelihood must be higher
         REQUIRE(original_log_marginal > altered_log_marginal);
 
         // back to the original parameters; change alpha beta
-        a = 100, b = 1;
+        model_params.a = 100, model_params.b = 1;
         for (int i = 0; i < x; ++i) {
-            alpha[i] = 0.2;
+            model_params.alpha[i] = 0.2;
         }
         for (int i = 0; i < z; ++i) {
-            beta[i] = 5;
+            model_params.beta[i] = 5;
         }
-        altered_log_marginal = log_marginal_S(S, a, b, alpha, beta);
+        altered_log_marginal = log_marginal_S(S, model_params);
         // Original likelihood must be higher
         REQUIRE(original_log_marginal > altered_log_marginal);
     }

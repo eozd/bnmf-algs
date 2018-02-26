@@ -10,16 +10,15 @@
  */
 static std::string
 seq_greedy_bld_param_checks(const bnmf_algs::matrix_t& X, size_t z,
-                            const std::vector<double>& alpha,
-                            const std::vector<double>& beta) {
+                            const bnmf_algs::AllocModelParams& model_params) {
     if ((X.array() < 0).any()) {
         return "X must be nonnegative";
     }
-    if (alpha.size() != X.rows()) {
+    if (model_params.alpha.size() != X.rows()) {
         return "Number of alpha parameters must be equal to number of rows of "
                "X";
     }
-    if (beta.size() != z) {
+    if (model_params.beta.size() != z) {
         return "Number of beta parameters must be equal to z";
     }
     return "";
@@ -27,17 +26,17 @@ seq_greedy_bld_param_checks(const bnmf_algs::matrix_t& X, size_t z,
 
 bnmf_algs::tensor3d_t
 bnmf_algs::seq_greedy_bld(const matrix_t& X, size_t z,
-                          const std::vector<double>& alpha,
-                          const std::vector<double>& beta) {
+                          const AllocModelParams& model_params) {
     {
-        auto error_msg = seq_greedy_bld_param_checks(X, z, alpha, beta);
+        auto error_msg = seq_greedy_bld_param_checks(X, z, model_params);
         if (error_msg != "") {
             throw std::invalid_argument(error_msg);
         }
     }
     long x = X.rows();
     long y = X.cols();
-    double sig_alpha = std::accumulate(alpha.begin(), alpha.end(), 0.0);
+    double sig_alpha = std::accumulate(model_params.alpha.begin(),
+                                       model_params.alpha.end(), 0.0);
 
     double sum = 0;
     std::vector<std::pair<int, int>> nonzero_indices;
@@ -73,10 +72,10 @@ bnmf_algs::seq_greedy_bld(const matrix_t& X, size_t z,
         ll.setZero();
 
         for (int k = 0; k < z; ++k) {
-            ll[k] = std::log(alpha[ii] + S_ipk(ii, k)) -
+            ll[k] = std::log(model_params.alpha[ii] + S_ipk(ii, k)) -
                     std::log(sig_alpha + S_ppk(k));
             ll[k] += -(std::log(1 + S(ii, jj, k)) -
-                       std::log(beta[k] + S_pjk(jj, k)));
+                       std::log(model_params.beta[k] + S_pjk(jj, k)));
         }
 
         auto ll_begin = ll.data();

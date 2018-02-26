@@ -25,11 +25,11 @@ using matrix_t =
  */
 using tensor3d_t = Eigen::Tensor<double, 3, Eigen::RowMajor>;
 
-    /**
-     * @brief Tensory type used to assign the results of reductions on tensors.
-     *
-     * @todo Templatize the tensor elements
-     */
+/**
+ * @brief Tensory type used to assign the results of reductions on tensors.
+ *
+ * @todo Templatize the tensor elements
+ */
 using tensor0d_t = Eigen::Tensor<double, 0, Eigen::RowMajor>;
 
 /**
