@@ -46,7 +46,7 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
 
     SECTION("Test against the results of ppmf.py implementation on "
             "Experiments.ipynb") {
-        matrix_t X(8, 10);
+        matrix_t X(x, y);
         X << 0., 1., 0., 0., 0., 3., 2., 0., 2., 2., 10., 10., 15., 21., 15.,
             17., 4., 19., 14., 7., 2., 10., 7., 12., 7., 10., 11., 7., 15., 13.,
             10., 6., 13., 8., 4., 7., 6., 12., 10., 9., 1., 1., 7., 3., 1., 6.,
@@ -62,6 +62,7 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
 
         REQUIRE(log_marginal >= -265);
         REQUIRE(sparseness(S) >= 0.6);
+        // todo: check if S is an integer tensor
     }
 }
 
@@ -230,4 +231,49 @@ TEST_CASE("Parameter checks on bld_mult", "[bld_mult]") {
     z--;
     X = matrix_t::Constant(x + 1, y, 5);
     REQUIRE_THROWS(bld::bld_mult(X, z, model_params));
+}
+
+TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
+    long x = 8, y = 10, z = 3;
+    shape<3> tensor_shape{x, y, z};
+    SECTION("Zero matrix") {
+        matrix_t X = matrix_t::Zero(x, y);
+        AllocModelParams model_params(tensor_shape);
+
+        tensord<3> S = bld::bld_mult(X, z, model_params);
+
+        tensord<0> min = S.minimum();
+        tensord<0> max = S.maximum();
+        REQUIRE(min.coeff() == Approx(0));
+        REQUIRE(max.coeff() == Approx(0));
+    }
+
+    SECTION("Test against the results of ppmf.py implementation on "
+            "Experiments.ipynb") {
+        matrix_t X(x, y);
+        X << 0., 1., 2., 1., 2., 2., 2., 1., 0., 1., 5., 8., 6., 3., 2., 6., 7.,
+            5., 2., 5., 3., 7., 10., 10., 3., 5., 9., 6., 2., 7., 9., 5., 4.,
+            5., 4., 6., 4., 2., 4., 0., 3., 6., 3., 3., 4., 7., 2., 2., 6., 3.,
+            11., 2., 11., 3., 0., 6., 11., 7., 7., 6., 16., 25., 14., 10., 16.,
+            10., 4., 6., 17., 6., 2., 1., 2., 0., 1., 1., 4., 1., 2., 4.;
+
+        AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
+                                      std::vector<double>(z, 1.0));
+
+        // todo: how to test if the results are correct?
+        tensord<3> S = bld::bld_mult(X, z, model_params);
+        double log_marginal = log_marginal_S(S, model_params);
+
+        // print tensor
+        //shape<3> offsets{0, 0, 0};
+        //shape<3> extents{x, y, 1};
+        //for (int i = 0; i < z; ++i) {
+        //    offsets[2] = i;
+        //    std::cout << S.slice(offsets, extents) << "\n-----------" << std::endl;
+        //}
+
+        REQUIRE(log_marginal >= -265);
+        REQUIRE(sparseness(S) >= 0.58);
+        // todo: check if S is an integer tensor
+    }
 }
