@@ -173,17 +173,21 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
         }
     }
 
-    tensord<2> S_ipk(x, z); // S_{i+k}
-    tensord<2> S_pjk(y, z); // S_{+jk}
-    matrix_t alpha_eph(x, z);
-    matrix_t beta_eph(y, z);
     tensord<3> grad_plus(x, y, z);
     tensord<3> grad_minus(x, y, z);
+    tensord<2> grad_plus_ijp(x, y);
+    tensord<2> grad_minus_ijp(x, y);
+    tensord<2> S_pjk(y, z); // S_{+jk}
+    tensord<2> S_ipk(x, z); // S_{i+k}
+    tensord<2> S_ijp(x, y); // S_{ij+}
+    matrix_t alpha_eph(x, z);
+    matrix_t beta_eph(y, z);
     auto psi = gsl_sf_psi;
     for (int eph = 0; eph < max_iter; ++eph) {
-        // update S_ipk, S_pjk
-        S_ipk = S.sum(shape<1>({1}));
+        // update S_pjk, S_ipk, S_ijp
         S_pjk = S.sum(shape<1>({0}));
+        S_ipk = S.sum(shape<1>({1}));
+        S_ijp = S.sum(shape<1>({2}));
         // update alpha_eph, beta_eph
         for (int i = 0; i < x; ++i) {
             for (int k = 0; k < z; ++k) {
@@ -201,12 +205,40 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
                 for (int k = 0; k < z; ++k) {
                     grad_plus(i, j, k) =
                         psi(beta_eph(j, k)) - psi(S(i, j, k) + 1);
-                    // todo: update grad_minus
                 }
             }
         }
+        vector_t alpha_eph_sum = alpha_eph.colwise().sum();
+        for (int i = 0; i < x; ++i) {
+            for (int k = 0; k < z; ++k) {
+                grad_minus(i, 0, k) =
+                    psi(alpha_eph_sum(k)) - psi(alpha_eph(i, k));
+                for (int j = 1; j < y; ++j) {
+                    grad_minus(i, j, k) = grad_minus(i, 0, k);
+                }
+            }
+        }
+        // update grad_plus_ijp, grad_minus_ijp
+        grad_plus_ijp = grad_plus.sum(shape<1>({2}));
+        grad_minus_ijp = grad_minus.sum(shape<1>({2}));
+        // update S
+        double nom, denom, xdiv, s_ij;
+        for (int i = 0; i < x; ++i) {
+            for (int j = 0; j < y; ++j) {
+                for (int k = 0; k < z; ++k) {
+                    xdiv = 1 / (X(i, j) + eps);
+                    s_ij = S_ijp(i, j);
 
-        // todo: update S
+                    nom =
+                        grad_plus(i, j, k) + s_ij + xdiv + grad_minus_ijp(i, j);
+                    denom = grad_minus(i, j, k) + s_ij + xdiv +
+                            grad_plus_ijp(i, j) + eps;
+
+                    S(i, j, k) *= nom / denom;
+                    S(i, j, k) *= X(i, j) / (s_ij + eps);
+                }
+            }
+        }
     }
 
     return S;
