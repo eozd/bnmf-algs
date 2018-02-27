@@ -1,9 +1,10 @@
-#include "catch2.hpp"
-#include "sampling.hpp"
-#include "util.hpp"
+#include "../catch2.hpp"
+#include "allocation_model/sampling.hpp"
+#include "util/util.hpp"
 
 using namespace bnmf_algs;
 using namespace bnmf_algs::util;
+using namespace bnmf_algs::allocation_model;
 
 TEST_CASE("Test AllocModelParams construction", "[AllocModelParams]") {
     shape<3> tensor_shape{5, 2, 8};

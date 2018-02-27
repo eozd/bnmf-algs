@@ -1,11 +1,16 @@
 #pragma once
 
-#include "alloc_model_params.hpp"
+#include "allocation_model/alloc_model_params.hpp"
 #include "defs.hpp"
 #include <tuple>
 #include <vector>
 
 namespace bnmf_algs {
+/**
+ * @brief Namespace that contains functions related to Allocation Model \cite
+ * kurutmazbayesian.
+ */
+namespace allocation_model {
 /**
  * @brief Return prior matrices W, H and vector L according to the Bayesian
  * NMF allocation model using distribution parameters.
@@ -68,29 +73,5 @@ tensord<3> sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
  */
 double log_marginal_S(const tensord<3>& S,
                       const AllocModelParams& model_params);
-
-/**
- * @brief Compute the sparseness of the given 3D tensor.
- *
- * Sparseness of a 3D tensor \f$S_{x \times y \times z}\f$ is defined as
- *
- * \f[
- * \frac{\sqrt{xyz} - S_{+++}/\|S\|_F}{\sqrt{xyz} - 1}
- * \f]
- *
- * where \f$\|S\|_F = \sqrt{\sum_{ijk}(S_{ijk})^2}\f$ is the Frobenius norm of
- * tensor \f$S\f$ and \f$S_{+++} = \sum_{ijk}S_{ijk}\f$ is the sum of elements
- * of \f$S\f$.
- *
- * @param S 3D tensor \f$S\f$.
- *
- * @return Sparseness of \f$S\f$.
- *
- * @remark If all elements of \f$S\f$ are 0, then the function returns
- * std::numeric_limits<double>::max().
- *
- * @todo Move this method to somewhere else; it is not exactly related to
- * sampling
- */
-double sparseness(const tensord<3>& S);
+} // namespace allocation_model
 } // namespace bnmf_algs

@@ -2,8 +2,10 @@
 #include <gsl/gsl_sf_gamma.h>
 #include <iostream>
 
-#include "sampling.hpp"
-#include "wrappers.hpp"
+#include "allocation_model/sampling.hpp"
+#include "util/wrappers.hpp"
+
+using namespace bnmf_algs;
 
 /**
  * @brief Check if shapes of \f$W\f$, \f$H\f$ and \f$L\f$ is incompatible.
@@ -18,10 +20,9 @@
  *
  * @return Error message. If there isn't any error, returns "".
  */
-static std::string
-ensure_compatible_dimensions(const bnmf_algs::matrix_t& prior_W,
-                             const bnmf_algs::matrix_t& prior_H,
-                             const bnmf_algs::vector_t& prior_L) {
+static std::string ensure_compatible_dimensions(const matrix_t& prior_W,
+                                                const matrix_t& prior_H,
+                                                const vector_t& prior_L) {
     if (prior_W.cols() != prior_H.rows()) {
         return "Incompatible dimensions: W=(" + std::to_string(prior_W.rows()) +
                ", " + std::to_string(prior_W.cols()) + ") H=(" +
@@ -64,9 +65,10 @@ ensure_compatible_dirichlet_parameters(long x, long z,
     return "";
 }
 
-std::tuple<bnmf_algs::matrix_t, bnmf_algs::matrix_t, bnmf_algs::vector_t>
-bnmf_algs::bnmf_priors(const shape<3>& tensor_shape,
-                       const AllocModelParams& model_params) {
+std::tuple<matrix_t, matrix_t, vector_t> allocation_model::bnmf_priors(
+    const shape<3>& tensor_shape,
+    const allocation_model::AllocModelParams& model_params) {
+
     long x = tensor_shape[0], y = tensor_shape[1], z = tensor_shape[2];
     // TODO: Preprocesor options to disable checks
     {
@@ -77,7 +79,7 @@ bnmf_algs::bnmf_priors(const shape<3>& tensor_shape,
         }
     }
 
-    auto rand_gen = make_gsl_rng(gsl_rng_taus);
+    auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
     // generate prior_L
     vector_t prior_L(y);
     for (int i = 0; i < y; ++i) {
@@ -110,9 +112,9 @@ bnmf_algs::bnmf_priors(const shape<3>& tensor_shape,
     return std::make_tuple(prior_W, prior_H, prior_L);
 }
 
-bnmf_algs::tensord<3> bnmf_algs::sample_S(const matrix_t& prior_W,
-                                          const matrix_t& prior_H,
-                                          const vector_t& prior_L) {
+tensord<3> allocation_model::sample_S(const matrix_t& prior_W,
+                                      const matrix_t& prior_H,
+                                      const vector_t& prior_L) {
     long x = prior_W.rows();
     long y = prior_L.cols();
     long z = prior_H.rows();
@@ -126,7 +128,7 @@ bnmf_algs::tensord<3> bnmf_algs::sample_S(const matrix_t& prior_W,
     }
 
     // TODO: Is it OK to construct this rng object every time?
-    auto rand_gen = make_gsl_rng(gsl_rng_taus);
+    auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
     tensord<3> sample(x, y, z);
     double mu;
     for (int i = 0; i < x; ++i) {
@@ -149,7 +151,7 @@ bnmf_algs::tensord<3> bnmf_algs::sample_S(const matrix_t& prior_W,
  *
  * @return Value of the first term
  */
-static double compute_first_term(const bnmf_algs::tensord<3>& S,
+static double compute_first_term(const tensord<3>& S,
                                  const std::vector<double>& alpha) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
@@ -191,7 +193,7 @@ static double compute_first_term(const bnmf_algs::tensord<3>& S,
  *
  * @return Value of the second term
  */
-static double compute_second_term(const bnmf_algs::tensord<3>& S,
+static double compute_second_term(const tensord<3>& S,
                                   const std::vector<double>& beta) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
@@ -233,8 +235,7 @@ static double compute_second_term(const bnmf_algs::tensord<3>& S,
  *
  * @return Value of the third term
  */
-static double compute_third_term(const bnmf_algs::tensord<3>& S, double a,
-                                 double b) {
+static double compute_third_term(const tensord<3>& S, double a, double b) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
     double log_gamma = -gsl_sf_lngamma(a);
@@ -261,7 +262,7 @@ static double compute_third_term(const bnmf_algs::tensord<3>& S, double a,
  *
  * @return Value of the fourth term
  */
-static double compute_fourth_term(const bnmf_algs::tensord<3>& S) {
+static double compute_fourth_term(const tensord<3>& S) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
     double fourth = 0;
@@ -275,8 +276,8 @@ static double compute_fourth_term(const bnmf_algs::tensord<3>& S) {
     return fourth;
 }
 
-double bnmf_algs::log_marginal_S(const tensord<3>& S,
-                                 const AllocModelParams& model_params) {
+double allocation_model::log_marginal_S(const tensord<3>& S,
+                                        const AllocModelParams& model_params) {
     if (model_params.alpha.size() != S.dimension(0)) {
         throw std::invalid_argument(
             "Number of alpha parameters must be equal to S.dimension(0)");
@@ -290,26 +291,4 @@ double bnmf_algs::log_marginal_S(const tensord<3>& S,
            compute_second_term(S, model_params.beta) +
            compute_third_term(S, model_params.a, model_params.b) -
            compute_fourth_term(S);
-}
-
-double bnmf_algs::sparseness(const tensord<3>& S) {
-    // TODO: implement a method to unpack std::array
-    long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
-    double sum = 0, squared_sum = 0;
-
-    for (int i = 0; i < x; ++i) {
-        for (int j = 0; j < y; ++j) {
-            for (int k = 0; k < z; ++k) {
-                sum += S(i, j, k);
-                squared_sum += S(i, j, k) * S(i, j, k);
-            }
-        }
-    }
-    if (squared_sum < std::numeric_limits<double>::epsilon()) {
-        return std::numeric_limits<double>::max();
-    }
-    double frob_norm = std::sqrt(squared_sum);
-    double axis_mult = std::sqrt(x * y * z);
-
-    return (axis_mult - sum / frob_norm) / (axis_mult - 1);
 }

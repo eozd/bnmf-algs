@@ -1,14 +1,15 @@
 #include <random>
 
-#include "catch2.hpp"
-#include "sampling.hpp"
-#include "util.hpp"
+#include "../catch2.hpp"
+#include "allocation_model/sampling.hpp"
+#include "util/util.hpp"
+#include <bitset>
 #include <iostream>
 #include <utility>
-#include <bitset>
 
 using namespace bnmf_algs;
 using namespace bnmf_algs::util;
+using namespace bnmf_algs::allocation_model;
 
 TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
     int x = 5, y = 3, z = 2;
@@ -54,7 +55,6 @@ TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
             REQUIRE(H.rows() == tensor_shape[2]);
             REQUIRE(H.cols() == tensor_shape[1]);
             REQUIRE(L.cols() == tensor_shape[1]);
-
         }
     }
 
@@ -279,6 +279,7 @@ TEST_CASE("Test sparseness", "[sparseness]") {
             }
         }
         double result = sparseness(S);
-        REQUIRE(Approx(result).margin(std::numeric_limits<double>::epsilon()) == 0);
+        REQUIRE(Approx(result).margin(std::numeric_limits<double>::epsilon()) ==
+                0);
     }
 }

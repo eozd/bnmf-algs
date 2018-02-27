@@ -1,12 +1,13 @@
 
-#include "catch2.hpp"
-#include "decomposition.hpp"
-#include "sampling.hpp"
-#include "util.hpp"
+#include "../catch2.hpp"
+#include "allocation_model/sampling.hpp"
+#include "bld/bld_algs.hpp"
+#include "util/util.hpp"
 #include <iostream>
 
 using namespace bnmf_algs;
 using namespace bnmf_algs::util;
+using namespace bnmf_algs::allocation_model;
 
 TEST_CASE("Parameter checks on seq_greedy_bld", "[seq_greedy_bld]") {
     int x = 10, y = 8, z = 3;
@@ -15,17 +16,17 @@ TEST_CASE("Parameter checks on seq_greedy_bld", "[seq_greedy_bld]") {
     std::vector<double> beta(z, 1);
     AllocModelParams model_params(1, 1, alpha, beta);
 
-    REQUIRE_NOTHROW(seq_greedy_bld(X, z, model_params));
+    REQUIRE_NOTHROW(bld::seq_greedy_bld(X, z, model_params));
 
     model_params.alpha.resize(x - 1);
-    REQUIRE_THROWS(seq_greedy_bld(X, z, model_params));
+    REQUIRE_THROWS(bld::seq_greedy_bld(X, z, model_params));
 
     model_params.alpha.resize(x);
     model_params.beta.resize(z - 1);
-    REQUIRE_THROWS(seq_greedy_bld(X, z, model_params));
+    REQUIRE_THROWS(bld::seq_greedy_bld(X, z, model_params));
 
     model_params.alpha.resize(x + 1);
-    REQUIRE_THROWS(seq_greedy_bld(X, z, model_params));
+    REQUIRE_THROWS(bld::seq_greedy_bld(X, z, model_params));
 }
 
 TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
@@ -35,7 +36,7 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
         matrix_t X = matrix_t::Zero(x, y);
         AllocModelParams model_params(tensor_shape);
 
-        tensord<3> S = seq_greedy_bld(X, z, model_params);
+        tensord<3> S = bld::seq_greedy_bld(X, z, model_params);
 
         tensord<0> min = S.minimum();
         tensord<0> max = S.maximum();
@@ -56,7 +57,7 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
                                       std::vector<double>(z, 1.0));
 
         // todo: how to test if the results are correct?
-        tensord<3> S = seq_greedy_bld(X, z, model_params);
+        tensord<3> S = bld::seq_greedy_bld(X, z, model_params);
         double log_marginal = log_marginal_S(S, model_params);
 
         REQUIRE(log_marginal >= -265);
@@ -71,17 +72,17 @@ TEST_CASE("Parameter checks on bld_fact", "[bld_fact]") {
     S.setRandom();
     AllocModelParams model_params(tensor_shape);
 
-    REQUIRE_NOTHROW(bld_fact(S, model_params));
+    REQUIRE_NOTHROW(bld::bld_fact(S, model_params));
 
     model_params.alpha.resize(x + 1);
-    REQUIRE_THROWS(bld_fact(S, model_params));
+    REQUIRE_THROWS(bld::bld_fact(S, model_params));
 
     model_params.alpha.resize(x);
     model_params.beta.resize(z + 1);
-    REQUIRE_THROWS(bld_fact(S, model_params));
+    REQUIRE_THROWS(bld::bld_fact(S, model_params));
 
     model_params.alpha.resize(x + 1);
-    REQUIRE_THROWS(bld_fact(S, model_params));
+    REQUIRE_THROWS(bld::bld_fact(S, model_params));
 }
 
 TEST_CASE("Algorithm checks on bld_fact", "[bld_fact]") {
@@ -199,7 +200,7 @@ TEST_CASE("Algorithm checks on bld_fact", "[bld_fact]") {
 
     matrix_t W, H;
     vector_t L;
-    std::tie(W, H, L) = bld_fact(S, model_params);
+    std::tie(W, H, L) = bld::bld_fact(S, model_params);
 
     // Use 8 digit precision since true values are entered with 8 digit
     // precision

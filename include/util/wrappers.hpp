@@ -4,6 +4,7 @@
 #include <memory>
 
 namespace bnmf_algs {
+namespace util {
 /**
  * @brief RAII wrapper around gsl_rng types.
  */
@@ -47,4 +48,5 @@ gsl_rng_wrapper make_gsl_rng(const gsl_rng_type* T);
  * @see gsl_ran_discrete_preproc
  */
 gsl_ran_discrete_wrapper make_gsl_ran_discrete(size_t K, const double* P);
+} // namespace util
 } // namespace bnmf_algs

@@ -1,9 +1,14 @@
 #pragma once
 
-#include "alloc_model_params.hpp"
+#include "allocation_model/alloc_model_params.hpp"
 #include "defs.hpp"
 
 namespace bnmf_algs {
+/**
+ * @brief Namespace that contains solver and auxiliary functions for Best Latent
+ * Decomposition (BLD) problem.
+ */
+namespace bld {
 /**
  * @brief Compute tensor \f$S\f$, the solution of BLD problem \cite
  * kurutmazbayesian, from matrix \f$X\f$ using sequential greedy method.
@@ -38,8 +43,9 @@ namespace bnmf_algs {
  * @throws std::invalid_argument if matrix \f$X\f$ is not nonnegative, if size
  * of alpha is not \f$x\f$, if size of beta is not \f$z\f$.
  */
-tensord<3> seq_greedy_bld(const matrix_t& X, size_t z,
-                          const AllocModelParams& model_params);
+tensord<3>
+seq_greedy_bld(const matrix_t& X, size_t z,
+               const allocation_model::AllocModelParams& model_params);
 
 /**
  * @brief Compute matrices \f$W, H\f$ and vector \f$L\f$ from tensor \f$S\f$
@@ -63,7 +69,8 @@ tensord<3> seq_greedy_bld(const matrix_t& X, size_t z,
  * vector \f$L_y\f$.
  */
 std::tuple<matrix_t, matrix_t, vector_t>
-bld_fact(const tensord<3>& S, const AllocModelParams& model_params,
+bld_fact(const tensord<3>& S,
+         const allocation_model::AllocModelParams& model_params,
          double eps = 1e-50);
 
 /**
@@ -100,10 +107,12 @@ bld_fact(const tensord<3>& S, const AllocModelParams& model_params,
  * @return Tensor \f$S\f$ of size \f$x \times y \times z\f$ where \f$X =
  * S_{ij+}\f$.
  *
- * @throws std::invalid_argument if number of rows of X is not equal to number
- * of alpha parameters, if z is not equal to number of beta parameters.
+ * @throws std::invalid_argument if X contains negative entries,
+ * number of rows of X is not equal to number of alpha parameters, if z is not
+ * equal to number of beta parameters.
  */
 tensord<3> bld_mult(const matrix_t& X, size_t z,
-                    const AllocModelParams& model_params,
+                    const allocation_model::AllocModelParams& model_params,
                     size_t max_iter = 1000, double eps = 1e-50);
+} // namespace bld
 } // namespace bnmf_algs

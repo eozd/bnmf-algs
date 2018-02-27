@@ -9,16 +9,20 @@
  * @brief Main namespace for bnmf-algs library
  */
 namespace bnmf_algs {
-
+/**
+ * @brief Namespace that contains solver and auxiliary functions for computing
+ * Nonnegative Matrix Factorization (NMF) of a matrix..
+ */
+namespace nmf {
 /**
  * @brief Nonnegative matrix factorization variant.
  */
-enum class NMFVariant {
+enum NMFVariant {
     KL, ///< NMF using Kullback-Leibler divergence as error measure.
-        ///< See \cite lee-seung-algs.
+    ///< See \cite lee-seung-algs.
 
     Euclidean ///< NMF using Euclidean distance as error measure.
-              ///< See \cite lee-seung-algs.
+    ///< See \cite lee-seung-algs.
 };
 
 /**
@@ -92,4 +96,5 @@ double euclidean_cost(const matrix_t& A, const matrix_t& B);
  * @remark If matrices A and B have different shape, the result is undefined.
  */
 double kl_cost(const matrix_t& A, const matrix_t& B);
+} // namespace nmf
 } // namespace bnmf_algs

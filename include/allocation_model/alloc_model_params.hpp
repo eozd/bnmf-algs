@@ -1,10 +1,24 @@
 #pragma once
 
-#include <vector>
 #include "defs.hpp"
+#include <vector>
 
 namespace bnmf_algs {
+namespace allocation_model {
 
+/**
+ * @brief Structure to hold the parameters for the Allocation Model \cite
+ * kurutmazbayesian.
+ *
+ * According to the Allocation Model,
+ *
+ * \f[
+ * L_j \sim \mathcal{G}(a, b) \qquad W_{:k} \sim \mathcal{D}(\alpha)
+ * \qquad H_{:j} \sim \mathcal{D}(\beta)
+ * \f]
+ *
+ * and \f$S_{ijk} \sim \mathcal{PO}(W_{ik}H_{kj}L_j)\f$.
+ */
 struct AllocModelParams {
     /**
      * @brief Shape parameter of Gamma distribution.
@@ -60,4 +74,6 @@ struct AllocModelParams {
      */
     explicit AllocModelParams(const shape<3>& tensor_shape);
 };
+
+} // namespace allocation_model
 } // namespace bnmf_algs

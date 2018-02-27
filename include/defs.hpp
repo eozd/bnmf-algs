@@ -27,8 +27,7 @@ using tensorx = Eigen::Tensor<Scalar, N, Eigen::RowMajor>;
 /**
  * @brief Tensor type specialization using double as Scalar value.
  */
-template <size_t N>
-using tensord = tensorx<double, N>;
+template <size_t N> using tensord = tensorx<double, N>;
 
 /**
  * @brief Shape of vectors, matrices, tensors, etc.

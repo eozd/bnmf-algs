@@ -1,12 +1,10 @@
+#include "../catch2.hpp"
+#include "util/util.hpp"
 #include <iostream>
-#include "catch2.hpp"
-#include "util.hpp"
 
 using namespace bnmf_algs::util;
 
-int min(int a, int b) {
-    return  a < b ? a : b;
-}
+int min(int a, int b) { return a < b ? a : b; }
 
 TEST_CASE("Call using std::tuple", "[util::call]") {
     auto tuple = std::make_tuple(5, 20);

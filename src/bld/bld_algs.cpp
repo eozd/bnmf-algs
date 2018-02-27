@@ -1,6 +1,8 @@
-#include "decomposition.hpp"
-#include "wrappers.hpp"
+#include "bld/bld_algs.hpp"
+#include "util/wrappers.hpp"
 #include <gsl/gsl_sf_psi.h>
+
+using namespace bnmf_algs;
 
 /**
  * @brief Do parameter checks on seq_greedy_bld parameters and return error
@@ -8,9 +10,9 @@
  *
  * @return Error message. If there isn't any error, returns "".
  */
-static std::string
-seq_greedy_bld_param_checks(const bnmf_algs::matrix_t& X, size_t z,
-                            const bnmf_algs::AllocModelParams& model_params) {
+static std::string seq_greedy_bld_param_checks(
+    const matrix_t& X, size_t z,
+    const allocation_model::AllocModelParams& model_params) {
     if ((X.array() < 0).any()) {
         return "X must be nonnegative";
     }
@@ -24,9 +26,9 @@ seq_greedy_bld_param_checks(const bnmf_algs::matrix_t& X, size_t z,
     return "";
 }
 
-bnmf_algs::tensord<3>
-bnmf_algs::seq_greedy_bld(const matrix_t& X, size_t z,
-                          const AllocModelParams& model_params) {
+tensord<3>
+bld::seq_greedy_bld(const matrix_t& X, size_t z,
+                    const allocation_model::AllocModelParams& model_params) {
     {
         auto error_msg = seq_greedy_bld_param_checks(X, z, model_params);
         if (error_msg != "") {
@@ -58,12 +60,12 @@ bnmf_algs::seq_greedy_bld(const matrix_t& X, size_t z,
     vector_t S_ppk = vector_t::Zero(z);    // S_{++k}
     matrix_t S_pjk = matrix_t::Zero(y, z); // S_{+jk}
 
-    auto rand_gen = make_gsl_rng(gsl_rng_taus);
+    auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
     int ii, jj;
     vector_t ll(z);
     for (int i = 0; i < (int)sum; ++i) {
-        auto rand_discrete = make_gsl_ran_discrete(nonzero_indices.size(),
-                                                   nonzero_values.data());
+        auto rand_discrete = util::make_gsl_ran_discrete(nonzero_indices.size(),
+                                                         nonzero_values.data());
 
         size_t idx = gsl_ran_discrete(rand_gen.get(), rand_discrete.get());
         nonzero_values[idx] = std::max(nonzero_values[idx] - 1, 0.0);
@@ -91,9 +93,10 @@ bnmf_algs::seq_greedy_bld(const matrix_t& X, size_t z,
     return S;
 }
 
-std::tuple<bnmf_algs::matrix_t, bnmf_algs::matrix_t, bnmf_algs::vector_t>
-bnmf_algs::bld_fact(const tensord<3>& S, const AllocModelParams& model_params,
-                    double eps) {
+std::tuple<matrix_t, matrix_t, vector_t>
+bld::bld_fact(const tensord<3>& S,
+              const allocation_model::AllocModelParams& model_params,
+              double eps) {
     long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
 
     if (model_params.alpha.size() != x) {
@@ -146,15 +149,17 @@ bnmf_algs::bld_fact(const tensord<3>& S, const AllocModelParams& model_params,
     return std::make_tuple(W, H, L);
 };
 
-bnmf_algs::tensord<3> bnmf_algs::bld_mult(const matrix_t& X, size_t z,
-                                          const AllocModelParams& model_params,
-                                          size_t max_iter, double eps) {
+tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
+                         const allocation_model::AllocModelParams& model_params,
+                         size_t max_iter, double eps) {
+    // nonnegativity check asw ell!
+    // todo: parameter checks
     long x = X.rows(), y = X.cols();
     tensord<3> S(x, y, z);
 
     // initialize tensor S
     {
-        auto rand_gen = make_gsl_rng(gsl_rng_taus);
+        auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
         std::vector<double> dirichlet_params(z, 1);
         std::vector<double> dirichlet_variates(z);
         for (int i = 0; i < x; ++i) {
@@ -168,8 +173,8 @@ bnmf_algs::tensord<3> bnmf_algs::bld_mult(const matrix_t& X, size_t z,
         }
     }
 
-    tensord<2> S_ipk(x, z);  // S_{i+k}
-    tensord<2> S_pjk(y, z);  // S_{+jk}
+    tensord<2> S_ipk(x, z); // S_{i+k}
+    tensord<2> S_pjk(y, z); // S_{+jk}
     matrix_t alpha_eph(x, z);
     matrix_t beta_eph(y, z);
     tensord<3> grad_plus(x, y, z);
@@ -201,7 +206,7 @@ bnmf_algs::tensord<3> bnmf_algs::bld_mult(const matrix_t& X, size_t z,
             }
         }
 
-        //todo: update S
+        // todo: update S
     }
 
     return S;

@@ -1,8 +1,10 @@
-#include "nmf.hpp"
+#include "nmf/nmf.hpp"
 
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+
+using namespace bnmf_algs;
 
 /**
  * @brief Check that given parameters satisfy the constraints as specified in
@@ -10,7 +12,7 @@
  *
  * @return Error message. If there isn't any error, then returns "".
  */
-static std::string nmf_check_parameters(const bnmf_algs::matrix_t& X, size_t r,
+static std::string nmf_check_parameters(const matrix_t& X, size_t r,
                                         double epsilon) {
     if ((X.array() < 0).any()) {
         return "X matrix has negative entries";
@@ -24,7 +26,7 @@ static std::string nmf_check_parameters(const bnmf_algs::matrix_t& X, size_t r,
     return "";
 }
 
-double bnmf_algs::euclidean_cost(const matrix_t& A, const matrix_t& B) {
+double nmf::euclidean_cost(const matrix_t& A, const matrix_t& B) {
     double cost = 0;
     for (int i = 0; i < A.rows(); ++i) {
         for (int j = 0; j < A.cols(); ++j) {
@@ -34,7 +36,7 @@ double bnmf_algs::euclidean_cost(const matrix_t& A, const matrix_t& B) {
     return cost;
 }
 
-double bnmf_algs::kl_cost(const matrix_t& X, const matrix_t& WH) {
+double nmf::kl_cost(const matrix_t& X, const matrix_t& WH) {
     double cost = 0;
     double x_elem, wh_elem;
     for (int i = 0; i < X.rows(); ++i) {
@@ -51,9 +53,9 @@ double bnmf_algs::kl_cost(const matrix_t& X, const matrix_t& WH) {
     return cost;
 }
 
-std::pair<bnmf_algs::matrix_t, bnmf_algs::matrix_t>
-bnmf_algs::nmf(const matrix_t& X, size_t r, bnmf_algs::NMFVariant variant,
-               size_t max_iter, double tolerance) {
+std::pair<matrix_t, matrix_t> nmf::nmf(const matrix_t& X, size_t r,
+                                       NMFVariant variant, size_t max_iter,
+                                       double tolerance) {
     using namespace Eigen;
     const long m = X.rows();
     const long n = X.cols();
@@ -83,9 +85,9 @@ bnmf_algs::nmf(const matrix_t& X, size_t r, bnmf_algs::NMFVariant variant,
         // update cost
         prev_cost = cost;
         if (variant == NMFVariant::Euclidean) {
-            cost = bnmf_algs::euclidean_cost(X, curr_approx);
+            cost = euclidean_cost(X, curr_approx);
         } else if (variant == NMFVariant::KL) {
-            cost = bnmf_algs::kl_cost(X, curr_approx);
+            cost = kl_cost(X, curr_approx);
         }
 
         // check cost convergence

@@ -2,8 +2,13 @@
 
 #include <cstddef>
 #include <utility>
+#include "defs.hpp"
 
 namespace bnmf_algs {
+/**
+ * @brief Namespace for general purpose utility functions to be used by all
+ * bnmf_algs functions.
+ */
 namespace util {
 
 /**
@@ -58,5 +63,30 @@ template <typename Function, typename Tuple> auto call(Function f, Tuple t) {
     static constexpr auto size = std::tuple_size<Tuple>::value;
     return call(f, t, std::make_index_sequence<size>{});
 }
+
+/**
+ * @brief Compute the sparseness of the given 3D tensor.
+ *
+ * Sparseness of a 3D tensor \f$S_{x \times y \times z}\f$ is defined as
+ *
+ * \f[
+ * \frac{\sqrt{xyz} - S_{+++}/\|S\|_F}{\sqrt{xyz} - 1}
+ * \f]
+ *
+ * where \f$\|S\|_F = \sqrt{\sum_{ijk}(S_{ijk})^2}\f$ is the Frobenius norm of
+ * tensor \f$S\f$ and \f$S_{+++} = \sum_{ijk}S_{ijk}\f$ is the sum of elements
+ * of \f$S\f$.
+ *
+ * @param S 3D tensor \f$S\f$.
+ *
+ * @return Sparseness of \f$S\f$.
+ *
+ * @remark If all elements of \f$S\f$ are 0, then the function returns
+ * std::numeric_limits<double>::max().
+ *
+ * @todo Move this method to somewhere else; it is not exactly related to
+ * sampling
+ */
+double sparseness(const tensord<3>& S);
 } // namespace util
 } // namespace bnmf_algs

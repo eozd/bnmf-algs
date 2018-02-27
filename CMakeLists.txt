@@ -20,20 +20,22 @@ include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${GSL_INCLUDE_DIRS})
 
 set(LIB_SRC_FILES
-    src/nmf.cpp
-    src/sampling.cpp
-    src/wrappers.cpp
-    src/decomposition.cpp
-    src/alloc_model_params.cpp)
+        src/nmf/nmf.cpp
+        src/allocation_model/sampling.cpp
+        src/util/wrappers.cpp
+        src/bld/bld_algs.cpp
+        src/allocation_model/alloc_model_params.cpp
+        src/util/util.cpp
+)
 
 set(TEST_SRC_FILES
-    test/test_nmf.cpp
-    test/include_catch.cpp
-    test/test_wrappers.cpp
-    test/test_sampling.cpp
-    test/test_util.cpp
-    test/test_decomposition.cpp
-    test/test_alloc_model_params.cpp
+        test/nmf/test_nmf.cpp
+        test/include_catch.cpp
+        test/util/test_wrappers.cpp
+        test/allocation_model/test_sampling.cpp
+        test/util/test_util.cpp
+        test/bld/test_bld_algs.cpp
+        test/allocation_model/test_alloc_model_params.cpp
 )
 
 add_library(bnmf_algs SHARED ${LIB_SRC_FILES})

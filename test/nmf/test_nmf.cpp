@@ -1,5 +1,5 @@
-#include "catch2.hpp"
-#include "nmf.hpp"
+#include "../catch2.hpp"
+#include "nmf/nmf.hpp"
 #include <chrono>
 #include <cmath>
 #include <fstream>
@@ -14,7 +14,7 @@ TEST_CASE("Euclidean NMF constraint checks", "[nmf]") {
 
     matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
     matrix_t W, H;
-    std::tie(W, H) = nmf(X, r, NMFVariant::Euclidean);
+    std::tie(W, H) = nmf::nmf(X, r, nmf::Euclidean);
 
     SECTION("Check returned matrices' shapes") {
         REQUIRE(W.rows() == m);
@@ -41,7 +41,7 @@ TEST_CASE("Euclidean NMF small matrix convergence check", "[nmf]") {
     matrix_t W, H;
 
     auto before = high_resolution_clock::now();
-    std::tie(W, H) = nmf(X, r, NMFVariant::Euclidean, 100000000, 1);
+    std::tie(W, H) = nmf::nmf(X, r, nmf::Euclidean, 100000000, 1);
     auto after = high_resolution_clock::now();
 
     milliseconds elapsed = duration_cast<milliseconds>(after - before);
@@ -55,7 +55,7 @@ TEST_CASE("KL NMF small matrix convergence check", "[nmf]") {
     matrix_t W, H;
 
     auto before = high_resolution_clock::now();
-    std::tie(W, H) = nmf(X, r, NMFVariant::KL, 100000000, 1);
+    std::tie(W, H) = nmf::nmf(X, r, nmf::KL, 100000000, 1);
     auto after = high_resolution_clock::now();
 
     milliseconds elapsed = duration_cast<milliseconds>(after - before);
@@ -67,7 +67,7 @@ TEST_CASE("KL NMF constraint checks", "[nmf]") {
 
     matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
     matrix_t W, H;
-    std::tie(W, H) = nmf(X, r, NMFVariant::KL);
+    std::tie(W, H) = nmf::nmf(X, r, nmf::KL);
 
     SECTION("Check returned matrices' shapes") {
         REQUIRE(W.rows() == m);
@@ -88,15 +88,15 @@ TEST_CASE("Euclidean NMF invalid parameters", "[nmf]") {
 
     SECTION("Negative X") {
         X(0, 2) = -0.002;
-        REQUIRE_THROWS(nmf(X, r, NMFVariant::Euclidean));
+        REQUIRE_THROWS(nmf::nmf(X, r, nmf::Euclidean));
     }
 
     SECTION("Invalid inner dimension") {
-        REQUIRE_THROWS(nmf(X, 0, NMFVariant::Euclidean));
+        REQUIRE_THROWS(nmf::nmf(X, 0, nmf::Euclidean));
     }
 
     SECTION("Invalid epsilon") {
-        REQUIRE_THROWS(nmf(X, r, NMFVariant::Euclidean, 102, -0.00000001));
+        REQUIRE_THROWS(nmf::nmf(X, r, nmf::Euclidean, 102, -0.00000001));
     }
 }
 
@@ -107,7 +107,7 @@ TEST_CASE("Euclidean NMF degenerate cases", "[degenerate]") {
 
         matrix_t X = matrix_t::Zero(m, n);
         matrix_t W, H;
-        std::tie(W, H) = nmf(X, r, NMFVariant::Euclidean, 200);
+        std::tie(W, H) = nmf::nmf(X, r, nmf::Euclidean, 200);
 
         REQUIRE(W.isZero(0));
         REQUIRE(H.isZero(0));
@@ -119,22 +119,22 @@ TEST_CASE("Euclidean distance tests", "[euclidean_cost]") {
     matrix_t X = matrix_t::Random(m, n);
 
     SECTION("Same matrices have 0 distance") {
-        REQUIRE(bnmf_algs::euclidean_cost(X, X) == Approx(0.0));
+        REQUIRE(nmf::euclidean_cost(X, X) == Approx(0.0));
     }
 
     SECTION("One of the matrices is 0") {
         matrix_t Y = matrix_t::Zero(m, n);
         double x_norm_squared = X.norm() * X.norm();
-        REQUIRE(bnmf_algs::euclidean_cost(X, Y) == Approx(x_norm_squared));
-        REQUIRE(bnmf_algs::euclidean_cost(Y, X) == Approx(x_norm_squared));
+        REQUIRE(nmf::euclidean_cost(X, Y) == Approx(x_norm_squared));
+        REQUIRE(nmf::euclidean_cost(Y, X) == Approx(x_norm_squared));
     }
 
     SECTION("Two random matrices") {
         matrix_t Y = matrix_t::Random(m, n);
         double norm = (X - Y).norm();
         double norm_squared = norm * norm;
-        REQUIRE(bnmf_algs::euclidean_cost(X, Y) == Approx(norm_squared));
-        REQUIRE(bnmf_algs::euclidean_cost(Y, X) == Approx(norm_squared));
+        REQUIRE(nmf::euclidean_cost(X, Y) == Approx(norm_squared));
+        REQUIRE(nmf::euclidean_cost(Y, X) == Approx(norm_squared));
     }
 }
 
@@ -143,17 +143,17 @@ TEST_CASE("KL-divergence cost tests", "[kl_cost]") {
     matrix_t X = matrix_t::Random(m, n);
 
     SECTION("Same matrices have 0 divergence") {
-        REQUIRE(bnmf_algs::kl_cost(X, X) == Approx(0.0));
+        REQUIRE(nmf::kl_cost(X, X) == Approx(0.0));
     }
 
     SECTION("At least one of the matrices is 0") {
         matrix_t Y = X;
         X = matrix_t::Zero(m, n);
-        REQUIRE(!std::isnan(bnmf_algs::kl_cost(X, Y)));
-        REQUIRE(!std::isnan(bnmf_algs::kl_cost(Y, X)));
+        REQUIRE(!std::isnan(nmf::kl_cost(X, Y)));
+        REQUIRE(!std::isnan(nmf::kl_cost(Y, X)));
 
         Y = X;
-        REQUIRE(!std::isnan(bnmf_algs::kl_cost(Y, X)));
+        REQUIRE(!std::isnan(nmf::kl_cost(Y, X)));
     }
 
     SECTION("General correctness") {
@@ -165,6 +165,6 @@ TEST_CASE("KL-divergence cost tests", "[kl_cost]") {
         Y << 0.75314334, 0.7584056, 0.54661004, 0.23851888, 0.75112086,
             0.2180139;
 
-        REQUIRE(bnmf_algs::kl_cost(Z, Y) == Approx(1.19944962));
+        REQUIRE(nmf::kl_cost(Z, Y) == Approx(1.19944962));
     }
 }

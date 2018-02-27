@@ -1,8 +1,8 @@
+#include "../catch2.hpp"
+#include "util/wrappers.hpp"
 #include <numeric>
-#include "catch2.hpp"
-#include "wrappers.hpp"
 
-using namespace bnmf_algs;
+using namespace bnmf_algs::util;
 
 TEST_CASE("gsl_rng_wrapper construction checks", "[gsl_rng_wrapper]") {
     SECTION("Check if we get a nullptr after normal construction") {
