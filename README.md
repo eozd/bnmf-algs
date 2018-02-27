@@ -29,6 +29,8 @@ To run the tests after building the project, type
 inside the ```build``` directory.
 
 ### Documentation
+
+#### Building
 To generate the doxygen documentation, run
 ```
 doxygen doc/Doxyfile
@@ -36,6 +38,7 @@ doxygen doc/Doxyfile
 in the project root directory. Then, you can view the documentation in HTML
 format by opening ```doc/html/index.html``` using your browser.
 
+#### View Online
 You can also view the documentation [online](https://eozd.github.io/bnmf-algs/).
 However, currently this documentation is not automatically updated; hence, it may
 be a little outdated.
