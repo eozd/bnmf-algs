@@ -135,6 +135,7 @@ bld::bld_fact(const tensord<3>& S,
     }
 
     // normalize
+    // todo: factorize normalization logic to a function under utils namespace
     for (int i = 0; i < x; ++i) {
         for (int k = 0; k < z; ++k) {
             W(i, k) /= (W_colsum(k) + eps);
@@ -152,8 +153,19 @@ bld::bld_fact(const tensord<3>& S,
 tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
                          const allocation_model::AllocModelParams& model_params,
                          size_t max_iter, double eps) {
-    // nonnegativity check asw ell!
-    // todo: parameter checks
+    // todo: think of a way to organize these parameter checks
+    if ((X.array() < 0).any()) {
+        throw std::invalid_argument("X must be nonnegative");
+    }
+    if (X.rows() != model_params.alpha.size()) {
+        throw std::invalid_argument(
+            "Number of rows of X must be equal to number of alpha parameters");
+    }
+    if (z != model_params.beta.size()) {
+        throw std::invalid_argument(
+            "z must be equal to number of beta parameters");
+    }
+
     long x = X.rows(), y = X.cols();
     tensord<3> S(x, y, z);
 

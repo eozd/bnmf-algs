@@ -208,3 +208,26 @@ TEST_CASE("Algorithm checks on bld_fact", "[bld_fact]") {
     REQUIRE(H.isApprox(H_true, 1e-8));
     REQUIRE(L.isApprox(L_true, 1e-8));
 }
+
+TEST_CASE("Parameter checks on bld_mult", "[bld_mult]") {
+    int x = 10, y = 5, z = 2;
+    shape<3> tensor_shape{x, y, z};
+    matrix_t X = matrix_t::Constant(x, y, 5);
+    allocation_model::AllocModelParams model_params(tensor_shape);
+
+    // max_iter = 5 since we don't want to wait
+    REQUIRE_NOTHROW(bld::bld_mult(X, z, model_params, 5));
+
+    X(0, 0) = -5;
+    REQUIRE_THROWS(bld::bld_mult(X, z, model_params));
+
+    X(0, 0) = 0;
+    REQUIRE_NOTHROW(bld::bld_mult(X, z, model_params, 5));
+
+    z++;
+    REQUIRE_THROWS(bld::bld_mult(X, z, model_params));
+
+    z--;
+    X = matrix_t::Constant(x + 1, y, 5);
+    REQUIRE_THROWS(bld::bld_mult(X, z, model_params));
+}
