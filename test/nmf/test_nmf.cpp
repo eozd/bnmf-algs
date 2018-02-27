@@ -10,7 +10,7 @@ using namespace Eigen;
 using namespace bnmf_algs;
 
 TEST_CASE("Euclidean NMF constraint checks", "[nmf]") {
-    int m = 50, n = 10, r = 5;
+    int m = 10, n = 5, r = 2;
 
     matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
     matrix_t W, H;
@@ -63,7 +63,7 @@ TEST_CASE("KL NMF small matrix convergence check", "[nmf]") {
 }
 
 TEST_CASE("KL NMF constraint checks", "[nmf]") {
-    int m = 50, n = 10, r = 5;
+    int m = 10, n = 5, r = 2;
 
     matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
     matrix_t W, H;
