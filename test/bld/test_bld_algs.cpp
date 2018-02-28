@@ -1,9 +1,7 @@
-
 #include "../catch2.hpp"
 #include "allocation_model/sampling.hpp"
 #include "bld/bld_algs.hpp"
 #include "util/util.hpp"
-#include <iostream>
 
 using namespace bnmf_algs;
 using namespace bnmf_algs::util;
@@ -251,11 +249,11 @@ TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
     SECTION("Test against the results of ppmf.py implementation on "
             "Experiments.ipynb") {
         matrix_t X(x, y);
-        X << 0., 1., 2., 1., 2., 2., 2., 1., 0., 1., 5., 8., 6., 3., 2., 6., 7.,
-            5., 2., 5., 3., 7., 10., 10., 3., 5., 9., 6., 2., 7., 9., 5., 4.,
-            5., 4., 6., 4., 2., 4., 0., 3., 6., 3., 3., 4., 7., 2., 2., 6., 3.,
-            11., 2., 11., 3., 0., 6., 11., 7., 7., 6., 16., 25., 14., 10., 16.,
-            10., 4., 6., 17., 6., 2., 1., 2., 0., 1., 1., 4., 1., 2., 4.;
+        X << 7., 11., 5., 8., 8., 8., 7., 6., 3., 9., 3., 7., 3., 1., 0., 6.,
+            1., 0., 1., 4., 1., 11., 4., 5., 3., 8., 5., 3., 3., 3., 0., 20.,
+            11., 16., 14., 26., 16., 23., 16., 15., 0., 1., 0., 2., 2., 2., 0.,
+            1., 0., 1., 3., 4., 1., 0., 4., 0., 2., 0., 1., 5., 4., 4., 2., 2.,
+            3., 4., 0., 2., 0., 5., 4., 3., 3., 1., 2., 6., 5., 7., 4., 2.;
 
         AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
                                       std::vector<double>(z, 1.0));
@@ -263,17 +261,8 @@ TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
         // todo: how to test if the results are correct?
         tensord<3> S = bld::bld_mult(X, z, model_params);
         double log_marginal = log_marginal_S(S, model_params);
-
-        // print tensor
-        //shape<3> offsets{0, 0, 0};
-        //shape<3> extents{x, y, 1};
-        //for (int i = 0; i < z; ++i) {
-        //    offsets[2] = i;
-        //    std::cout << S.slice(offsets, extents) << "\n-----------" << std::endl;
-        //}
-
-        REQUIRE(log_marginal >= -265);
-        REQUIRE(sparseness(S) >= 0.58);
+        REQUIRE(log_marginal >= -262);
+        REQUIRE(sparseness(S) >= 0.64);
         // todo: check if S is an integer tensor
     }
 }

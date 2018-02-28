@@ -187,61 +187,69 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
     }
 
     tensord<3> grad_plus(x, y, z);
-    tensord<2> grad_plus_ijp(x, y);
     matrix_t grad_minus(x, z);
-    vector_t grad_minus_ip(x);
+    matrix_t nom_mult(x, y);
+    matrix_t denom_mult(x, y);
     tensord<2> S_pjk(y, z); // S_{+jk}
     tensord<2> S_ipk(x, z); // S_{i+k}
     tensord<2> S_ijp(x, y); // S_{ij+}
     matrix_t alpha_eph(x, z);
     matrix_t beta_eph(y, z);
-    auto psi = gsl_sf_psi;
     for (int eph = 0; eph < max_iter; ++eph) {
         // update S_pjk, S_ipk, S_ijp
         S_pjk = S.sum(shape<1>({0}));
         S_ipk = S.sum(shape<1>({1}));
         S_ijp = S.sum(shape<1>({2}));
-        // update alpha_eph, beta_eph
+        // update alpha_eph
         for (int i = 0; i < x; ++i) {
             for (int k = 0; k < z; ++k) {
                 alpha_eph(i, k) = model_params.alpha[i] + S_ipk(i, k);
             }
         }
+        // update beta_eph
         for (int j = 0; j < y; ++j) {
             for (int k = 0; k < z; ++k) {
                 beta_eph(j, k) = model_params.beta[k] + S_pjk(j, k);
             }
         }
-        // update grad_plus, grad_minus
+        // update grad_plus
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
                 for (int k = 0; k < z; ++k) {
                     grad_plus(i, j, k) =
-                        psi(beta_eph(j, k)) - psi(S(i, j, k) + 1);
+                        gsl_sf_psi(beta_eph(j, k)) - gsl_sf_psi(S(i, j, k) + 1);
                 }
             }
         }
+        // update grad_minus
         vector_t alpha_eph_sum = alpha_eph.colwise().sum();
         for (int i = 0; i < x; ++i) {
             for (int k = 0; k < z; ++k) {
-                grad_minus(i, k) = psi(alpha_eph_sum(k)) - psi(alpha_eph(i, k));
+                grad_minus(i, k) =
+                    gsl_sf_psi(alpha_eph_sum(k)) - gsl_sf_psi(alpha_eph(i, k));
             }
         }
-        // update grad_plus_ijp, grad_minus_ijp
-        grad_plus_ijp = grad_plus.sum(shape<1>({2}));
-        grad_minus_ip = grad_minus.rowwise().sum();
-        // update S
-        double nom_mult_term, denom_mult_term, xdiv, s_ij, x_over_s;
+        // update nom_mult, denom_mult
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
-                xdiv = 1.0 / (X(i, j) + eps);
-                s_ij = S_ijp(i, j);
-                nom_mult_term = s_ij * xdiv * grad_minus_ip(i);
-                denom_mult_term = s_ij * xdiv * grad_plus_ijp(i, j);
-                x_over_s = X(i, j) / (s_ij + eps);
+                double xdiv = 1.0 / (X(i, j) + eps);
+                double nom_sum = 0, denom_sum = 0;
                 for (int k = 0; k < z; ++k) {
-                    S(i, j, k) *= (grad_plus(i, j, k) + nom_mult_term) /
-                                  (grad_minus(i, k) + denom_mult_term + eps);
+                    nom_sum += (S(i, j, k) * xdiv * grad_minus(i, k));
+                    denom_sum += (S(i, j, k) * xdiv * grad_plus(i, j, k));
+                }
+                nom_mult(i, j) = nom_sum;
+                denom_mult(i, j) = denom_sum;
+            }
+        }
+        // update S
+        for (int i = 0; i < x; ++i) {
+            for (int j = 0; j < y; ++j) {
+                double s_ij = S_ijp(i, j);
+                double x_over_s = X(i, j) / (s_ij + eps);
+                for (int k = 0; k < z; ++k) {
+                    S(i, j, k) *= (grad_plus(i, j, k) + nom_mult(i, j)) /
+                                  (grad_minus(i, k) + denom_mult(i, j) + eps);
                     S(i, j, k) *= x_over_s;
                 }
             }
