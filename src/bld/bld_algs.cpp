@@ -2,6 +2,7 @@
 #include "util/wrappers.hpp"
 #include <gsl/gsl_sf_psi.h>
 #include <iostream>
+#include <util/util.hpp>
 
 using namespace bnmf_algs;
 
@@ -184,7 +185,7 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
     tensord<2> S_ijp(x, y); // S_{ij+}
     matrix_t alpha_eph(x, z);
     matrix_t beta_eph(y, z);
-    for (int eph = 0; eph < max_iter; ++eph) {
+    for (size_t eph = 0; eph < max_iter; ++eph) {
         // update S_pjk, S_ipk, S_ijp
         S_pjk = S.sum(shape<1>({0}));
         S_ipk = S.sum(shape<1>({1}));
@@ -246,4 +247,106 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
     }
 
     return S;
+}
+
+/**
+ * @brief Calculate step size to use during gradient ascent iterations.
+ *
+ * @param step Current step.
+ *
+ * @return Step size to use at step n.
+ */
+static double eta(size_t step) { return 0.1 / std::pow(step + 1, 0.55); }
+
+tensord<3> bld::bld_add(const matrix_t& X, size_t z,
+                        const allocation_model::AllocModelParams& model_params,
+                        size_t max_iter, double eps) {
+    // todo: think of a way to organize these parameter checks
+    if ((X.array() < 0).any()) {
+        throw std::invalid_argument("X must be nonnegative");
+    }
+    if (X.rows() != model_params.alpha.size()) {
+        throw std::invalid_argument(
+            "Number of rows of X must be equal to number of alpha parameters");
+    }
+    if (z != model_params.beta.size()) {
+        throw std::invalid_argument(
+            "z must be equal to number of beta parameters");
+    }
+
+    long x = X.rows(), y = X.cols();
+    tensord<3> S(x, y, z);
+    // initialize tensor S
+    {
+        auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
+        std::vector<double> dirichlet_params(z, 1);
+        std::vector<double> dirichlet_variates(z);
+        for (int i = 0; i < x; ++i) {
+            for (int j = 0; j < y; ++j) {
+                gsl_ran_dirichlet(rand_gen.get(), z, dirichlet_params.data(),
+                                  dirichlet_variates.data());
+                for (int k = 0; k < z; ++k) {
+                    S(i, j, k) = X(i, j) * dirichlet_variates[k];
+                }
+            }
+        }
+    }
+
+    tensord<2> S_pjk(y, z); // S_{+jk}
+    tensord<2> S_ipk(x, z); // S_{i+k}
+    matrix_t alpha_eph(x, z);
+    matrix_t beta_eph(y, z);
+    tensord<3> grad_S(x, y, z);
+    tensord<3> eps_tensor(x, y, z);
+    eps_tensor.setConstant(eps);
+    for (size_t eph = 0; eph < max_iter; ++eph) {
+        // update S_pjk, S_ipk, S_ijp
+        S_pjk = S.sum(shape<1>({0}));
+        S_ipk = S.sum(shape<1>({1}));
+        // update alpha_eph
+        for (int i = 0; i < x; ++i) {
+            for (int k = 0; k < z; ++k) {
+                alpha_eph(i, k) = model_params.alpha[i] + S_ipk(i, k);
+            }
+        }
+        // update beta_eph
+        for (int j = 0; j < y; ++j) {
+            for (int k = 0; k < z; ++k) {
+                beta_eph(j, k) = model_params.beta[k] + S_pjk(j, k);
+            }
+        }
+        // update grad_S
+        vector_t alpha_eph_sum = alpha_eph.colwise().sum();
+        for (int i = 0; i < x; ++i) {
+            for (int j = 0; j < y; ++j) {
+                for (int k = 0; k < z; ++k) {
+                    grad_S(i, j, k) = gsl_sf_psi(beta_eph(j, k)) -
+                                      gsl_sf_psi(S(i, j, k) + 1) -
+                                      gsl_sf_psi(alpha_eph_sum(k)) +
+                                      gsl_sf_psi(alpha_eph(i, k));
+                }
+            }
+        }
+        // construct Z
+        tensord<3> Z = S.log() + eps_tensor;
+        tensord<2> S_mult = (S * grad_S).sum(shape<1>({2}));
+        for (int i = 0; i < x; ++i) {
+            for (int j = 0; j < y; ++j) {
+                for (int k = 0; k < z; ++k) {
+                    Z(i, j, k) += eta(eph) * S(i, j, k) *
+                                  (X(i, j) * grad_S(i, j, k) - S_mult(i, j));
+                }
+            }
+        }
+        Z = Z.exp();
+        bnmf_algs::util::normalize(Z, 2, bnmf_algs::util::NormType::L1);
+        // update S
+        for (int i = 0; i < x; ++i) {
+            for (int j = 0; j < y; ++j) {
+                for (int k = 0; k < z; ++k) {
+                    S(i, j, k) = X(i, j)*Z(i, j, k);
+                }
+            }
+        }
+    }
 }
