@@ -1,6 +1,7 @@
 #include "bld/bld_algs.hpp"
 #include "util/wrappers.hpp"
 #include <gsl/gsl_sf_psi.h>
+#include <iostream>
 
 using namespace bnmf_algs;
 
@@ -186,9 +187,9 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
     }
 
     tensord<3> grad_plus(x, y, z);
-    tensord<3> grad_minus(x, y, z);
     tensord<2> grad_plus_ijp(x, y);
-    tensord<2> grad_minus_ijp(x, y);
+    matrix_t grad_minus(x, z);
+    vector_t grad_minus_ip(x);
     tensord<2> S_pjk(y, z); // S_{+jk}
     tensord<2> S_ipk(x, z); // S_{i+k}
     tensord<2> S_ijp(x, y); // S_{ij+}
@@ -223,31 +224,25 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
         vector_t alpha_eph_sum = alpha_eph.colwise().sum();
         for (int i = 0; i < x; ++i) {
             for (int k = 0; k < z; ++k) {
-                grad_minus(i, 0, k) =
-                    psi(alpha_eph_sum(k)) - psi(alpha_eph(i, k));
-                for (int j = 1; j < y; ++j) {
-                    grad_minus(i, j, k) = grad_minus(i, 0, k);
-                }
+                grad_minus(i, k) = psi(alpha_eph_sum(k)) - psi(alpha_eph(i, k));
             }
         }
         // update grad_plus_ijp, grad_minus_ijp
         grad_plus_ijp = grad_plus.sum(shape<1>({2}));
-        grad_minus_ijp = grad_minus.sum(shape<1>({2}));
+        grad_minus_ip = grad_minus.rowwise().sum();
         // update S
-        double nom, denom, xdiv, s_ij;
+        double nom_mult_term, denom_mult_term, xdiv, s_ij, x_over_s;
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
+                xdiv = 1.0 / (X(i, j) + eps);
+                s_ij = S_ijp(i, j);
+                nom_mult_term = s_ij * xdiv * grad_minus_ip(i);
+                denom_mult_term = s_ij * xdiv * grad_plus_ijp(i, j);
+                x_over_s = X(i, j) / (s_ij + eps);
                 for (int k = 0; k < z; ++k) {
-                    xdiv = 1 / (X(i, j) + eps);
-                    s_ij = S_ijp(i, j);
-
-                    nom =
-                        grad_plus(i, j, k) + s_ij + xdiv + grad_minus_ijp(i, j);
-                    denom = grad_minus(i, j, k) + s_ij + xdiv +
-                            grad_plus_ijp(i, j) + eps;
-
-                    S(i, j, k) *= nom / denom;
-                    S(i, j, k) *= X(i, j) / (s_ij + eps);
+                    S(i, j, k) *= (grad_plus(i, j, k) + nom_mult_term) /
+                                  (grad_minus(i, k) + denom_mult_term + eps);
+                    S(i, j, k) *= x_over_s;
                 }
             }
         }
