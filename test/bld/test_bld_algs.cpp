@@ -26,6 +26,11 @@ TEST_CASE("Parameter checks on seq_greedy_bld", "[seq_greedy_bld]") {
 
     model_params.alpha.resize(x + 1);
     REQUIRE_THROWS(bld::seq_greedy_bld(X, z, model_params));
+
+    model_params.alpha.resize(x);
+    model_params.beta.resize(z);
+    X(0, 0) = -5;
+    REQUIRE_THROWS(bld::seq_greedy_bld(X, z, model_params));
 }
 
 TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
