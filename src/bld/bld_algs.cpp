@@ -349,4 +349,5 @@ tensord<3> bld::bld_add(const matrix_t& X, size_t z,
             }
         }
     }
+    return S;
 }
