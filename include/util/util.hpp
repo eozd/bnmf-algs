@@ -96,7 +96,8 @@ double sparseness(const tensord<3>& S);
 enum class NormType {
     L1, ///< Normalize using L1-norm (divide by sums of absolute values)
     L2, ///< Normalize using L2-norm (divide by sqrt of sum of squares)
-    Max }; ///< Normalize using L-infinity norm (divide by max of absolute values)
+    Max ///< Normalize using L-infinity norm (divide by max of absolute values)
+};
 
 /**
  * @brief Normalize a tensor in-place along the given axis.
