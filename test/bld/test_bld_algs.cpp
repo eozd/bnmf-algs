@@ -2,6 +2,7 @@
 #include "allocation_model/sampling.hpp"
 #include "bld/bld_algs.hpp"
 #include "util/util.hpp"
+#include <iostream>
 
 using namespace bnmf_algs;
 using namespace bnmf_algs::util;
@@ -267,7 +268,6 @@ TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
     }
 }
 
-
 TEST_CASE("Parameter checks on bld_add", "[bld_add]") {
     int x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
@@ -292,5 +292,37 @@ TEST_CASE("Parameter checks on bld_add", "[bld_add]") {
 }
 
 TEST_CASE("Algorithm checks on bld_add", "[bld_add]") {
+    long x = 8, y = 10, z = 3;
+    shape<3> tensor_shape{x, y, z};
+    SECTION("Zero matrix") {
+        matrix_t X = matrix_t::Zero(x, y);
+        AllocModelParams model_params(tensor_shape);
 
+        tensord<3> S = bld::bld_add(X, z, model_params);
+
+        tensord<0> min = S.minimum();
+        tensord<0> max = S.maximum();
+        REQUIRE(min.coeff() == Approx(0));
+        REQUIRE(max.coeff() == Approx(0));
+    }
+
+    SECTION("Test against the results of ppmf.py implementation on "
+            "Experiments.ipynb") {
+        matrix_t X(x, y);
+        X << 6., 3., 7., 15., 8., 6., 1., 7., 6., 7., 3., 3., 11., 1., 3., 3.,
+            0., 1., 3., 1., 1., 2., 2., 8., 3., 2., 0., 2., 6., 1., 8., 9., 18.,
+            5., 8., 6., 19., 6., 11., 8., 6., 3., 5., 1., 2., 0., 2., 4., 0.,
+            2., 2., 1., 2., 2., 1., 0., 1., 2., 7., 1., 6., 10., 15., 6., 3.,
+            2., 9., 4., 12., 4., 3., 2., 0., 4., 2., 2., 1., 3., 2., 2.;
+
+        AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
+                                      std::vector<double>(z, 1.0));
+
+        // todo: how to test if the results are correct?
+        tensord<3> S = bld::bld_add(X, z, model_params);
+        double log_marginal = log_marginal_S(S, model_params);
+
+        REQUIRE(log_marginal >= -273);
+        REQUIRE(sparseness(S) >= 0.58);
+    }
 }
