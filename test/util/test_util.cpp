@@ -84,6 +84,18 @@ TEST_CASE("Test normalize", "[normalize] [normalized]") {
                   {6., 0., 0.},
                   {4., 0., 0.},
                   {2., 0., 0.}}});
+
+    SECTION("Test invalid axis") {
+        size_t axis = 3;
+        REQUIRE_THROWS(util::normalize(S, axis));
+        REQUIRE_THROWS(util::normalized(S, axis));
+        axis = 2;
+        REQUIRE_NOTHROW(util::normalize(S, axis));
+        REQUIRE_NOTHROW(util::normalized(S, axis));
+        axis = 0;
+        REQUIRE_NOTHROW(util::normalize(S, axis));
+        REQUIRE_NOTHROW(util::normalized(S, axis));
+    }
     SECTION("Test tensor dimensions") {
         // does it fail to compile as expected?
         // tensord<0> zero_tensor;

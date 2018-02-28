@@ -112,6 +112,9 @@ template <int N>
 void normalize(tensord<N>& input, size_t axis, NormType type = NormType::L1,
                double eps = 1e-50) {
     static_assert(N >= 1, "Tensor must be at least 1 dimensional");
+    if (axis >= N) {
+        throw std::invalid_argument("Normalization axis must be less than N");
+    }
 
     tensord<N - 1> norms;
     shape<1> reduction_dim{axis};
