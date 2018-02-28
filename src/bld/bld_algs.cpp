@@ -117,18 +117,14 @@ bld::bld_fact(const tensord<3>& S,
     matrix_t H(z, y);
     vector_t L(y);
 
-    vector_t W_colsum = vector_t::Zero(z);
-    vector_t H_colsum = vector_t::Zero(y);
     for (int i = 0; i < x; ++i) {
         for (int k = 0; k < z; ++k) {
             W(i, k) = model_params.alpha[i] + S_ipk(i, k) - 1;
-            W_colsum(k) += W(i, k);
         }
     }
     for (int k = 0; k < z; ++k) {
         for (int j = 0; j < y; ++j) {
             H(k, j) = model_params.beta[k] + S_pjk(j, k) - 1;
-            H_colsum(j) += H(k, j);
         }
     }
     for (int j = 0; j < y; ++j) {
@@ -136,17 +132,10 @@ bld::bld_fact(const tensord<3>& S,
     }
 
     // normalize
-    // todo: factorize normalization logic to a function under utils namespace
-    for (int i = 0; i < x; ++i) {
-        for (int k = 0; k < z; ++k) {
-            W(i, k) /= (W_colsum(k) + eps);
-        }
-    }
-    for (int k = 0; k < z; ++k) {
-        for (int j = 0; j < y; ++j) {
-            H(k, j) /= (H_colsum(j) + eps);
-        }
-    }
+    vector_t W_colsum = W.colwise().sum() + vector_t::Constant(W.cols(), eps);
+    vector_t H_colsum = H.colwise().sum() + vector_t::Constant(H.cols(), eps);
+    W = W.array().rowwise() / W_colsum.array();
+    H = H.array().rowwise() / H_colsum.array();
 
     return std::make_tuple(W, H, L);
 };
