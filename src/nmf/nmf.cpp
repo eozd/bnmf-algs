@@ -20,8 +20,8 @@ static std::string nmf_check_parameters(const matrix_t& X, size_t r,
     if (r == 0) {
         return "r must be positive";
     }
-    if (epsilon < 0) {
-        return "epsilon must be nonnegative";
+    if (epsilon <= 0) {
+        return "epsilon must be positive";
     }
     return "";
 }

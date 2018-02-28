@@ -22,7 +22,7 @@ namespace allocation_model {
  *
  * @param tensor_shape Shape of the sample tensor \f$x \times y \times z\f$.
  * @param model_params Allocation Model parameters. See
- * bnmf_algs::AllocModelParams.
+ * bnmf_algs::allocation_model::AllocModelParams.
  *
  * @return std::tuple of \f$<W_{x \times z}, H_{z \times y}, L_y>\f$.
  *
@@ -48,7 +48,7 @@ bnmf_priors(const shape<3>& tensor_shape, const AllocModelParams& model_params);
  * generative Bayesian NMF model.
  *
  * @throws std::invalid_argument if number of columns of prior_W is not equal to
- * number of rows of prior_H, if number of columns of prior_L is not equal to
+ * number of rows of prior_H, if number of columns of prior_H is not equal to
  * number of columns of prior_L
  */
 tensord<3> sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
@@ -64,7 +64,7 @@ tensord<3> sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
  *
  * @param S Tensor \f$S\f$ of size \f$x \times y \times z \f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::AllocModelParams.
+ * bnmf_algs::allocation_model::AllocModelParams.
  *
  * @return log marginal \f$\log{p(S)}\f$.
  *

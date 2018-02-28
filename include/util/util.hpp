@@ -83,9 +83,6 @@ template <typename Function, typename Tuple> auto call(Function f, Tuple t) {
  *
  * @remark If all elements of \f$S\f$ are 0, then the function returns
  * std::numeric_limits<double>::max().
- *
- * @todo Move this method to somewhere else; it is not exactly related to
- * sampling
  */
 double sparseness(const tensord<3>& S);
 
@@ -94,9 +91,12 @@ double sparseness(const tensord<3>& S);
  * bnmf_algs::util::normalized.
  */
 enum class NormType {
-    L1, ///< Normalize using L1-norm (divide by sums of absolute values)
-    L2, ///< Normalize using L2-norm (divide by sqrt of sum of squares)
-    Max ///< Normalize using L-infinity norm (divide by max of absolute values)
+    L1, ///< Normalize using \f$L_1\f$ norm \f$\left(\|x\|_1 = \sum_i
+        ///  |x_i|\right)\f$
+    L2, ///< Normalize using \f$L_2\f$ norm \f$\left(\|x\|_2 = \sqrt{\sum_i
+        ///  x_i^2}\right)\f$
+    Max ///< Normalize using \f$L_{\infty}\f$ norm \f$\left(\|x\|_{\infty} =
+        /// \max\{|x_1|, \dots, |x_n|\}\right)\f$
 };
 
 /**

@@ -97,6 +97,7 @@ TEST_CASE("Euclidean NMF invalid parameters", "[nmf]") {
 
     SECTION("Invalid epsilon") {
         REQUIRE_THROWS(nmf::nmf(X, r, nmf::Euclidean, 102, -0.00000001));
+        REQUIRE_THROWS(nmf::nmf(X, r, nmf::Euclidean, 102, 0));
     }
 }
 

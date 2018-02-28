@@ -19,10 +19,10 @@ namespace nmf {
  */
 enum NMFVariant {
     KL, ///< NMF using Kullback-Leibler divergence as error measure.
-    ///< See \cite lee-seung-algs.
+        /// See \cite lee-seung-algs.
 
     Euclidean ///< NMF using Euclidean distance as error measure.
-    ///< See \cite lee-seung-algs.
+              /// See \cite lee-seung-algs.
 };
 
 /**
@@ -51,7 +51,7 @@ enum NMFVariant {
  * @return std::pair of W and H matrices.
  *
  * @throws std::invalid_argument if \f$X\f$ is not nonnegative, if r is not
- * positive, if max_iter is not nonnegative, epsilon is not nonnegative
+ * positive, epsilon is not positive
  */
 std::pair<matrix_t, matrix_t>
 nmf(const matrix_t& X, size_t r, NMFVariant variant, size_t max_iter = 1000,

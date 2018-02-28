@@ -35,7 +35,7 @@ namespace bld {
  * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
  * This is the depth of the output tensor \f$S\f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::AllocModelParams.
+ * bnmf_algs::allocation_model::AllocModelParams.
  *
  * @return Tensor \f$S\f$ of size \f$x \times y \times z\f$ where \f$X =
  * S_{ij+}\f$.
@@ -61,7 +61,7 @@ seq_greedy_bld(const matrix_t& X, size_t z,
  *
  * @param S Tensor \f$S\f$ of shape \f$x \times y \times z\f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::AllocModelParams.
+ * bnmf_algs::allocation_model::AllocModelParams.
  * @param eps Floating point epsilon value to be used to prevent division by 0
  * errors.
  *
@@ -99,7 +99,7 @@ bld_fact(const tensord<3>& S,
  * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
  * This is the depth of the output tensor \f$S\f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::AllocModelParams.
+ * bnmf_algs::allocation_model::AllocModelParams.
  * @param max_iter Maximum number of iterations.
  * @param eps Floating point epsilon value to be used to prevent division by 0
  * errors.
@@ -108,8 +108,8 @@ bld_fact(const tensord<3>& S,
  * S_{ij+}\f$.
  *
  * @throws std::invalid_argument if X contains negative entries,
- * number of rows of X is not equal to number of alpha parameters, if z is not
- * equal to number of beta parameters.
+ * if number of rows of X is not equal to number of alpha parameters, if z is
+ * not equal to number of beta parameters.
  */
 tensord<3> bld_mult(const matrix_t& X, size_t z,
                     const allocation_model::AllocModelParams& model_params,
@@ -141,7 +141,7 @@ tensord<3> bld_mult(const matrix_t& X, size_t z,
  * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
  * This is the depth of the output tensor \f$S\f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::AllocModelParams.
+ * bnmf_algs::allocation_model::AllocModelParams.
  * @param max_iter Maximum number of iterations.
  * @param eps Floating point epsilon value to be used to prevent division by 0
  * errors.
@@ -150,8 +150,8 @@ tensord<3> bld_mult(const matrix_t& X, size_t z,
  * S_{ij+}\f$.
  *
  * @throws std::invalid_argument if X contains negative entries,
- * number of rows of X is not equal to number of alpha parameters, if z is not
- * equal to number of beta parameters.
+ * if number of rows of X is not equal to number of alpha parameters, if z is
+ * not equal to number of beta parameters.
  */
 tensord<3> bld_add(const matrix_t& X, size_t z,
                    const allocation_model::AllocModelParams& model_params,
