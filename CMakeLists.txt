@@ -26,7 +26,7 @@ set(LIB_SRC_FILES
         src/bld/bld_algs.cpp
         src/allocation_model/alloc_model_params.cpp
         src/util/util.cpp
-)
+        include/util/generator.hpp)
 
 set(TEST_SRC_FILES
         test/nmf/test_nmf.cpp
@@ -36,7 +36,7 @@ set(TEST_SRC_FILES
         test/util/test_util.cpp
         test/bld/test_bld_algs.cpp
         test/allocation_model/test_alloc_model_params.cpp
-)
+        test/util/test_generator.cpp)
 
 add_library(bnmf_algs SHARED ${LIB_SRC_FILES})
 target_link_libraries(bnmf_algs gsl gslcblas)
