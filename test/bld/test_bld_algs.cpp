@@ -36,7 +36,7 @@ TEST_CASE("Parameter checks on seq_greedy_bld", "[seq_greedy_bld]") {
 TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
     long x = 8, y = 10, z = 3;
     shape<3> tensor_shape{x, y, z};
-    SECTION("Zero matrix") {
+    SECTION("Zero matrix result is Zero") {
         matrix_t X = matrix_t::Zero(x, y);
         AllocModelParams model_params(tensor_shape);
 
@@ -64,8 +64,15 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
         tensord<3> S = bld::seq_greedy_bld(X, z, model_params);
         double log_marginal = log_marginal_S(S, model_params);
 
+        // Test marginal and sparseness
         REQUIRE(log_marginal >= -265);
         REQUIRE(sparseness(S) >= 0.6);
+
+        // Test if S_{::+} = X
+        tensord<2> sum_S = S.sum(shape<1>({2}));
+        matrix_t sum_S_mat = Eigen::Map<matrix_t>(
+            sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
+        REQUIRE(X.isApprox(sum_S_mat));
         // todo: check if S is an integer tensor
     }
 }
@@ -240,7 +247,7 @@ TEST_CASE("Parameter checks on bld_mult", "[bld_mult]") {
 TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
     long x = 8, y = 10, z = 3;
     shape<3> tensor_shape{x, y, z};
-    SECTION("Zero matrix") {
+    SECTION("Zero matrix result is Zero") {
         matrix_t X = matrix_t::Zero(x, y);
         AllocModelParams model_params(tensor_shape);
 
@@ -265,10 +272,16 @@ TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
                                       std::vector<double>(z, 1.0));
 
         // todo: how to test if the results are correct?
-        tensord<3> S = bld::bld_mult(X, z, model_params);
+        tensord<3> S = bld::bld_mult(X, z, model_params, 2000);
         double log_marginal = log_marginal_S(S, model_params);
         REQUIRE(log_marginal >= -262);
         REQUIRE(sparseness(S) >= 0.64);
+
+        // Test if S_{::+} = X
+        tensord<2> sum_S = S.sum(shape<1>({2}));
+        matrix_t sum_S_mat = Eigen::Map<matrix_t>(
+                sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
+        REQUIRE(X.isApprox(sum_S_mat, 1e-10));
         // todo: check if S is an integer tensor
     }
 }
@@ -299,7 +312,7 @@ TEST_CASE("Parameter checks on bld_add", "[bld_add]") {
 TEST_CASE("Algorithm checks on bld_add", "[bld_add]") {
     long x = 8, y = 10, z = 3;
     shape<3> tensor_shape{x, y, z};
-    SECTION("Zero matrix") {
+    SECTION("Zero matrix result is Zero") {
         matrix_t X = matrix_t::Zero(x, y);
         AllocModelParams model_params(tensor_shape);
 
@@ -329,5 +342,11 @@ TEST_CASE("Algorithm checks on bld_add", "[bld_add]") {
 
         REQUIRE(log_marginal >= -273);
         REQUIRE(sparseness(S) >= 0.58);
+
+        // Test if S_{::+} = X
+        tensord<2> sum_S = S.sum(shape<1>({2}));
+        matrix_t sum_S_mat = Eigen::Map<matrix_t>(
+                sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
+        REQUIRE(X.isApprox(sum_S_mat));
     }
 }
