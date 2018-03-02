@@ -194,6 +194,7 @@ TEST_CASE("Parameter checks on log marginal of S", "[log_marginal_S]") {
     int x = 5, y = 4, z = 8;
     shape<3> tensor_shape{x, y, z};
     tensord<3> S(x, y, z);
+    S.setConstant(1);
     AllocModelParams model_params(tensor_shape);
 
     REQUIRE_NOTHROW(log_marginal_S(S, model_params));
