@@ -3,6 +3,7 @@
 #include "allocation_model/alloc_model_params.hpp"
 #include "defs.hpp"
 #include <tuple>
+#include <util/generator.hpp>
 #include <vector>
 
 namespace bnmf_algs {
@@ -73,5 +74,95 @@ tensord<3> sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
  */
 double log_marginal_S(const tensord<3>& S,
                       const AllocModelParams& model_params);
+
+/**
+ * @brief Computer type that will compute the next sample when its operator() is
+ * invoked.
+ *
+ * SampleOnesComputer will generate the next std::pair<int, int> value from the
+ * previous value given to its operator(). This operation is performed in-place.
+ */
+class SampleOnesComputer {
+  public:
+    /**
+     * @brief Construct a new SampleOnesComputer.
+     *
+     * A const-reference is stored for the given matrix for storage efficiency.
+     *
+     * @param X Matrix \f$X\f$ that will be used during sampling.
+     * @param replacement Whether to sample with replacement.
+     * @param n Number of times to sample if replacement is true.
+     */
+    explicit SampleOnesComputer(const matrix_t& X, bool replacement = false,
+                                size_t n = 1);
+
+    /**
+     * @brief Call operator that will compute the next sample in-place.
+     *
+     * After this function exits, the object referenced by prev_val will be
+     * modified to store the next sample.
+     *
+     * Note that SampleOnesComputer object satisfies the
+     * bnmf_algs::util::Generator and bnmf_algs::util::ComputationIterator
+     * Computer interface. Hence, a sequence of samples may be generated
+     * efficiently by using this Computer with bnmf_algs::util::Generator or
+     * bnmf_algs::util::ComputationIterator.
+     *
+     * @param curr_step Current step of the sampling computation.
+     * @param prev_val Previously sampled value to modify in-place.
+     */
+    void operator()(size_t curr_step, std::pair<int, int>& prev_val);
+
+  private:
+    const matrix_t& X;
+    bool replacement;
+    size_t n;
+};
+
+/**
+ * @brief Return a bnmf_algs::util::Generator that will generate a sequence of
+ * samples by using SampleOnesComputer as its Computer.
+ *
+ * sample_ones is a perfect forwarding function that passes its parameters to
+ * a SampleOnesComputer constructor. Afterwards, this Computer type is used to
+ * return a bnmf_algs::util::Generator type to generate a sequence of samples.
+ * An example usage is as follows:
+ *
+ * @code
+ * matrix_t X(10, 5);
+ *
+ * // SampleOnesComputer constructor may take a single matrix parameter
+ * for (const auto& sample_pair : sample_ones(X)) {
+ *     // do something with the sample
+ * }
+ *
+ * // Override default replacement parameter of SampleOnesComputer
+ * for (const auto& sample_pair : sample_ones(X, false)) {
+ *     // do something with the sample
+ * }
+ *
+ * // Give all parameters manually
+ * for (const auto& sample_pair : sample_ones(X, false, 10)) {
+ *     // do something with the sample
+ * }
+ * @endcode
+ *
+ * @tparam Args Type of the arguments.
+ *
+ * @param args Arguments that will be perfectly forwarded to SampleOnesComputer
+ * constructor.
+ *
+ * @return A bnmf_algs::util::Generator type that can be used to generate a
+ * sequence of samples by using SampleOnesComputer as its computer.
+ */
+template <typename... Args>
+util::Generator<std::pair<int, int>, SampleOnesComputer>
+sample_ones(Args&&... args) {
+    std::pair<int, int> init_val;
+    size_t num_samples = 5;
+
+    return {init_val, num_samples,
+            SampleOnesComputer(std::forward<Args>(args)...)};
+};
 } // namespace allocation_model
 } // namespace bnmf_algs

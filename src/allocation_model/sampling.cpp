@@ -292,3 +292,13 @@ double allocation_model::log_marginal_S(const tensord<3>& S,
            compute_third_term(S, model_params.a, model_params.b) -
            compute_fourth_term(S);
 }
+
+allocation_model::SampleOnesComputer::SampleOnesComputer(const matrix_t& X,
+                                                         bool replacement,
+                                                         size_t n)
+    : X(X), replacement(replacement), n(n) {}
+
+void allocation_model::SampleOnesComputer::
+operator()(size_t curr_step, std::pair<int, int>& prev_val) {
+    // todo: compute next sample from previous
+}
