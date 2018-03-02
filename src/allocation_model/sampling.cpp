@@ -293,12 +293,61 @@ double allocation_model::log_marginal_S(const tensord<3>& S,
            compute_fourth_term(S);
 }
 
-allocation_model::SampleOnesComputer::SampleOnesComputer(const matrix_t& X,
-                                                         bool replacement,
-                                                         size_t n)
-    : X(X), replacement(replacement), n(n) {}
+using namespace allocation_model;
 
-void allocation_model::SampleOnesComputer::
-operator()(size_t curr_step, std::pair<int, int>& prev_val) {
-    // todo: compute next sample from previous
+SampleOnesComputer::SampleOnesComputer(const matrix_t& X, bool replacement,
+                                       size_t n)
+    : X(X), replacement(replacement), n(n),
+      X_cumsum(vector_t(X.cols() * X.rows())),
+      X_cols(static_cast<size_t>(X.cols())), X_sum(X.array().sum()),
+      rnd_gen(util::make_gsl_rng(gsl_rng_taus)) {
+
+    X_cumsum(0) = X(0, 0);
+    for (int i = 0; i < X.rows(); ++i) {
+        for (int j = 1; j < X.cols(); ++j) {
+            long index = i * X.cols() + j;
+            X_cumsum(index) = X_cumsum(index - 1) + X(i, j);
+        }
+    }
+
+    if (replacement) {
+        X_cumsum /= X_sum;
+    } else {
+        X_cumsum /= static_cast<int>(X_sum);
+    }
+}
+
+void SampleOnesComputer::operator()(size_t curr_step,
+                                    std::pair<int, int>& prev_val) {
+    double u = gsl_ran_flat(rnd_gen.get(), 0, 1);
+    if (replacement) {
+        std::cout << curr_step << ":\t";
+        double* begin = X_cumsum.data();
+        double* end = X_cumsum.data() + X_cumsum.cols();
+        auto it = std::upper_bound(begin, end, u);
+
+        long m = it - begin;
+        prev_val.first = static_cast<int>(m / X_cols);
+        prev_val.second = static_cast<int>(m % X_cols);
+    } else {
+    }
+}
+
+util::Generator<std::pair<int, int>, SampleOnesComputer>
+allocation_model::sample_ones(const matrix_t& X, bool replacement, size_t n) {
+    size_t num_samples;
+    if (replacement) {
+        num_samples = n;
+    } else {
+        num_samples = static_cast<size_t>(X.array().sum());
+    }
+    // don't know the initial value
+    std::pair<int, int> init_val;
+    util::Generator<std::pair<int, int>, SampleOnesComputer> gen(
+        init_val, num_samples + 1, SampleOnesComputer(X, replacement, n));
+
+    // get rid of the first empty value
+    ++gen.begin();
+
+    return gen;
 }

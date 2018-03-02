@@ -255,7 +255,7 @@ TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
 
 TEST_CASE("Test sample ones", "[sample_ones]") {
     matrix_t X(5, 3);
-    for (const auto& pair : sample_ones(X, false)) {
-        std::cout << pair.first << " " << pair.second << std::endl;
+    for (const auto& pair : sample_ones(X, true, 50)) {
+        std::cout << '(' << pair.first << " " << pair.second << ')' << std::endl;
     }
 }

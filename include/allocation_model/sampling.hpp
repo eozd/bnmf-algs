@@ -5,6 +5,7 @@
 #include <tuple>
 #include <util/generator.hpp>
 #include <vector>
+#include <util/wrappers.hpp>
 
 namespace bnmf_algs {
 /**
@@ -93,8 +94,7 @@ class SampleOnesComputer {
      * @param replacement Whether to sample with replacement.
      * @param n Number of times to sample if replacement is true.
      */
-    explicit SampleOnesComputer(const matrix_t& X, bool replacement = false,
-                                size_t n = 1);
+    explicit SampleOnesComputer(const matrix_t& X, bool replacement, size_t n);
 
     /**
      * @brief Call operator that will compute the next sample in-place.
@@ -117,11 +117,16 @@ class SampleOnesComputer {
     const matrix_t& X;
     bool replacement;
     size_t n;
+
+    // computation variables
+private:
+    vector_t X_cumsum;
+    size_t X_cols;
+    double X_sum;
+    util::gsl_rng_wrapper rnd_gen;
 };
 
 /**
- * @brief Return a bnmf_algs::util::Generator that will generate a sequence of
- * samples by using SampleOnesComputer as its Computer.
  *
  * sample_ones is a perfect forwarding function that passes its parameters to
  * a SampleOnesComputer constructor. Afterwards, this Computer type is used to
@@ -147,22 +152,27 @@ class SampleOnesComputer {
  * }
  * @endcode
  *
- * @tparam Args Type of the arguments.
+ */
+/**
+ * @brief Return a bnmf_algs::util::Generator that will generate a sequence of
+ * samples by using SampleOnesComputer as its Computer.
  *
- * @param args Arguments that will be perfectly forwarded to SampleOnesComputer
- * constructor.
+ * This function returns a bnmf_algs::util::Generator object that will produce
+ * a sequence of samples by generating the samples using SampleOnesComputer.
+ * Since the return value is a generator, only a single sample is stored in the
+ * memory at a given time.
+ *
+ * @param X Matrix \f$X\f$ from the Allocation Model \cite kurutmazbayesian.
+ * @see bnmf_algs::allocation_model
+ * @param replacement If true, sample with replacement.
+ * @param n If replacement is true, then n is the number of samples that will be
+ * generated. If replacement is false, then floor of sum of \f$X\f$ many samples
+ * will be generated.
  *
  * @return A bnmf_algs::util::Generator type that can be used to generate a
  * sequence of samples by using SampleOnesComputer as its computer.
  */
-template <typename... Args>
 util::Generator<std::pair<int, int>, SampleOnesComputer>
-sample_ones(Args&&... args) {
-    std::pair<int, int> init_val;
-    size_t num_samples = 5;
-
-    return {init_val, num_samples,
-            SampleOnesComputer(std::forward<Args>(args)...)};
-}
+sample_ones(const matrix_t& X, bool replacement = false, size_t n = 1);
 } // namespace allocation_model
 } // namespace bnmf_algs

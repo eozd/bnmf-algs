@@ -301,11 +301,12 @@ template <typename T, typename Computer> class Generator {
      * first value that will get generated.
      * @param iter_count Number of values to generate.
      * @param computer Computer function/functor that will compute the next
-     * value from the previous value.
+     * value from the previous value. Computer is taken as an rvalue reference
+     * and is moved into this Generator object.
      */
-    Generator(const T& init_val, size_t iter_count, Computer computer)
+    Generator(const T& init_val, size_t iter_count, Computer&& computer)
         : init_val(init_val), curr_step_count(0), total_iter_count(iter_count),
-          computer(computer),
+          computer(std::move(computer)),
           begin_it(&(this->init_val), &(this->curr_step_count),
                    &(this->computer)),
           end_it(&(this->total_iter_count)){};
