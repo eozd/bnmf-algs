@@ -44,8 +44,9 @@ namespace util {
  *
  * // ComputationIterator
  * int init = 0, beg_index = 0, end_index = 5;
- * ComputationIterator<int> begin(&init, &beg_index, &computer);
- * ComputationIterator<int> end(&end_index);
+ * Computer computer;
+ * ComputationIterator<int, Computer> begin(&init, &beg_index, &computer);
+ * ComputationIterator<int>, Computer end(&end_index);
  * auto it = beg;
  * ++beg;
  * // *it has changed as well
@@ -58,8 +59,8 @@ namespace util {
  *
  * @code
  * int init = 0, beg_index = 0, end_index = 5;
- * ComputationIterator<int> begin(&init, &beg_index, &computer);
- * ComputationIterator<int> end(&end_index);
+ * ComputationIterator<int, Computer> begin(&init, &beg_index, &computer);
+ * ComputationIterator<int, Computer> end(&end_index);
  *
  * std::vector<int> out(end_index);
  * std::transform(begin, end, out.begin(), multiply_by_2);
@@ -67,49 +68,43 @@ namespace util {
  * // out == {0, 2, 4, 6, 8}
  * @endcode
  *
- * However, it is not possible to use std::max_element for example, since
- * max_element uses values of the previous iterator as well. Since when an
- * iterator is incremented, the value pointed by the iterator is updated, the
- * previous iterator points to the updated value, as well. Fixing this issues
- * would require actually storing the past values which is not the functionality
+ * However, it is not possible to use std::max_element since when an
+ * iterator it is incremented, the value pointed by the iterator is updated and
+ * all copies of it point to the updated value, as well. Fixing this issue would
+ * require actually storing the past values which is not the functionality
  * provided by ComputationIterator whose main purpose is to store only the most
  * recently computed value.
  *
- * See bnmf_algs::util::Generator for an easier and more automatic API.
+ * Given Computer type must have a
+ * @code void operator()(size_t curr_step, T& prev_val); @endcode call operator
+ * that will be called to update the previous value in-place. Example Computers
+ * for ComputationIterator<std::string, Computer> may be
+ * @code
+ * void str_computer(size_t curr_step, std::string& prev_val) {
+ *     // modify prev_val in-place to compute next value
+ * }
+ * @endcode
+ * or
+ * @code
+ * class StrComputer {
+ * public:
+ *     void operator()(size_t curr_step, std::string& prev_val) {
+ *         // modify prev_val in-place to compute next_value
+ *     }
+ * }
+ * @endcode
+ *
+ * See bnmf_algs::util::Generator for an easier and more automatic API when
+ * dealing with generator expressions.
  *
  * @tparam T Type of the resulting values of the computation that will be
  * performed at each step.
+ * @tparam Computer Type of the invocable computer object. May be a
+ * functor/std::function/function pointer and so on.
  */
-template <typename T> class ComputationIterator {
+template <typename T, typename Computer>
+class ComputationIterator : public std::iterator<std::forward_iterator_tag, T> {
   public:
-    /**
-     * @brief Invocable type that will be called to perform the computation at
-     * each step.
-     *
-     * A computer takes the current step count of the computation and the
-     * previously computed value, and must modify the given previous value
-     * in-place to compute the next value.
-     *
-     * For example, for a @code ComputationIterator<std::string> @endcode class,
-     * computers may be
-     *
-     * @code
-     * void str_computer(size_t curr_step, std::string& prev_val) {
-     *     // modify prev_val in-place to compute next value
-     * }
-     * @endcode
-     *
-     * @code
-     * class StrComputer {
-     * public:
-     *     void operator()(size_t curr_step, std::string& prev_val) {
-     *         // modify prev_val in-place to compute next_value
-     *     }
-     * }
-     * @endcode
-     */
-    using computer_t = std::function<void(size_t, T&)>;
-
     /**
      * @brief ComputationIterator constructor that takes pointers for initial
      * value, current step count and the computer.
@@ -130,7 +125,7 @@ template <typename T> class ComputationIterator {
      * @param computer_ptr Pointer pointing to the computer function/functor.
      */
     ComputationIterator(T* init_val_ptr, size_t* step_count_ptr,
-                        computer_t* computer_ptr)
+                        Computer* computer_ptr)
         : curr_val_ptr(init_val_ptr), step_count_ptr(step_count_ptr),
           computer_ptr(computer_ptr){};
 
@@ -167,8 +162,9 @@ template <typename T> class ComputationIterator {
      * @code
      * // ComputationIterator
      * int init = 0, beg_index = 0, end_index = 5;
-     * ComputationIterator<int> begin(&init, &beg_index, &computer);
-     * ComputationIterator<int> end(&end_index);
+     * Op computer;
+     * ComputationIterator<int, Op> begin(&init, &beg_index, &computer);
+     * ComputationIterator<int, Op> end(&end_index);
      * auto it = beg;
      * ++beg;
      * // *it has changed as well
@@ -227,7 +223,7 @@ template <typename T> class ComputationIterator {
     }
 
   private:
-    computer_t* computer_ptr;
+    Computer* computer_ptr;
     size_t* step_count_ptr;
     T* curr_val_ptr;
 };
@@ -250,45 +246,43 @@ template <typename T> class ComputationIterator {
  *     ++prev;
  * }
  *
+ * Generator<int, decltype(&increment)> gen(0, 50, increment);
  * std::vector<int> numbers;
- * for (auto num : Generator<int> gen(0, 50, increment)) {
+ * for (auto num : gen) {
  *     numbers.push_back(num);
  * }
  * // numbers.size() == 50
- * // gen.prev() == gen.end()
+ * // gen.begin() == gen.end()
  *
  * std::vector<int> new_numbers(numbers);
- * for (auto num : Generator<int> gen(0, 50, increment)) {
+ * for (auto num : gen) {
  *     new_numbers.push_back(num);
  * }
- * // numbers == new_numbers
+ * // new_numbers.size() == 0
  * @endcode
  *
- * Since Generator object provides prev() and end() methods, it can be used
- * with range-based for loops as seen in the previous example. Regular for loops
- * are also supported:
+ * Since Generator object provides begin() and end() methods, it can be used
+ * with range-based for loops as seen in the previous example. Regular
+ * iterator-based for loops are also supported:
  *
  * @code
- * Generator<int> gen(0, 50, increment);
- * for (auto it = gen.prev(); it != gen.end(); ++it) {
+ * Op increment;
+ * Generator<int, Op> gen(0, 50, increment);
+ * for (auto it = gen.begin(); it != gen.end(); ++it) {
  *     numbers.push_back(num);
  * }
  * @endcode
  *
  * @tparam T Type of the values to generate.
+ * @tparam Computer Type of the computer functor/function/etc. to use.
  */
-template <typename T> class Generator {
+template <typename T, typename Computer> class Generator {
   public:
     /**
      * @brief Iterator type that will be used to compute values repeatedly
      * without explicitly storing all the values.
      */
-    using iter_type = ComputationIterator<T>;
-
-    /**
-     * @brief Computer type that will be used to compute values.
-     */
-    using computer_t = typename iter_type::computer_t;
+    using iter_type = ComputationIterator<T, Computer>;
 
   public:
     /**
@@ -299,8 +293,8 @@ template <typename T> class Generator {
      * number of values that will get generated. For example,
      *
      * @code
-     * Generator<int> gen(0, 5, increment);  // 0, 1, 2, 3, 4
-     * gen = Generator<int>(20, 4, decrement);  // 20, 19, 18, 17
+     * Generator<int, Op> gen(0, 5, increment);  // 0, 1, 2, 3, 4
+     * gen = Generator<int, Op>(20, 4, decrement);  // 20, 19, 18, 17
      * @endcode
      *
      * @param init_val Initial value of the sequence to generate. This is the
@@ -309,24 +303,24 @@ template <typename T> class Generator {
      * @param computer Computer function/functor that will compute the next
      * value from the previous value.
      */
-    Generator(T init_val, size_t iter_count, computer_t computer)
-        : init_val(std::move(init_val)), curr_step_count(0),
-          total_iter_count(iter_count), computer(computer),
-          prev_it(&(this->init_val), &(this->curr_step_count),
-                  &(computer)),
+    Generator(const T& init_val, size_t iter_count, Computer computer)
+        : init_val(init_val), curr_step_count(0), total_iter_count(iter_count),
+          computer(computer),
+          begin_it(&(this->init_val), &(this->curr_step_count),
+                   &(this->computer)),
           end_it(nullptr, &(this->total_iter_count), nullptr){};
 
     /**
      * @brief Return the iterator pointing to the previously computed value.
      *
      * Note that since only the most recently computed value is stored, the
-     * semantics for prev() is not the same container::begin(). After an
+     * semantics for begin() is not the same STL container::begin(). After an
      * iterator is incremented, the next value is computed and the previous
      * value is forgotten.
      *
-     * All the returned prev iterators point to the same values. Hence, once a
-     * copy of a prev iterator is incremented and hence the pointed values are
-     * updated, all the subsequent calls to prev() will return iterators
+     * All the returned begin iterators point to the same values. Hence, once a
+     * copy of a begin iterator is incremented and hence the pointed values are
+     * updated, all the subsequent calls to begin() will return iterators
      * pointing to these updated values.
      *
      * An increment to any of the iterators update the values pointed by all the
@@ -341,13 +335,13 @@ template <typename T> class Generator {
      *
      * @return Iterator pointing to the most recently computed value.
      */
-    iter_type prev() { return prev_it; }
+    iter_type begin() { return begin_it; }
 
     /**
      * @brief Return the end iterator.
      *
      * End iterator is a sentinel iterator. If an iterator returned by
-     * Generator::prev() is equal to Generator::end(), then this Generator
+     * Generator::begin() is equal to Generator::end(), then this Generator
      * object is consumed and doesn't produce any values when used with
      * range-based for loops.
      *
@@ -359,8 +353,8 @@ template <typename T> class Generator {
     T init_val;
     size_t curr_step_count;
     size_t total_iter_count;
-    computer_t computer;
-    iter_type prev_it;
+    Computer computer;
+    iter_type begin_it;
     iter_type end_it;
 };
 } // namespace util
