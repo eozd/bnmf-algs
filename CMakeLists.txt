@@ -16,8 +16,8 @@ include_directories("include")
 
 find_package(GSL REQUIRED)
 find_package(Eigen3 REQUIRED)
-include_directories(${EIGEN3_INCLUDE_DIR})
-include_directories(${GSL_INCLUDE_DIRS})
+include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
+include_directories(SYSTEM ${GSL_INCLUDE_DIRS})
 
 set(LIB_SRC_FILES
         src/nmf/nmf.cpp

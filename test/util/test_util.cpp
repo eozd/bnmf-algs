@@ -29,7 +29,7 @@ TEST_CASE("Call using selected elements", "[call]") {
 }
 
 TEST_CASE("Test sparseness", "[sparseness]") {
-    int x = 5, y = 5, z = 5;
+    size_t x = 5, y = 5, z = 5;
     shape<3> tensor_shape{x, y, z};
 
     SECTION("Zero tensor") {
@@ -47,13 +47,7 @@ TEST_CASE("Test sparseness", "[sparseness]") {
 
     SECTION("Tensor with all ones") {
         tensord<3> S(x, y, z);
-        for (int i = 0; i < x; ++i) {
-            for (int j = 0; j < y; ++j) {
-                for (int k = 0; k < z; ++k) {
-                    S(i, j, k) = 1;
-                }
-            }
-        }
+        S.setConstant(1);
         double result = util::sparseness(S);
         REQUIRE(Approx(result).margin(std::numeric_limits<double>::epsilon()) ==
                 0);

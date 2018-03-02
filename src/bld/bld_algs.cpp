@@ -18,11 +18,11 @@ static std::string seq_greedy_bld_param_checks(
     if ((X.array() < 0).any()) {
         return "X must be nonnegative";
     }
-    if (model_params.alpha.size() != X.rows()) {
+    if (model_params.alpha.size() != static_cast<size_t>(X.rows())) {
         return "Number of alpha parameters must be equal to number of rows of "
                "X";
     }
-    if (model_params.beta.size() != z) {
+    if (model_params.beta.size() != static_cast<size_t>(z)) {
         return "Number of beta parameters must be equal to z";
     }
     return "";
@@ -75,7 +75,7 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
         std::tie(ii, jj) = nonzero_indices[idx];
         ll.setZero();
 
-        for (int k = 0; k < z; ++k) {
+        for (size_t k = 0; k < z; ++k) {
             ll[k] = std::log(model_params.alpha[ii] + S_ipk(ii, k)) -
                     std::log(sig_alpha + S_ppk(k));
             ll[k] += -(std::log(1 + S(ii, jj, k)) -
@@ -99,7 +99,9 @@ std::tuple<matrix_t, matrix_t, vector_t>
 bld::bld_fact(const tensord<3>& S,
               const allocation_model::AllocModelParams& model_params,
               double eps) {
-    long x = S.dimension(0), y = S.dimension(1), z = S.dimension(2);
+    auto x = static_cast<size_t>(S.dimension(0));
+    auto y = static_cast<size_t>(S.dimension(1));
+    auto z = static_cast<size_t>(S.dimension(2));
 
     if (model_params.alpha.size() != x) {
         throw std::invalid_argument(
@@ -118,17 +120,17 @@ bld::bld_fact(const tensord<3>& S,
     matrix_t H(z, y);
     vector_t L(y);
 
-    for (int i = 0; i < x; ++i) {
-        for (int k = 0; k < z; ++k) {
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t k = 0; k < z; ++k) {
             W(i, k) = model_params.alpha[i] + S_ipk(i, k) - 1;
         }
     }
-    for (int k = 0; k < z; ++k) {
-        for (int j = 0; j < y; ++j) {
+    for (size_t k = 0; k < z; ++k) {
+        for (size_t j = 0; j < y; ++j) {
             H(k, j) = model_params.beta[k] + S_pjk(j, k) - 1;
         }
     }
-    for (int j = 0; j < y; ++j) {
+    for (size_t j = 0; j < y; ++j) {
         L(j) = (model_params.a + S_pjp(j) - 1) / (model_params.b + 1 + eps);
     }
 
@@ -139,7 +141,7 @@ bld::bld_fact(const tensord<3>& S,
     H = H.array().rowwise() / H_colsum.array();
 
     return std::make_tuple(W, H, L);
-};
+}
 
 tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
                          const allocation_model::AllocModelParams& model_params,
@@ -148,7 +150,7 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
     if ((X.array() < 0).any()) {
         throw std::invalid_argument("X must be nonnegative");
     }
-    if (X.rows() != model_params.alpha.size()) {
+    if (static_cast<size_t>(X.rows()) != model_params.alpha.size()) {
         throw std::invalid_argument(
             "Number of rows of X must be equal to number of alpha parameters");
     }
@@ -169,7 +171,7 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
             for (int j = 0; j < y; ++j) {
                 gsl_ran_dirichlet(rand_gen.get(), z, dirichlet_params.data(),
                                   dirichlet_variates.data());
-                for (int k = 0; k < z; ++k) {
+                for (size_t k = 0; k < z; ++k) {
                     S(i, j, k) = X(i, j) * dirichlet_variates[k];
                 }
             }
@@ -192,20 +194,20 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
         S_ijp = S.sum(shape<1>({2}));
         // update alpha_eph
         for (int i = 0; i < x; ++i) {
-            for (int k = 0; k < z; ++k) {
+            for (size_t k = 0; k < z; ++k) {
                 alpha_eph(i, k) = model_params.alpha[i] + S_ipk(i, k);
             }
         }
         // update beta_eph
         for (int j = 0; j < y; ++j) {
-            for (int k = 0; k < z; ++k) {
+            for (size_t k = 0; k < z; ++k) {
                 beta_eph(j, k) = model_params.beta[k] + S_pjk(j, k);
             }
         }
         // update grad_plus
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
-                for (int k = 0; k < z; ++k) {
+                for (size_t k = 0; k < z; ++k) {
                     grad_plus(i, j, k) =
                         gsl_sf_psi(beta_eph(j, k)) - gsl_sf_psi(S(i, j, k) + 1);
                 }
@@ -214,7 +216,7 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
         // update grad_minus
         vector_t alpha_eph_sum = alpha_eph.colwise().sum();
         for (int i = 0; i < x; ++i) {
-            for (int k = 0; k < z; ++k) {
+            for (size_t k = 0; k < z; ++k) {
                 grad_minus(i, k) =
                     gsl_sf_psi(alpha_eph_sum(k)) - gsl_sf_psi(alpha_eph(i, k));
             }
@@ -224,7 +226,7 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
             for (int j = 0; j < y; ++j) {
                 double xdiv = 1.0 / (X(i, j) + eps);
                 double nom_sum = 0, denom_sum = 0;
-                for (int k = 0; k < z; ++k) {
+                for (size_t k = 0; k < z; ++k) {
                     nom_sum += (S(i, j, k) * xdiv * grad_minus(i, k));
                     denom_sum += (S(i, j, k) * xdiv * grad_plus(i, j, k));
                 }
@@ -237,7 +239,7 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
             for (int j = 0; j < y; ++j) {
                 double s_ij = S_ijp(i, j);
                 double x_over_s = X(i, j) / (s_ij + eps);
-                for (int k = 0; k < z; ++k) {
+                for (size_t k = 0; k < z; ++k) {
                     S(i, j, k) *= (grad_plus(i, j, k) + nom_mult(i, j)) /
                                   (grad_minus(i, k) + denom_mult(i, j) + eps);
                     S(i, j, k) *= x_over_s;
@@ -265,7 +267,7 @@ tensord<3> bld::bld_add(const matrix_t& X, size_t z,
     if ((X.array() < 0).any()) {
         throw std::invalid_argument("X must be nonnegative");
     }
-    if (X.rows() != model_params.alpha.size()) {
+    if (static_cast<size_t>(X.rows()) != model_params.alpha.size()) {
         throw std::invalid_argument(
             "Number of rows of X must be equal to number of alpha parameters");
     }
@@ -285,7 +287,7 @@ tensord<3> bld::bld_add(const matrix_t& X, size_t z,
             for (int j = 0; j < y; ++j) {
                 gsl_ran_dirichlet(rand_gen.get(), z, dirichlet_params.data(),
                                   dirichlet_variates.data());
-                for (int k = 0; k < z; ++k) {
+                for (size_t k = 0; k < z; ++k) {
                     S(i, j, k) = X(i, j) * dirichlet_variates[k];
                 }
             }
@@ -305,13 +307,13 @@ tensord<3> bld::bld_add(const matrix_t& X, size_t z,
         S_ipk = S.sum(shape<1>({1}));
         // update alpha_eph
         for (int i = 0; i < x; ++i) {
-            for (int k = 0; k < z; ++k) {
+            for (size_t k = 0; k < z; ++k) {
                 alpha_eph(i, k) = model_params.alpha[i] + S_ipk(i, k);
             }
         }
         // update beta_eph
         for (int j = 0; j < y; ++j) {
-            for (int k = 0; k < z; ++k) {
+            for (size_t k = 0; k < z; ++k) {
                 beta_eph(j, k) = model_params.beta[k] + S_pjk(j, k);
             }
         }
@@ -319,7 +321,7 @@ tensord<3> bld::bld_add(const matrix_t& X, size_t z,
         vector_t alpha_eph_sum = alpha_eph.colwise().sum();
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
-                for (int k = 0; k < z; ++k) {
+                for (size_t k = 0; k < z; ++k) {
                     grad_S(i, j, k) = gsl_sf_psi(beta_eph(j, k)) -
                                       gsl_sf_psi(S(i, j, k) + 1) -
                                       gsl_sf_psi(alpha_eph_sum(k)) +
@@ -332,7 +334,7 @@ tensord<3> bld::bld_add(const matrix_t& X, size_t z,
         tensord<2> S_mult = (S * grad_S).sum(shape<1>({2}));
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
-                for (int k = 0; k < z; ++k) {
+                for (size_t k = 0; k < z; ++k) {
                     Z(i, j, k) += eta(eph) * S(i, j, k) *
                                   (X(i, j) * grad_S(i, j, k) - S_mult(i, j));
                 }
@@ -343,7 +345,7 @@ tensord<3> bld::bld_add(const matrix_t& X, size_t z,
         // update S
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
-                for (int k = 0; k < z; ++k) {
+                for (size_t k = 0; k < z; ++k) {
                     S(i, j, k) = X(i, j)*Z(i, j, k);
                 }
             }

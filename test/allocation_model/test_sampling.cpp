@@ -12,7 +12,7 @@ using namespace bnmf_algs::util;
 using namespace bnmf_algs::allocation_model;
 
 TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
-    int x = 5, y = 3, z = 2;
+    size_t x = 5, y = 3, z = 2;
     shape<3> tensor_shape{x, y, z};
     AllocModelParams model_params(tensor_shape);
     matrix_t W, H;
@@ -70,7 +70,7 @@ TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
 }
 
 TEST_CASE("Parameter checks for sample_S using prior matrices", "[sample_S]") {
-    int x = 10, y = 8, z = 5;
+    size_t x = 10, y = 8, z = 5;
     matrix_t W = matrix_t::Ones(x, z);
     matrix_t H = matrix_t::Ones(z, y);
     vector_t L = vector_t::Ones(y);
@@ -91,7 +91,7 @@ TEST_CASE("Parameter checks for sample_S using prior matrices", "[sample_S]") {
 TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters",
           "[bnmf_priors]") {
     // result matrices
-    int x = 7, y = 4, z = 8;
+    size_t x = 7, y = 4, z = 8;
     shape<3> tensor_shape{x, y, z};
     matrix_t W, H;
     vector_t L;
@@ -104,10 +104,10 @@ TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters",
     double a = 5, b = 4;
     std::vector<double> alpha(x);
     std::vector<double> beta(z);
-    for (int i = 0; i < x; ++i) {
+    for (size_t i = 0; i < x; ++i) {
         alpha[i] = dis(gen);
     }
-    for (int i = 0; i < z; ++i) {
+    for (size_t i = 0; i < z; ++i) {
         beta[i] = dis(gen);
     }
     AllocModelParams model_params(a, b, alpha, beta);
@@ -132,7 +132,7 @@ TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters",
 }
 
 TEST_CASE("Algorithm checks for sample_S using prior matrices", "[sample_S]") {
-    int x = 10, y = 8, z = 5;
+    size_t x = 10, y = 8, z = 5;
 
     SECTION("Zero matrices") {
         matrix_t W = matrix_t::Zero(x, z);
@@ -141,9 +141,9 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "[sample_S]") {
 
         tensord<3> S = sample_S(W, H, L);
         double sum = 0;
-        for (int i = 0; i < x; ++i)
-            for (int j = 0; j < y; ++j)
-                for (int k = 0; k < z; ++k)
+        for (size_t i = 0; i < x; ++i)
+            for (size_t j = 0; j < y; ++j)
+                for (size_t k = 0; k < z; ++k)
                     sum += S(i, j, k);
 
         REQUIRE(sum == Approx(0));
@@ -162,9 +162,9 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "[sample_S]") {
         // TODO: How to check if the result comes from Poisson with certain mean
         SECTION("Nonnegativity check") {
             bool nonnegative = true;
-            for (int i = 0; i < x; ++i)
-                for (int j = 0; j < y; ++j)
-                    for (int k = 0; k < z; ++k)
+            for (size_t i = 0; i < x; ++i)
+                for (size_t j = 0; j < y; ++j)
+                    for (size_t k = 0; k < z; ++k)
                         if (S(i, j, k) < 0)
                             nonnegative = false;
             REQUIRE(nonnegative);
@@ -175,9 +175,9 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "[sample_S]") {
         SECTION("Check if matrix is integer valued") {
             tensord<3> S_round = S.round();
             double sum = 0;
-            for (int i = 0; i < x; ++i)
-                for (int j = 0; j < y; ++j)
-                    for (int k = 0; k < z; ++k)
+            for (size_t i = 0; i < x; ++i)
+                for (size_t j = 0; j < y; ++j)
+                    for (size_t k = 0; k < z; ++k)
                         sum += (std::abs(S(i, j, k) - S_round(i, j, k)));
 
             REQUIRE(sum == Approx(0));
@@ -191,7 +191,7 @@ TEST_CASE("Algorithm checks for getting a sample from distribution parameters",
 }
 
 TEST_CASE("Parameter checks on log marginal of S", "[log_marginal_S]") {
-    int x = 5, y = 4, z = 8;
+    size_t x = 5, y = 4, z = 8;
     shape<3> tensor_shape{x, y, z};
     tensord<3> S(x, y, z);
     S.setConstant(1);
@@ -211,17 +211,17 @@ TEST_CASE("Parameter checks on log marginal of S", "[log_marginal_S]") {
 }
 
 TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
-    int x = 8, y = 10, z = 2;
+    size_t x = 8, y = 10, z = 2;
     shape<3> tensor_shape{x, y, z};
 
     // parameters
     double a = 40, b = 1;
     std::vector<double> alpha(x);
     std::vector<double> beta(z);
-    for (int i = 0; i < x; ++i) {
+    for (size_t i = 0; i < x; ++i) {
         alpha[i] = 1;
     }
-    for (int i = 0; i < z; ++i) {
+    for (size_t i = 0; i < z; ++i) {
         beta[i] = 1;
     }
     AllocModelParams model_params(a, b, alpha, beta);
@@ -241,14 +241,21 @@ TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
 
         // back to the original parameters; change alpha beta
         model_params.a = 100, model_params.b = 1;
-        for (int i = 0; i < x; ++i) {
+        for (size_t i = 0; i < x; ++i) {
             model_params.alpha[i] = 0.2;
         }
-        for (int i = 0; i < z; ++i) {
+        for (size_t i = 0; i < z; ++i) {
             model_params.beta[i] = 5;
         }
         altered_log_marginal = log_marginal_S(S, model_params);
         // Original likelihood must be higher
         REQUIRE(original_log_marginal > altered_log_marginal);
+    }
+}
+
+TEST_CASE("Test sample ones", "[sample_ones]") {
+    matrix_t X(5, 3);
+    for (const auto& pair : sample_ones(X, false)) {
+        std::cout << pair.first << " " << pair.second << std::endl;
     }
 }

@@ -49,7 +49,7 @@ static std::string ensure_compatible_dimensions(const matrix_t& prior_W,
  * @return Error message. If there isn't any errors, returns "".
  */
 static std::string
-ensure_compatible_dirichlet_parameters(long x, long z,
+ensure_compatible_dirichlet_parameters(size_t x, size_t z,
                                        const std::vector<double>& alpha,
                                        const std::vector<double>& beta) {
     if (alpha.size() != x) {
@@ -69,12 +69,12 @@ std::tuple<matrix_t, matrix_t, vector_t> allocation_model::bnmf_priors(
     const shape<3>& tensor_shape,
     const allocation_model::AllocModelParams& model_params) {
 
-    long x = tensor_shape[0], y = tensor_shape[1], z = tensor_shape[2];
+    size_t x = tensor_shape[0], y = tensor_shape[1], z = tensor_shape[2];
     // TODO: Preprocesor options to disable checks
     {
         auto error_msg = ensure_compatible_dirichlet_parameters(
             x, z, model_params.alpha, model_params.beta);
-        if (error_msg != "") {
+        if (!error_msg.empty()) {
             throw std::invalid_argument(error_msg);
         }
     }
@@ -82,29 +82,29 @@ std::tuple<matrix_t, matrix_t, vector_t> allocation_model::bnmf_priors(
     auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
     // generate prior_L
     vector_t prior_L(y);
-    for (int i = 0; i < y; ++i) {
+    for (size_t i = 0; i < y; ++i) {
         prior_L(i) =
             gsl_ran_gamma(rand_gen.get(), model_params.a, model_params.b);
     }
     // generate prior_W
     matrix_t prior_W(x, z);
     vector_t dirichlet_variates(x);
-    for (int i = 0; i < z; ++i) {
+    for (size_t i = 0; i < z; ++i) {
         gsl_ran_dirichlet(rand_gen.get(), x, model_params.alpha.data(),
                           dirichlet_variates.data());
 
-        for (int j = 0; j < x; ++j) {
+        for (size_t j = 0; j < x; ++j) {
             prior_W(j, i) = dirichlet_variates(j);
         }
     }
     // generate prior_H
     matrix_t prior_H(z, y);
     dirichlet_variates = vector_t(z);
-    for (int i = 0; i < y; ++i) {
+    for (size_t i = 0; i < y; ++i) {
         gsl_ran_dirichlet(rand_gen.get(), z, model_params.beta.data(),
                           dirichlet_variates.data());
 
-        for (int j = 0; j < z; ++j) {
+        for (size_t j = 0; j < z; ++j) {
             prior_H(j, i) = dirichlet_variates(j);
         }
     }
@@ -278,11 +278,11 @@ static double compute_fourth_term(const tensord<3>& S) {
 
 double allocation_model::log_marginal_S(const tensord<3>& S,
                                         const AllocModelParams& model_params) {
-    if (model_params.alpha.size() != S.dimension(0)) {
+    if (model_params.alpha.size() != static_cast<size_t>(S.dimension(0))) {
         throw std::invalid_argument(
             "Number of alpha parameters must be equal to S.dimension(0)");
     }
-    if (model_params.beta.size() != S.dimension(2)) {
+    if (model_params.beta.size() != static_cast<size_t>(S.dimension(2))) {
         throw std::invalid_argument(
             "Number of beta parameters must be equal to S.dimension(2)");
     }

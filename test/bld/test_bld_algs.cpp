@@ -9,7 +9,7 @@ using namespace bnmf_algs::util;
 using namespace bnmf_algs::allocation_model;
 
 TEST_CASE("Parameter checks on seq_greedy_bld", "[seq_greedy_bld]") {
-    int x = 10, y = 8, z = 3;
+    size_t x = 10, y = 8, z = 3;
     matrix_t X = matrix_t::Random(x, y) + matrix_t::Constant(x, y, 5);
     std::vector<double> alpha(x, 1);
     std::vector<double> beta(z, 1);
@@ -34,7 +34,7 @@ TEST_CASE("Parameter checks on seq_greedy_bld", "[seq_greedy_bld]") {
 }
 
 TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
-    long x = 8, y = 10, z = 3;
+    size_t x = 8, y = 10, z = 3;
     shape<3> tensor_shape{x, y, z};
     SECTION("Zero matrix result is Zero") {
         matrix_t X = matrix_t::Zero(x, y);
@@ -78,7 +78,7 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
 }
 
 TEST_CASE("Parameter checks on bld_fact", "[bld_fact]") {
-    int x = 5, y = 8, z = 2;
+    size_t x = 5, y = 8, z = 2;
     shape<3> tensor_shape{x, y, z};
     tensord<3> S(x, y, z);
     S.setRandom();
@@ -98,7 +98,7 @@ TEST_CASE("Parameter checks on bld_fact", "[bld_fact]") {
 }
 
 TEST_CASE("Algorithm checks on bld_fact", "[bld_fact]") {
-    int x = 8, y = 10, z = 3;
+    size_t x = 8, y = 10, z = 3;
     shape<3> tensor_shape{x, y, z};
     AllocModelParams model_params(tensor_shape);
     model_params.a = 40;
@@ -222,7 +222,7 @@ TEST_CASE("Algorithm checks on bld_fact", "[bld_fact]") {
 }
 
 TEST_CASE("Parameter checks on bld_mult", "[bld_mult]") {
-    int x = 10, y = 5, z = 2;
+    size_t x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
     matrix_t X = matrix_t::Constant(x, y, 5);
     allocation_model::AllocModelParams model_params(tensor_shape);
@@ -245,7 +245,7 @@ TEST_CASE("Parameter checks on bld_mult", "[bld_mult]") {
 }
 
 TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
-    long x = 8, y = 10, z = 3;
+    size_t x = 8, y = 10, z = 3;
     shape<3> tensor_shape{x, y, z};
     SECTION("Zero matrix result is Zero") {
         matrix_t X = matrix_t::Zero(x, y);
@@ -287,7 +287,7 @@ TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
 }
 
 TEST_CASE("Parameter checks on bld_add", "[bld_add]") {
-    int x = 10, y = 5, z = 2;
+    size_t x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
     matrix_t X = matrix_t::Constant(x, y, 5);
     allocation_model::AllocModelParams model_params(tensor_shape);
@@ -310,7 +310,7 @@ TEST_CASE("Parameter checks on bld_add", "[bld_add]") {
 }
 
 TEST_CASE("Algorithm checks on bld_add", "[bld_add]") {
-    long x = 8, y = 10, z = 3;
+    size_t x = 8, y = 10, z = 3;
     shape<3> tensor_shape{x, y, z};
     SECTION("Zero matrix result is Zero") {
         matrix_t X = matrix_t::Zero(x, y);

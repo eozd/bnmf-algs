@@ -223,9 +223,9 @@ class ComputationIterator : public std::iterator<std::forward_iterator_tag, T> {
     }
 
   private:
-    Computer* computer_ptr;
-    size_t* step_count_ptr;
     T* curr_val_ptr;
+    size_t* step_count_ptr;
+    Computer* computer_ptr;
 };
 
 /**
@@ -308,7 +308,7 @@ template <typename T, typename Computer> class Generator {
           computer(computer),
           begin_it(&(this->init_val), &(this->curr_step_count),
                    &(this->computer)),
-          end_it(nullptr, &(this->total_iter_count), nullptr){};
+          end_it(&(this->total_iter_count)){};
 
     /**
      * @brief Return the iterator pointing to the previously computed value.

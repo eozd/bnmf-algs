@@ -163,6 +163,6 @@ sample_ones(Args&&... args) {
 
     return {init_val, num_samples,
             SampleOnesComputer(std::forward<Args>(args)...)};
-};
+}
 } // namespace allocation_model
 } // namespace bnmf_algs

@@ -57,12 +57,12 @@ std::pair<matrix_t, matrix_t> nmf::nmf(const matrix_t& X, size_t r,
                                        NMFVariant variant, size_t max_iter,
                                        double tolerance) {
     using namespace Eigen;
-    const long m = X.rows();
-    const long n = X.cols();
+    const size_t m = static_cast<size_t>(X.rows());
+    const size_t n = static_cast<size_t>(X.cols());
 
     {
         auto error_msg = nmf_check_parameters(X, r, tolerance);
-        if (error_msg != "") {
+        if (!error_msg.empty()) {
             throw std::invalid_argument(error_msg);
         }
     }
@@ -99,22 +99,22 @@ std::pair<matrix_t, matrix_t> nmf::nmf(const matrix_t& X, size_t r,
         if (variant == NMFVariant::Euclidean) {
             numer = (W.transpose() * X).eval();
             denom = (W.transpose() * curr_approx).eval();
-            for (int a = 0; a < r; ++a) {
-                for (int mu = 0; mu < n; ++mu) {
+            for (size_t a = 0; a < r; ++a) {
+                for (size_t mu = 0; mu < n; ++mu) {
                     H(a, mu) *= numer(a, mu) / denom(a, mu);
                 }
             }
         } else if (variant == NMFVariant::KL) {
             frac = X.cwiseQuotient(curr_approx);
-            for (int a = 0; a < r; ++a) {
+            for (size_t a = 0; a < r; ++a) {
                 double denom_sum = 0;
-                for (int i = 0; i < m; ++i) {
+                for (size_t i = 0; i < m; ++i) {
                     denom_sum += W(i, a);
                 }
 
-                for (int mu = 0; mu < n; ++mu) {
+                for (size_t mu = 0; mu < n; ++mu) {
                     double numer_sum = 0;
-                    for (int i = 0; i < m; ++i) {
+                    for (size_t i = 0; i < m; ++i) {
                         numer_sum += W(i, a) * frac(i, mu);
                     }
                     H(a, mu) *= numer_sum / denom_sum;
@@ -126,18 +126,18 @@ std::pair<matrix_t, matrix_t> nmf::nmf(const matrix_t& X, size_t r,
         if (variant == NMFVariant::Euclidean) {
             numer = (X * H.transpose()).eval();
             denom = (W * (H * H.transpose())).eval();
-            for (int i = 0; i < m; ++i) {
-                for (int j = 0; j < r; ++j) {
+            for (size_t i = 0; i < m; ++i) {
+                for (size_t j = 0; j < r; ++j) {
                     W(i, j) *= numer(i, j) / denom(i, j);
                 }
             }
         } else if (variant == NMFVariant::KL) {
             frac = X.cwiseQuotient(W * H);
-            for (int i = 0; i < m; ++i) {
-                for (int a = 0; a < r; ++a) {
+            for (size_t i = 0; i < m; ++i) {
+                for (size_t a = 0; a < r; ++a) {
 
                     double numer_sum = 0, denom_sum = 0;
-                    for (int mu = 0; mu < n; ++mu) {
+                    for (size_t mu = 0; mu < n; ++mu) {
                         numer_sum += H(a, mu) * frac(i, mu);
                         denom_sum += H(a, mu);
                     }

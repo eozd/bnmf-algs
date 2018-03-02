@@ -140,9 +140,8 @@ TEST_CASE("Test Generator makes only a single copy for itself", "[generator]") {
     C::reset_counters();
 
     Generator<C, Op> gen(c_obj, 1000, Op());
-    for (const auto& c_obj : gen) {
-        c_obj.val;
-    }
+    for (const auto& c_obj : gen)
+        ;
     REQUIRE(C::TotalDefaultCtorCount == 0);
     REQUIRE(C::TotalCopyCount == 1);
 }
@@ -166,7 +165,7 @@ TEST_CASE("Test if incrementing a copy of iterator updates original value",
     REQUIRE(begin->val == 1);
 }
 
-void increment(size_t index, int& prev) { ++prev; };
+void increment(size_t index, int& prev) { ++prev; }
 
 TEST_CASE("Test various STL algorithms with Generator", "[generator]") {
     SECTION("std::find") {
@@ -200,14 +199,15 @@ TEST_CASE("Test various STL algorithms with Generator", "[generator]") {
     }
 
     SECTION("std::transform") {
-        size_t count = 500;
-        Generator<int, decltype(&increment)> gen(0, count, increment);
+        int count = 500;
+        Generator<int, decltype(&increment)> gen(0, static_cast<size_t>(count),
+                                                 increment);
 
-        std::vector<int> two_times(count);
+        std::vector<int> two_times(static_cast<size_t>(count));
         std::transform(gen.begin(), gen.end(), two_times.begin(),
                        [](int elem) { return 2 * elem; });
 
-        std::vector<int> expected(count);
+        std::vector<int> expected(static_cast<size_t>(count));
         for (int i = 0; i < count; ++i)
             expected[i] = 2 * i;
 
@@ -235,8 +235,7 @@ TEST_CASE("Test various STL algorithms with Generator", "[generator]") {
         size_t count = 500;
         Generator<int, decltype(&increment)> gen(0, count - 300, increment);
 
-        REQUIRE(std::none_of(gen.begin(), gen.end(), [] (int elem) {
-            return elem < 0;
-        }));
+        REQUIRE(std::none_of(gen.begin(), gen.end(),
+                             [](int elem) { return elem < 0; }));
     }
 }
