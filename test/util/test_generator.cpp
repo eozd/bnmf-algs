@@ -10,8 +10,8 @@ using namespace bnmf_algs::util;
 void str_computer(size_t index, std::string& prev) { prev += "abc"; }
 
 struct C {
-    static inline size_t TotalDefaultCtorCount = 0;
-    static inline size_t TotalCopyCount = 0;
+    static size_t TotalDefaultCtorCount;
+    static size_t TotalCopyCount;
 
     static void reset_counters() {
         TotalDefaultCtorCount = 0;
@@ -32,6 +32,9 @@ struct C {
         return *this;
     }
 };
+
+size_t C::TotalDefaultCtorCount = 0;
+size_t C::TotalCopyCount = 0;
 
 void c_computer(size_t index, C& prev) { prev.val++; }
 
