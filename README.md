@@ -1,6 +1,7 @@
 ## bnmf-algs
-![build-status](https://travis-ci.org/eozd/bnmf-algs.svg?branch=master)
+[![Travis Status](https://travis-ci.org/eozd/bnmf-algs.svg?branch=master)](https://travis-ci.org/eozd/bnmf-algs)
 [![codecov](https://codecov.io/gh/eozd/bnmf-algs/branch/master/graph/badge.svg)](https://codecov.io/gh/eozd/bnmf-algs)
+[![Documentation Status](https://readthedocs.org/projects/bnmf-algs/badge/?version=latest)](http://bnmf-algs.readthedocs.io/en/latest/?badge=latest)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 Nonnegative matrix factorization and matrix allocation algorithm implementations
@@ -39,6 +40,5 @@ in the project root directory. Then, you can view the documentation in HTML
 format by opening ```doc/html/index.html``` using your browser.
 
 #### View Online
-You can also view the documentation [online](https://eozd.github.io/bnmf-algs/).
-However, currently this documentation is not automatically updated; hence, it may
-be a little outdated.
+You can also view the documentation [online](http://bnmf-algs.readthedocs.io/en/latest/?badge=latest).
+Online documentation is automatically built from the latest commit to the master branch.
