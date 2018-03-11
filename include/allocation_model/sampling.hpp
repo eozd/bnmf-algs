@@ -9,6 +9,63 @@
 
 namespace bnmf_algs {
 /**
+ * @brief Namespace that contains types and functions for internal computations.
+ *
+ * Functions and classes in this namespace are not meant for direct usage by the
+ * users of bnmf-algs library; hence, behaviours of some functions may not be
+ * as expected. Additionally, these functions and types are not directly tested;
+ * their behaviour is verified through correct behaviour of the API functions
+ * and types bnmf-algs library exposes.
+ */
+namespace details {
+
+/**
+ * @brief Computer type that will compute the next sample when its operator() is
+ * invoked.
+ *
+ * SampleOnesComputer will generate the next std::pair<int, int> value from the
+ * previous value given to its operator(). This operation is performed in-place.
+ */
+class SampleOnesComputer {
+  public:
+    /**
+     * @brief Construct a new SampleOnesComputer.
+     *
+     * @param X Matrix \f$X\f$ that will be used during sampling.
+     * @param replacement Whether to sample with replacement.
+     */
+    explicit SampleOnesComputer(const matrix_t& X, bool replacement);
+
+    /**
+     * @brief Function call operator that will compute the next sample in-place.
+     *
+     * After this function exits, the object referenced by prev_val will be
+     * modified to store the next sample.
+     *
+     * Note that SampleOnesComputer object satisfies the
+     * bnmf_algs::util::Generator and bnmf_algs::util::ComputationIterator
+     * Computer interface. Hence, a sequence of samples may be generated
+     * efficiently by using this Computer with bnmf_algs::util::Generator or
+     * bnmf_algs::util::ComputationIterator.
+     *
+     * @param curr_step Current step of the sampling computation.
+     * @param prev_val Previously sampled value to modify in-place.
+     */
+    void operator()(size_t curr_step, std::pair<int, int>& prev_val);
+
+  private:
+    bool replacement;
+
+    // computation variables
+  private:
+    vector_t X_cumsum;
+    size_t X_cols;
+    double X_sum;
+    util::gsl_rng_wrapper rnd_gen;
+};
+} // namespace details
+
+/**
  * @brief Namespace that contains functions related to Allocation Model \cite
  * kurutmazbayesian.
  */
@@ -75,65 +132,6 @@ tensord<3> sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
  */
 double log_marginal_S(const tensord<3>& S,
                       const AllocModelParams& model_params);
-
-/**
- * @brief Namespace that contains types and functions for internal computations.
- *
- * Functions and classes in this namespace are not meant for direct usage by the
- * users of bnmf-algs library; hence, behaviours of some functions may not be
- * as expected. Additionally, these functions and types are not directly tested;
- * their behaviour is verified through correct behaviour of the API functions
- * and types bnmf-algs library exposes.
- */
-namespace details {
-
-/**
- * @brief Computer type that will compute the next sample when its operator() is
- * invoked.
- *
- * SampleOnesComputer will generate the next std::pair<int, int> value from the
- * previous value given to its operator(). This operation is performed in-place.
- */
-class SampleOnesComputer {
-  public:
-    /**
-     * @brief Construct a new SampleOnesComputer.
-     *
-     * A const-reference is stored for the given matrix for storage efficiency.
-     *
-     * @param X Matrix \f$X\f$ that will be used during sampling.
-     * @param replacement Whether to sample with replacement.
-     */
-    explicit SampleOnesComputer(const matrix_t& X, bool replacement);
-
-    /**
-     * @brief Call operator that will compute the next sample in-place.
-     *
-     * After this function exits, the object referenced by prev_val will be
-     * modified to store the next sample.
-     *
-     * Note that SampleOnesComputer object satisfies the
-     * bnmf_algs::util::Generator and bnmf_algs::util::ComputationIterator
-     * Computer interface. Hence, a sequence of samples may be generated
-     * efficiently by using this Computer with bnmf_algs::util::Generator or
-     * bnmf_algs::util::ComputationIterator.
-     *
-     * @param curr_step Current step of the sampling computation.
-     * @param prev_val Previously sampled value to modify in-place.
-     */
-    void operator()(size_t curr_step, std::pair<int, int>& prev_val);
-
-  private:
-    bool replacement;
-
-    // computation variables
-  private:
-    vector_t X_cumsum;
-    size_t X_cols;
-    double X_sum;
-    util::gsl_rng_wrapper rnd_gen;
-};
-} // namespace details
 
 /**
  * @brief Return a bnmf_algs::util::Generator that will generate a sequence of

@@ -346,10 +346,16 @@ tensord<3> bld::bld_add(const matrix_t& X, size_t z,
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
                 for (size_t k = 0; k < z; ++k) {
-                    S(i, j, k) = X(i, j)*Z(i, j, k);
+                    S(i, j, k) = X(i, j) * Z(i, j, k);
                 }
             }
         }
     }
     return S;
 }
+
+details::CollapsedGibbsComputer::CollapsedGibbsComputer(const matrix_t& X,
+                                                        size_t z) {}
+
+void details::CollapsedGibbsComputer::
+operator()(size_t curr_step, const tensord<3>& S_prev) {}
