@@ -4,8 +4,8 @@
 #include "defs.hpp"
 #include <tuple>
 #include <util/generator.hpp>
-#include <vector>
 #include <util/wrappers.hpp>
+#include <vector>
 
 namespace bnmf_algs {
 /**
@@ -119,7 +119,7 @@ class SampleOnesComputer {
     size_t n;
 
     // computation variables
-private:
+  private:
     vector_t X_cumsum;
     size_t X_cols;
     double X_sum;
