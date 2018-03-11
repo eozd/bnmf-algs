@@ -77,6 +77,17 @@ double log_marginal_S(const tensord<3>& S,
                       const AllocModelParams& model_params);
 
 /**
+ * @brief Namespace that contains types and functions for internal computations.
+ *
+ * Functions and classes in this namespace are not meant for direct usage by the
+ * users of bnmf-algs library; hence, behaviours of some functions may not be
+ * as expected. Additionally, these functions and types are not directly tested;
+ * their behaviour is verified through correct behaviour of the API functions
+ * and types bnmf-algs library exposes.
+ */
+namespace details {
+
+/**
  * @brief Computer type that will compute the next sample when its operator() is
  * invoked.
  *
@@ -92,9 +103,8 @@ class SampleOnesComputer {
      *
      * @param X Matrix \f$X\f$ that will be used during sampling.
      * @param replacement Whether to sample with replacement.
-     * @param n Number of times to sample if replacement is true.
      */
-    explicit SampleOnesComputer(const matrix_t& X, bool replacement, size_t n);
+    explicit SampleOnesComputer(const matrix_t& X, bool replacement);
 
     /**
      * @brief Call operator that will compute the next sample in-place.
@@ -114,9 +124,7 @@ class SampleOnesComputer {
     void operator()(size_t curr_step, std::pair<int, int>& prev_val);
 
   private:
-    const matrix_t& X;
     bool replacement;
-    size_t n;
 
     // computation variables
   private:
@@ -125,37 +133,11 @@ class SampleOnesComputer {
     double X_sum;
     util::gsl_rng_wrapper rnd_gen;
 };
+} // namespace details
 
 /**
- *
- * sample_ones is a perfect forwarding function that passes its parameters to
- * a SampleOnesComputer constructor. Afterwards, this Computer type is used to
- * return a bnmf_algs::util::Generator type to generate a sequence of samples.
- * An example usage is as follows:
- *
- * @code
- * matrix_t X(10, 5);
- *
- * // SampleOnesComputer constructor may take a single matrix parameter
- * for (const auto& sample_pair : sample_ones(X)) {
- *     // do something with the sample
- * }
- *
- * // Override default replacement parameter of SampleOnesComputer
- * for (const auto& sample_pair : sample_ones(X, false)) {
- *     // do something with the sample
- * }
- *
- * // Give all parameters manually
- * for (const auto& sample_pair : sample_ones(X, false, 10)) {
- *     // do something with the sample
- * }
- * @endcode
- *
- */
-/**
  * @brief Return a bnmf_algs::util::Generator that will generate a sequence of
- * samples by using SampleOnesComputer as its Computer.
+ * samples by using details::SampleOnesComputer as its Computer.
  *
  * This function returns a bnmf_algs::util::Generator object that will produce
  * a sequence of samples by generating the samples using SampleOnesComputer.
@@ -170,9 +152,12 @@ class SampleOnesComputer {
  * will be generated.
  *
  * @return A bnmf_algs::util::Generator type that can be used to generate a
- * sequence of samples by using SampleOnesComputer as its computer.
+ * sequence of samples.
+ *
+ * @throws std::invalid_argument if matrix \f$X\f$ has no element, if matrix
+ * \f$X\f$ contains negative entries.
  */
-util::Generator<std::pair<int, int>, SampleOnesComputer>
+util::Generator<std::pair<int, int>, details::SampleOnesComputer>
 sample_ones(const matrix_t& X, bool replacement = false, size_t n = 1);
 } // namespace allocation_model
 } // namespace bnmf_algs

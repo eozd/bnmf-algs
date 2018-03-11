@@ -5,7 +5,6 @@
 #include "util/util.hpp"
 #include <bitset>
 #include <iostream>
-#include <utility>
 
 using namespace bnmf_algs;
 using namespace bnmf_algs::util;
@@ -253,9 +252,98 @@ TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
     }
 }
 
-TEST_CASE("Test sample ones", "[sample_ones]") {
-    matrix_t X(5, 3);
-    for (const auto& pair : sample_ones(X, true, 50)) {
-        std::cout << '(' << pair.first << " " << pair.second << ')' << std::endl;
+TEST_CASE("Parameter checks on sample ones", "[sample_ones]") {
+
+    SECTION("Empty matrix X throws exception") {
+        matrix_t X;
+        REQUIRE_THROWS(sample_ones(X));
+
+        X = matrix_t::Zero(1, 0);
+        REQUIRE_THROWS(sample_ones(X));
+
+        X = matrix_t::Zero(0, 1);
+        REQUIRE_THROWS(sample_ones(X));
+
+        X = matrix_t::Zero(1, 1);
+        REQUIRE_NOTHROW(sample_ones(X));
+    }
+
+    SECTION("Matrix X with negative entries throws exception") {
+        matrix_t X = matrix_t::Zero(5, 5);
+        X(2, 3) = -1e-50;
+        REQUIRE_THROWS(sample_ones(X));
+    }
+
+    SECTION("Number of samples equals to n when replacement is true") {
+        size_t n = 491, x = 5, y = 3;
+        matrix_t X = matrix_t::Random(x, y) + matrix_t::Constant(x, y, 1);
+        auto gen = sample_ones(X, true, n);
+
+        std::vector<std::pair<int, int>> res;
+        std::copy(gen.begin(), gen.end(), std::back_inserter(res));
+
+        REQUIRE(res.size() == n);
+
+        n = 0;
+        res.clear();
+        gen = sample_ones(X, true, n);
+        std::copy(gen.begin(), gen.end(), std::back_inserter(res));
+
+        REQUIRE(res.empty());
+    }
+
+    SECTION("Number of samples equals to sum(X) when replacement is false") {
+        size_t x = 10, y = 15;
+        matrix_t X = matrix_t::Random(x, y) + matrix_t::Constant(x, y, 1);
+        auto gen = sample_ones(X);
+
+        std::vector<std::pair<int, int>> res;
+        std::copy(gen.begin(), gen.end(), std::back_inserter(res));
+
+        REQUIRE(res.size() == static_cast<size_t>(X.sum()));
+
+        X = matrix_t::Zero(1, 1);
+        gen = sample_ones(X);
+        res.clear();
+
+        std::copy(gen.begin(), gen.end(), std::back_inserter(res));
+
+        REQUIRE(res.empty());
+    }
+}
+
+TEST_CASE("Algorithm checks on sample_ones", "[sample_ones]") {
+
+    SECTION("First k 0-elements are never sampled") {
+        size_t x = 10, y = 15;
+        size_t num_zero_rows = 2;
+        matrix_t X = matrix_t::Random(x, y) + matrix_t::Constant(x, y, 5);
+        X.block(0, 0, num_zero_rows, y) = matrix_t::Zero(num_zero_rows, y);
+        std::vector<std::pair<int, int>> res;
+
+        {
+            size_t num_samples = 1000;
+            res.clear();
+            auto gen_replacement = sample_ones(X, true, num_samples);
+            std::copy(gen_replacement.begin(), gen_replacement.end(),
+                      std::back_inserter(res));
+
+            bool contains_invalid_sample =
+                std::any_of(res.begin(), res.end(),
+                            [](const auto& pair) { return pair.first <= 1; });
+            REQUIRE(!contains_invalid_sample);
+        }
+
+        {
+            auto gen_no_replacement = sample_ones(X);
+            res.clear();
+            std::copy(gen_no_replacement.begin(), gen_no_replacement.end(),
+                      std::back_inserter(res));
+
+            bool contains_invalid_sample =
+                std::any_of(res.begin(), res.end(),
+                            [](const auto& pair) { return pair.first <= 1; });
+            REQUIRE(!contains_invalid_sample);
+        }
     }
 }

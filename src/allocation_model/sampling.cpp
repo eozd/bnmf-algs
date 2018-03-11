@@ -295,10 +295,9 @@ double allocation_model::log_marginal_S(const tensord<3>& S,
 
 using namespace allocation_model;
 
-SampleOnesComputer::SampleOnesComputer(const matrix_t& X, bool replacement,
-                                       size_t n)
-    : X(X), replacement(replacement), n(n),
-      X_cumsum(vector_t(X.cols() * X.rows())),
+details::SampleOnesComputer::SampleOnesComputer(const matrix_t& X,
+                                                bool replacement)
+    : replacement(replacement), X_cumsum(vector_t(X.cols() * X.rows())),
       X_cols(static_cast<size_t>(X.cols())), X_sum(X.array().sum()),
       rnd_gen(util::make_gsl_rng(gsl_rng_taus)) {
 
@@ -313,8 +312,8 @@ SampleOnesComputer::SampleOnesComputer(const matrix_t& X, bool replacement,
     }
 }
 
-void SampleOnesComputer::operator()(size_t curr_step,
-                                    std::pair<int, int>& prev_val) {
+void details::SampleOnesComputer::operator()(size_t curr_step,
+                                             std::pair<int, int>& prev_val) {
     double u = gsl_ran_flat(rnd_gen.get(), 0, 1);
 
     vector_t cum_prob;
@@ -340,8 +339,15 @@ void SampleOnesComputer::operator()(size_t curr_step,
     prev_val.second = static_cast<int>(m % X_cols);
 }
 
-util::Generator<std::pair<int, int>, SampleOnesComputer>
+util::Generator<std::pair<int, int>, details::SampleOnesComputer>
 allocation_model::sample_ones(const matrix_t& X, bool replacement, size_t n) {
+    if (X.array().size() == 0) {
+        throw std::invalid_argument("Matrix X must have at least one element");
+    }
+    if ((X.array() < 0).any()) {
+        throw std::invalid_argument("Matrix X must be nonnegative");
+    }
+
     size_t num_samples;
     if (replacement) {
         num_samples = n;
@@ -350,8 +356,8 @@ allocation_model::sample_ones(const matrix_t& X, bool replacement, size_t n) {
     }
     // don't know the initial value
     std::pair<int, int> init_val;
-    util::Generator<std::pair<int, int>, SampleOnesComputer> gen(
-        init_val, num_samples + 1, SampleOnesComputer(X, replacement, n));
+    util::Generator<std::pair<int, int>, details::SampleOnesComputer> gen(
+        init_val, num_samples + 1, details::SampleOnesComputer(X, replacement));
 
     // get rid of the first empty value
     ++gen.begin();
