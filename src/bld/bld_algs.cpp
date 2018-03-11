@@ -1,5 +1,5 @@
 #include "bld/bld_algs.hpp"
-#include "util/wrappers.hpp"
+#include "allocation_model/sampling.hpp"
 #include <gsl/gsl_sf_psi.h>
 #include <iostream>
 #include <util/util.hpp>
@@ -354,8 +354,100 @@ tensord<3> bld::bld_add(const matrix_t& X, size_t z,
     return S;
 }
 
-details::CollapsedGibbsComputer::CollapsedGibbsComputer(const matrix_t& X,
-                                                        size_t z) {}
+details::CollapsedGibbsComputer::CollapsedGibbsComputer(
+    const matrix_t& X, size_t z,
+    const allocation_model::AllocModelParams& model_params, size_t max_iter)
+    : model_params(model_params),
+      one_sampler_repl(allocation_model::sample_ones(X, true, max_iter)),
+      one_sampler_no_repl(allocation_model::sample_ones(X, false)),
+      U_ipk(matrix_t::Zero(X.rows(), z)), U_ppk(vector_t::Zero(z)),
+      U_pjk(matrix_t::Zero(X.cols(), z)),
+      sum_alpha(std::accumulate(model_params.alpha.begin(),
+                                model_params.alpha.end(), 0.0)),
+      rnd_gen(util::make_gsl_rng(gsl_rng_taus)) {}
 
-void details::CollapsedGibbsComputer::
-operator()(size_t curr_step, const tensord<3>& S_prev) {}
+void details::CollapsedGibbsComputer::increment_sampling(size_t x, size_t y,
+                                                         tensord<3>& S_prev) {
+    vector_t prob(1, U_ppk.cols());
+    Eigen::Map<vector_t> beta(model_params.beta.data(), 1,
+                              model_params.beta.size());
+    std::vector<unsigned int> multinomial_sample(
+        static_cast<unsigned long>(U_ppk.cols()));
+
+    auto alpha_row = U_ipk.row(x).array() + model_params.alpha[x];
+    auto beta_row = (U_pjk.row(y) + beta).array();
+    auto sum_alpha_row = U_ppk.array() + sum_alpha;
+    prob = alpha_row * beta_row / sum_alpha_row;
+
+    gsl_ran_multinomial(rnd_gen.get(), static_cast<size_t>(prob.cols()), 1,
+                        prob.data(), multinomial_sample.data());
+    auto k = std::distance(
+        multinomial_sample.begin(),
+        std::max_element(multinomial_sample.begin(), multinomial_sample.end()));
+
+    ++S_prev(x, y, k);
+    ++U_ipk(x, k);
+    ++U_ppk(k);
+    ++U_pjk(y, k);
+}
+
+void details::CollapsedGibbsComputer::decrement_sampling(size_t x, size_t y,
+                                                         tensord<3>& S_prev) {
+    vector_t prob(1, U_ppk.cols());
+    Eigen::Map<vector_t> beta(model_params.beta.data(), 1,
+                              model_params.beta.size());
+    std::vector<unsigned int> multinomial_sample(
+        static_cast<unsigned long>(U_ppk.cols()));
+
+    // todo: can we take a fiber from S with contiguous memory?
+    for (long i = 0; i < S_prev.dimension(0); ++i) {
+        for (long j = 0; j < S_prev.dimension(1); ++j) {
+            for (long k = 0; k < S_prev.dimension(2); ++k) {
+                prob(k) = S_prev(i, j, k);
+            }
+        }
+    }
+
+    gsl_ran_multinomial(rnd_gen.get(), static_cast<size_t>(prob.cols()), 1,
+                        prob.data(), multinomial_sample.data());
+    auto k = std::distance(
+        multinomial_sample.begin(),
+        std::max_element(multinomial_sample.begin(), multinomial_sample.end()));
+
+    --S_prev(x, y, k);
+    --U_ipk(x, k);
+    --U_ppk(k);
+    --U_pjk(y, k);
+}
+
+void details::CollapsedGibbsComputer::operator()(size_t curr_step,
+                                                 tensord<3>& S_prev) {
+    size_t x, y;
+    if (curr_step == 0) {
+        for (const auto& pair : one_sampler_no_repl) {
+            std::tie(x, y) = pair;
+            increment_sampling(x, y, S_prev);
+        }
+    } else {
+        std::tie(x, y) = *(++one_sampler_repl.begin());
+        decrement_sampling(x, y, S_prev);
+        increment_sampling(x, y, S_prev);
+    }
+}
+
+util::Generator<tensord<3>, details::CollapsedGibbsComputer>
+collapsed_gibbs(const matrix_t& X, size_t z,
+                const allocation_model::AllocModelParams& model_params,
+                size_t max_iter = 1000) {
+
+    tensord<3> init_val(X.rows(), X.cols(), z);
+    init_val.setZero();
+
+    util::Generator<tensord<3>, details::CollapsedGibbsComputer> gen(
+        init_val, max_iter + 2,
+        details::CollapsedGibbsComputer(X, z, model_params, max_iter));
+
+    ++gen.begin();
+
+    return gen;
+}

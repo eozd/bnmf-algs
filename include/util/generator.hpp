@@ -277,6 +277,7 @@ class ComputationIterator : public std::iterator<std::forward_iterator_tag, T> {
  * @tparam Computer Type of the computer functor/function/etc. to use.
  */
 template <typename T, typename Computer> class Generator {
+    // todo: Can we use the return type of Computer to get rid of T?
   public:
     /**
      * @brief Iterator type that will be used to compute values repeatedly

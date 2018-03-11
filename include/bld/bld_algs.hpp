@@ -1,8 +1,10 @@
 #pragma once
 
+#include "allocation_model/sampling.hpp"
 #include "allocation_model/alloc_model_params.hpp"
 #include "defs.hpp"
 #include "util/generator.hpp"
+#include "util/wrappers.hpp"
 
 namespace bnmf_algs {
 namespace details {
@@ -10,8 +12,8 @@ namespace details {
  * @brief Computer type that will compute the next collapsed gibbs sample when
  * its operator() is invoked.
  *
- * CollapsedGibbsComputer will compute a new tensord<3> object from the previous
- * sample when its operator() is invoked.
+ * CollapsedGibbsComputer will compute a new bnmf_algs::tensord<3> object from
+ * the previous sample when its operator() is invoked.
  */
 class CollapsedGibbsComputer {
   public:
@@ -19,11 +21,17 @@ class CollapsedGibbsComputer {
      * @brief Construct a new CollapsedGibbsComputer.
      *
      * @param X Matrix \f$X\f$ of size \f$x \times y\f$ that will be used during
-     * sampling.
+     * sampling. A const-reference to matrix X is stored for efficiency.
      * @param z Depth of the output tensor \f$S\f$ with size \f$x \times y
      * \times z\f$.
+     * @param model_params Allocation model parameters. See
+     * bnmf_algs::allocation_model::AllocModelParams.
+     * @param max_iter Maximum number of iterations.
      */
-    explicit CollapsedGibbsComputer(const matrix_t& X, size_t z);
+    explicit CollapsedGibbsComputer(
+        const matrix_t& X, size_t z,
+        const allocation_model::AllocModelParams& model_params,
+        size_t max_iter);
 
     /**
      * @brief Function call operator that will compute the next tensor sample
@@ -41,10 +49,52 @@ class CollapsedGibbsComputer {
      * @param curr_step Current step of collapsed gibbs computation.
      * @param S_prev Previously computed sample to modify in-place.
      */
-    void operator()(size_t curr_step, const tensord<3>& S_prev);
+    void operator()(size_t curr_step, tensord<3>& S_prev);
 
+  private:
+    /**
+     * @brief Sample a single multinomial variable and increment corresponding
+     * U_ipk, U_ppk, U_pjk and S_prev entries.
+     *
+     * This function constructs the probability distribution of each \f$z\f$
+     * event in a multinomial distribution, draws a single sample and increments
+     * @code S_prev(x, y, k), U_ipk(x, k), U_ppk(k), U_pjk(y, k) @endcode
+     * entries.
+     *
+     * @param x Row of U_ipk and alpha parameter to use.
+     * @param y Row of U_pjk to use.
+     * @param S_prev Previously computed tensor \f$S\f$.
+     */
+    void increment_sampling(size_t x, size_t y, tensord<3>& S_prev);
+    /**
+     * @brief Sample a single multinomial variable and decremnet corresponding
+     * U_ipk, U_ppk, U_pjk and S_prev entries.
+     *
+     * This function constructs the probability distribution of each \f$z\f$
+     * event in a multinomial distribution by using @code S_prev(x, y, :)
+     * @endcode fiber, draws a sample from multinomial and decrements
+     * @code S_prev(x, y, k), U_ipk(x, k), U_ppk(k), U_pjk(y, k) @endcode
+     * entries.
+     *
+     * @param x Row of S_prev.
+     * @param y Column of S_prev.
+     * @param S_prev Previously computed tensor \f$S\f$.
+     */
+    void decrement_sampling(size_t x, size_t y, tensord<3>& S_prev);
+
+  private:
+    allocation_model::AllocModelParams model_params;
     // computation variables
   private:
+    util::Generator<std::pair<int, int>, details::SampleOnesComputer>
+        one_sampler_repl;
+    util::Generator<std::pair<int, int>, details::SampleOnesComputer>
+        one_sampler_no_repl;
+    matrix_t U_ipk;
+    vector_t U_ppk;
+    matrix_t U_pjk;
+    double sum_alpha;
+    util::gsl_rng_wrapper rnd_gen;
 };
 } // namespace details
 
