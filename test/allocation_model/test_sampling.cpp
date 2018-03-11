@@ -319,30 +319,23 @@ TEST_CASE("Algorithm checks on sample_ones", "[sample_ones]") {
         size_t num_zero_rows = 2;
         matrix_t X = matrix_t::Random(x, y) + matrix_t::Constant(x, y, 5);
         X.block(0, 0, num_zero_rows, y) = matrix_t::Zero(num_zero_rows, y);
-        std::vector<std::pair<int, int>> res;
 
         {
             size_t num_samples = 1000;
-            res.clear();
             auto gen_replacement = sample_ones(X, true, num_samples);
-            std::copy(gen_replacement.begin(), gen_replacement.end(),
-                      std::back_inserter(res));
 
             bool contains_invalid_sample =
-                std::any_of(res.begin(), res.end(),
+                std::any_of(gen_replacement.begin(), gen_replacement.end(),
                             [](const auto& pair) { return pair.first <= 1; });
             REQUIRE(!contains_invalid_sample);
         }
 
         {
             auto gen_no_replacement = sample_ones(X);
-            res.clear();
-            std::copy(gen_no_replacement.begin(), gen_no_replacement.end(),
-                      std::back_inserter(res));
 
-            bool contains_invalid_sample =
-                std::any_of(res.begin(), res.end(),
-                            [](const auto& pair) { return pair.first <= 1; });
+            bool contains_invalid_sample = std::any_of(
+                gen_no_replacement.begin(), gen_no_replacement.end(),
+                [](const auto& pair) { return pair.first <= 1; });
             REQUIRE(!contains_invalid_sample);
         }
     }
