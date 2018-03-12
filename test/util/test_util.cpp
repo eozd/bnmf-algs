@@ -289,7 +289,7 @@ TEST_CASE("Test normalize", "[normalize] [normalized]") {
                         {0., 1., 1.},
                         {0.75, 0.25, 1.},
                         {0.25, 1., 0.}}});
-        util::normalize(S, 2, util::NormType::Max);
+        util::normalize(S, 2, util::NormType::Inf);
         Eigen::Map<vector_t> vec_r(res.data(), res.size());
         Eigen::Map<vector_t> vec_s(S.data(), S.size());
 

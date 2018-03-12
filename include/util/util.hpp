@@ -95,7 +95,7 @@ enum class NormType {
         ///  |x_i|\right)\f$
     L2, ///< Normalize using \f$L_2\f$ norm \f$\left(\|x\|_2 = \sqrt{\sum_i
         ///  x_i^2}\right)\f$
-    Max ///< Normalize using \f$L_{\infty}\f$ norm \f$\left(\|x\|_{\infty} =
+    Inf ///< Normalize using \f$L_{\infty}\f$ norm \f$\left(\|x\|_{\infty} =
         /// \max\{|x_1|, \dots, |x_n|\}\right)\f$
 };
 
@@ -125,7 +125,7 @@ void normalize(tensord<N>& input, size_t axis, NormType type = NormType::L1,
     case NormType::L2:
         norms = input.square().sum(reduction_dim);
         break;
-    case NormType::Max:
+    case NormType::Inf:
         norms = input.abs().maximum(reduction_dim);
         break;
     }
