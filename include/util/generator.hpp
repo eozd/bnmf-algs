@@ -173,8 +173,8 @@ class ComputationIterator : public std::iterator<std::forward_iterator_tag, T> {
      * @return Return a reference to the current ComputationIterator object.
      */
     ComputationIterator& operator++() {
-        ++(*step_count_ptr);
         (*computer_ptr)(*step_count_ptr, *curr_val_ptr);
+        ++(*step_count_ptr);
         return *this;
     }
 
@@ -312,6 +312,87 @@ template <typename T, typename Computer> class Generator {
                    &(this->computer)),
           end_it(&(this->total_iter_count)){};
 
+    /**
+     * @brief Copy constructor.
+     *
+     * Generator class manually implements its copy constructor to correctly
+     * copy the begin and end iterators which should point to the copy
+     * constructed object's member variables.
+     *
+     * @param other Other Generator object to copy construct from.
+     */
+    Generator(const Generator& other)
+        : init_val(other.init_val), curr_step_count(other.curr_step_count),
+          total_iter_count(other.total_iter_count), computer(other.computer),
+          begin_it(iter_type(&(this->init_val), &(this->curr_step_count),
+                             &(this->computer))),
+          end_it(iter_type(&(this->total_iter_count))) {}
+
+    /**
+     * @brief Copy assignment operator.
+     *
+     * Generator class manually implements its copy assignment operator to
+     * correctly copy the begin and end iterators which should point to the
+     * copy assigned object's member variables.
+     *
+     * @param other Other Generator object to copy assign from.
+     *
+     * @return Reference to the assigned Generator object.
+     */
+    Generator& operator=(const Generator& other) {
+        this->init_val = other.init_val;
+        this->curr_step_count = other.curr_step_count;
+        this->total_iter_count = other.total_iter_count;
+        this->computer = other.computer;
+
+        this->begin_it = iter_type(&(this->init_val), &(this->curr_step_count),
+                                   &(this->total_iter_count));
+        this->end_it = iter_type(&(this->total_iter_count));
+
+        return *this;
+    }
+
+    /**
+     * @brief Move constructor.
+     *
+     * Generator class manually implements its move constructor to
+     * correctly construct begin and end iterators which should point to
+     * move constructed object's member variables.
+     *
+     * @param other Other Generator object to move from.
+     */
+    Generator(Generator&& other)
+        : init_val(std::move(other.init_val)),
+          curr_step_count(std::move(other.curr_step_count)),
+          total_iter_count(std::move(other.total_iter_count)),
+          computer(std::move(other.computer)),
+          begin_it(iter_type(&(this->init_val), &(this->curr_step_count),
+                             &(this->computer))),
+          end_it(iter_type(&(this->total_iter_count))) {}
+
+    /**
+     * @brief Move assignment operator.
+     *
+     * Generator class manually implements its move assignment operator to
+     * correctly construct begin and end iterators which should point to
+     * move assigned object's member variables.
+     *
+     * @param other Other Generator object to move from.
+     *
+     * @return Reference to move assigned Generator object.
+     */
+    Generator& operator=(Generator&& other) {
+        this->init_val = std::move(other.init_val);
+        this->curr_step_count = std::move(other.curr_step_count);
+        this->total_iter_count = std::move(other.total_iter_count);
+        this->computer = std::move(other.computer);
+
+        this->begin_it = iter_type(&(this->init_val), &(this->curr_step_count),
+                                   &(this->computer));
+        this->end_it = iter_type(&(this->total_iter_count));
+
+        return *this;
+    }
     /**
      * @brief Return the iterator pointing to the previously computed value.
      *
