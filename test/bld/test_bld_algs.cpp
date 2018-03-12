@@ -433,10 +433,42 @@ TEST_CASE("Parameter checks on collapsed icm", "[collapsed_icm]") {
 
     z--;
     X = matrix_t::Constant(x + 1, y, 5);
-    REQUIRE_THROWS(bld::collapsed_icm(X, z, model_params));}
+    REQUIRE_THROWS(bld::collapsed_icm(X, z, model_params));
+
+    SECTION("Zero matrix throws exception") {
+        X = matrix_t::Zero(x, y);
+        REQUIRE_THROWS(bld::collapsed_gibbs(X, z, model_params));
+    }
+}
 
 TEST_CASE("Algorithm checks on collapsed icm", "[collapsed_icm]") {
+    size_t x = 8, y = 10, z = 3;
+    shape<3> tensor_shape{x, y, z};
 
+    SECTION("Test against the results of ppmf.py implementation on "
+            "Experiments.ipynb") {
+        matrix_t X(x, y);
+        X << 6., 3., 6., 5., 6., 6., 7., 10., 12., 2., 1., 5., 5., 3., 1., 2.,
+            8., 3., 2., 7., 3., 11., 5., 5., 2., 5., 5., 2., 0., 11., 1., 0.,
+            4., 1., 1., 1., 1., 4., 1., 4., 8., 2., 3., 12., 10., 15., 6., 8.,
+            18., 2., 10., 10., 5., 7., 8., 9., 9., 9., 24., 7., 4., 0., 1., 1.,
+            5., 4., 2., 2., 9., 2., 4., 1., 3., 2., 7., 5., 4., 7., 10., 0.;
+
+        AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
+                                      std::vector<double>(z, 1.0));
+
+        tensord<3> S = bld::collapsed_icm(X, z, model_params);
+
+        double log_marginal = log_marginal_S(S, model_params);
+
+        REQUIRE(log_marginal >= -350);
+        REQUIRE(sparseness(S) >= 0.55);
+
+        tensord<2> sum_S = S.sum(shape<1>({2}));
+        matrix_t sum_S_mat = Eigen::Map<matrix_t>(
+                sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
+        REQUIRE(X.isApprox(sum_S_mat));
+    }
 }
 
 TEST_CASE("Parameter checks on bld approximate", "[bld_appr]") {
@@ -463,5 +495,22 @@ TEST_CASE("Parameter checks on bld approximate", "[bld_appr]") {
 }
 
 TEST_CASE("Algorithm checks on bld approximate", "[bld_appr]") {
+    size_t x = 8, y = 10, z = 3;
+    shape<3> tensor_shape{x, y, z};
+    SECTION("Zero matrix result is Zero") {
+        matrix_t X = matrix_t::Zero(x, y);
+        AllocModelParams model_params(tensor_shape);
 
+        tensord<3> S;
+        matrix_t nu, mu;
+        std::tie(S, nu, mu) = bld::bld_appr(X, z, model_params);
+
+        tensord<0> min = S.minimum();
+        tensord<0> max = S.maximum();
+        REQUIRE(min.coeff() == Approx(0));
+        REQUIRE(max.coeff() == Approx(0));
+    }
+
+    SECTION("Test against the results of ppmf.py implementation on "
+            "Experiments.ipynb") {}
 }
