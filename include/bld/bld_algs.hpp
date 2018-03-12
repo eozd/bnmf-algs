@@ -1,7 +1,7 @@
 #pragma once
 
-#include "allocation_model/sampling.hpp"
 #include "allocation_model/alloc_model_params.hpp"
+#include "allocation_model/sampling.hpp"
 #include "defs.hpp"
 #include "util/generator.hpp"
 #include "util/wrappers.hpp"
@@ -21,7 +21,7 @@ class CollapsedGibbsComputer {
      * @brief Construct a new CollapsedGibbsComputer.
      *
      * @param X Matrix \f$X\f$ of size \f$x \times y\f$ that will be used during
-     * sampling. A const-reference to matrix X is stored for efficiency.
+     * sampling.
      * @param z Depth of the output tensor \f$S\f$ with size \f$x \times y
      * \times z\f$.
      * @param model_params Allocation model parameters. See
@@ -291,5 +291,46 @@ util::Generator<tensord<3>, details::CollapsedGibbsComputer>
 collapsed_gibbs(const matrix_t& X, size_t z,
                 const allocation_model::AllocModelParams& model_params,
                 size_t max_iter = 1000);
+
+/**
+ * @brief Compute tensor \f$S\f$, the solution of BLD problem \cite
+ * kurutmazbayesian, from matrix \f$X\f$ using collapsed iterated conditional
+ * modes.
+ *
+ * According to Allocation Model \cite kurutmazbayesian,
+ *
+ * \f[
+ * L_j \sim \mathcal{G}(a, b) \qquad W_{:k} \sim \mathcal{D}(\alpha) \qquad
+ * H_{:j} \sim \mathcal{D}(\beta) \f]
+ *
+ * Each entry \f$S_{ijk} \sim \mathcal{PO}(W_{ik}H_{kj}L_j)\f$ and overall \f$X
+ * = S_{ij+}\f$.
+ *
+ * In this context, Best Latent Decomposition (BLD) problem is \cite
+ * kurutmazbayesian,
+ *
+ * \f[
+ * S^* = \underset{S_{::+}=X}{\arg \max}\text{ }p(S).
+ * \f]
+ *
+ * \todo Explain collapsed icm algorithm.
+ *
+ * @param X Nonnegative matrix of size \f$x \times y\f$ to decompose.
+ * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
+ * This is the depth of the output tensor \f$S\f$.
+ * @param model_params Allocation model parameters. See
+ * bnmf_algs::allocation_model::AllocModelParams.
+ * @param max_iter Maximum number of iterations.
+ *
+ * @return Tensor \f$S\f$ of size \f$x \times y \times z\f$ where \f$X =
+ * S_{ij+}\f$.
+ *
+ * @throws std::invalid_argument if X contains negative entries,
+ * if number of rows of X is not equal to number of alpha parameters, if z is
+ * not equal to number of beta parameters.
+ */
+tensord<3> collapsed_icm(const matrix_t& X, size_t z,
+                         const allocation_model::AllocModelParams& model_params,
+                         size_t max_iter = 1000);
 } // namespace bld
 } // namespace bnmf_algs
