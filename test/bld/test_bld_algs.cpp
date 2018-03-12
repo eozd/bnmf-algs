@@ -350,3 +350,83 @@ TEST_CASE("Algorithm checks on bld_add", "[bld_add]") {
         REQUIRE(X.isApprox(sum_S_mat));
     }
 }
+
+TEST_CASE("Parameter checks on collapsed gibbs", "[collapsed_gibbs]") {
+    size_t x = 10, y = 5, z = 2;
+    shape<3> tensor_shape{x, y, z};
+    matrix_t X = matrix_t::Constant(x, y, 5);
+    allocation_model::AllocModelParams model_params(tensor_shape);
+
+    // max_iter = 5 since we don't want to wait
+    REQUIRE_NOTHROW(bld::collapsed_gibbs(X, z, model_params, 5));
+
+    X(0, 0) = -5;
+    REQUIRE_THROWS(bld::collapsed_gibbs(X, z, model_params));
+
+    X(0, 0) = 0;
+    REQUIRE_NOTHROW(bld::collapsed_gibbs(X, z, model_params, 5));
+
+    z++;
+    REQUIRE_THROWS(bld::collapsed_gibbs(X, z, model_params));
+
+    z--;
+    X = matrix_t::Constant(x + 1, y, 5);
+    REQUIRE_THROWS(bld::collapsed_gibbs(X, z, model_params));
+}
+
+TEST_CASE("Algorithm checks on collapsed gibbs", "[collapsed_gibbs]") {
+
+}
+
+TEST_CASE("Parameter checks on collapsed icm", "[collapsed_icm]") {
+    size_t x = 10, y = 5, z = 2;
+    shape<3> tensor_shape{x, y, z};
+    matrix_t X = matrix_t::Constant(x, y, 5);
+    allocation_model::AllocModelParams model_params(tensor_shape);
+
+    // max_iter = 5 since we don't want to wait
+    REQUIRE_NOTHROW(bld::collapsed_icm(X, z, model_params, 5));
+
+    X(0, 0) = -5;
+    REQUIRE_THROWS(bld::collapsed_icm(X, z, model_params));
+
+    X(0, 0) = 0;
+    REQUIRE_NOTHROW(bld::collapsed_icm(X, z, model_params, 5));
+
+    z++;
+    REQUIRE_THROWS(bld::collapsed_icm(X, z, model_params));
+
+    z--;
+    X = matrix_t::Constant(x + 1, y, 5);
+    REQUIRE_THROWS(bld::collapsed_icm(X, z, model_params));}
+
+TEST_CASE("Algorithm checks on collapsed icm", "[collapsed_icm]") {
+
+}
+
+TEST_CASE("Parameter checks on bld approximate", "[bld_appr]") {
+    size_t x = 10, y = 5, z = 2;
+    shape<3> tensor_shape{x, y, z};
+    matrix_t X = matrix_t::Constant(x, y, 5);
+    allocation_model::AllocModelParams model_params(tensor_shape);
+
+    // max_iter = 5 since we don't want to wait
+    REQUIRE_NOTHROW(bld::bld_appr(X, z, model_params, 5));
+
+    X(0, 0) = -5;
+    REQUIRE_THROWS(bld::bld_appr(X, z, model_params));
+
+    X(0, 0) = 0;
+    REQUIRE_NOTHROW(bld::bld_appr(X, z, model_params, 5));
+
+    z++;
+    REQUIRE_THROWS(bld::bld_appr(X, z, model_params));
+
+    z--;
+    X = matrix_t::Constant(x + 1, y, 5);
+    REQUIRE_THROWS(bld::bld_appr(X, z, model_params));
+}
+
+TEST_CASE("Algorithm checks on bld approximate", "[bld_appr]") {
+
+}

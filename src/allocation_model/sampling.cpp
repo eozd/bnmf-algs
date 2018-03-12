@@ -298,7 +298,7 @@ using namespace allocation_model;
 details::SampleOnesComputer::SampleOnesComputer(const matrix_t& X,
                                                 bool replacement)
     : replacement(replacement), X_cumsum(vector_t(X.cols() * X.rows())),
-      X_cols(static_cast<size_t>(X.cols())),
+      X_cols(X.cols()),
       X_sum(replacement ? X.array().sum() : std::floor(X.array().sum())),
       rnd_gen(util::make_gsl_rng(gsl_rng_taus)) {
 
@@ -315,9 +315,9 @@ void details::SampleOnesComputer::operator()(size_t curr_step,
 
     vector_t cum_prob;
     if (replacement) {
-        cum_prob = X_cumsum / X_sum;
+        cum_prob = X_cumsum.array() / X_sum;
     } else {
-        cum_prob = X_cumsum / (X_sum - (curr_step - 1));
+        cum_prob = X_cumsum.array() / (X_sum - curr_step);
     }
 
     double* begin = cum_prob.data();
@@ -328,7 +328,7 @@ void details::SampleOnesComputer::operator()(size_t curr_step,
 
     if (!replacement) {
         vector_t diff = vector_t::Constant(X_cumsum.cols(), 1);
-        diff.head(m) *= 0;
+        diff.head(m) = vector_t::Zero(m);
         X_cumsum -= diff;
     }
 

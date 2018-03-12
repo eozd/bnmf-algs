@@ -59,7 +59,7 @@ class SampleOnesComputer {
     // computation variables
   private:
     vector_t X_cumsum;
-    size_t X_cols;
+    long X_cols;
     double X_sum;
     util::gsl_rng_wrapper rnd_gen;
 };

@@ -7,14 +7,14 @@
 using namespace bnmf_algs;
 
 /**
- * @brief Do parameter checks on seq_greedy_bld parameters and return error
- * message if there is any.
+ * @brief Do parameter checks on BLD computing function parameters and return
+ * error message if there is any.
  *
  * @return Error message. If there isn't any error, returns "".
  */
-static std::string seq_greedy_bld_param_checks(
-    const matrix_t& X, size_t z,
-    const allocation_model::AllocModelParams& model_params) {
+static std::string
+check_bld_params(const matrix_t& X, size_t z,
+                 const allocation_model::AllocModelParams& model_params) {
     if ((X.array() < 0).any()) {
         return "X must be nonnegative";
     }
@@ -32,8 +32,8 @@ tensord<3>
 bld::seq_greedy_bld(const matrix_t& X, size_t z,
                     const allocation_model::AllocModelParams& model_params) {
     {
-        auto error_msg = seq_greedy_bld_param_checks(X, z, model_params);
-        if (error_msg != "") {
+        auto error_msg = check_bld_params(X, z, model_params);
+        if (!error_msg.empty()) {
             throw std::invalid_argument(error_msg);
         }
     }
@@ -146,17 +146,11 @@ bld::bld_fact(const tensord<3>& S,
 tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
                          const allocation_model::AllocModelParams& model_params,
                          size_t max_iter, double eps) {
-    // todo: think of a way to organize these parameter checks
-    if ((X.array() < 0).any()) {
-        throw std::invalid_argument("X must be nonnegative");
-    }
-    if (static_cast<size_t>(X.rows()) != model_params.alpha.size()) {
-        throw std::invalid_argument(
-            "Number of rows of X must be equal to number of alpha parameters");
-    }
-    if (z != model_params.beta.size()) {
-        throw std::invalid_argument(
-            "z must be equal to number of beta parameters");
+    {
+        auto error_msg = check_bld_params(X, z, model_params);
+        if (!error_msg.empty()) {
+            throw std::invalid_argument(error_msg);
+        }
     }
 
     long x = X.rows(), y = X.cols();
@@ -263,17 +257,11 @@ static double eta(size_t step) { return 0.1 / std::pow(step + 1, 0.55); }
 tensord<3> bld::bld_add(const matrix_t& X, size_t z,
                         const allocation_model::AllocModelParams& model_params,
                         size_t max_iter, double eps) {
-    // todo: think of a way to organize these parameter checks
-    if ((X.array() < 0).any()) {
-        throw std::invalid_argument("X must be nonnegative");
-    }
-    if (static_cast<size_t>(X.rows()) != model_params.alpha.size()) {
-        throw std::invalid_argument(
-            "Number of rows of X must be equal to number of alpha parameters");
-    }
-    if (z != model_params.beta.size()) {
-        throw std::invalid_argument(
-            "z must be equal to number of beta parameters");
+    {
+        auto error_msg = check_bld_params(X, z, model_params);
+        if (!error_msg.empty()) {
+            throw std::invalid_argument(error_msg);
+        }
     }
 
     long x = X.rows(), y = X.cols();
@@ -429,7 +417,8 @@ void details::CollapsedGibbsComputer::operator()(size_t curr_step,
             increment_sampling(i, j, S_prev);
         }
     } else {
-        std::tie(i, j) = *(++one_sampler_repl.begin());
+        std::tie(i, j) = *one_sampler_repl.begin();
+        ++one_sampler_repl.begin();
         decrement_sampling(i, j, S_prev);
         increment_sampling(i, j, S_prev);
     }
@@ -439,6 +428,12 @@ util::Generator<tensord<3>, details::CollapsedGibbsComputer>
 bld::collapsed_gibbs(const matrix_t& X, size_t z,
                      const allocation_model::AllocModelParams& model_params,
                      size_t max_iter) {
+    {
+        auto error_msg = check_bld_params(X, z, model_params);
+        if (!error_msg.empty()) {
+            throw std::invalid_argument(error_msg);
+        }
+    }
 
     tensord<3> init_val(X.rows(), X.cols(), z);
     init_val.setZero();
@@ -456,6 +451,13 @@ tensord<3>
 bld::collapsed_icm(const matrix_t& X, size_t z,
                    const allocation_model::AllocModelParams& model_params,
                    size_t max_iter) {
+    {
+        auto error_msg = check_bld_params(X, z, model_params);
+        if (!error_msg.empty()) {
+            throw std::invalid_argument(error_msg);
+        }
+    }
+
     const auto x = static_cast<size_t>(X.rows());
     const auto y = static_cast<size_t>(X.cols());
 
@@ -676,7 +678,7 @@ static void update_nu(const matrix_t& orig_over_appr,
 
     // normalize
     vector_t nu_rowsum =
-        nu.rowwise().sum() + vector_t::Constant(nu.rows(), eps);
+        nu.rowwise().sum() + vector_t::Constant(nu.rows(), eps).transpose();
     nu = nu.array().colwise() / nu_rowsum.transpose().array();
 }
 
@@ -688,7 +690,7 @@ static void update_mu(const matrix_t& orig_over_appr,
     auto y = static_cast<size_t>(grad_plus.dimension(1));
     auto z = static_cast<size_t>(grad_plus.dimension(2));
 
-    matrix_t nom = matrix_t::Zero(x, z);
+    matrix_t nom = matrix_t::Zero(z, y);
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             for (size_t k = 0; k < z; ++k) {
@@ -707,7 +709,7 @@ static void update_mu(const matrix_t& orig_over_appr,
             }
         }
     }
-    matrix_t denom = matrix_t::Zero(x, z);
+    matrix_t denom = matrix_t::Zero(z, y);
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             for (size_t k = 0; k < z; ++k) {
@@ -740,6 +742,13 @@ std::tuple<tensord<3>, matrix_t, matrix_t>
 bld::bld_appr(const matrix_t& X, size_t z,
               const allocation_model::AllocModelParams& model_params,
               size_t max_iter, double eps) {
+    {
+        auto error_msg = check_bld_params(X, z, model_params);
+        if (!error_msg.empty()) {
+            throw std::invalid_argument(error_msg);
+        }
+    }
+
     auto x = static_cast<size_t>(X.rows());
     auto y = static_cast<size_t>(X.cols());
 
@@ -809,5 +818,5 @@ bld::bld_appr(const matrix_t& X, size_t z,
     update_orig_over_appr(X, X_hat, eps_mat, orig_over_appr);
     update_S(orig_over_appr, nu, mu, S);
 
-    return {S, nu, mu};
+    return std::make_tuple(S, nu, mu);
 }
