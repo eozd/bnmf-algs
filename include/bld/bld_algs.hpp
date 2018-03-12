@@ -31,7 +31,7 @@ class CollapsedGibbsComputer {
     explicit CollapsedGibbsComputer(
         const matrix_t& X, size_t z,
         const allocation_model::AllocModelParams& model_params,
-        size_t max_iter);
+        size_t max_iter, double eps);
 
     /**
      * @brief Function call operator that will compute the next tensor sample
@@ -95,6 +95,7 @@ class CollapsedGibbsComputer {
     vector_t U_ppk;
     matrix_t U_pjk;
     double sum_alpha;
+    double eps;
     util::gsl_rng_wrapper rnd_gen;
 };
 } // namespace details
@@ -291,7 +292,7 @@ tensord<3> bld_add(const matrix_t& X, size_t z,
 util::Generator<tensord<3>, details::CollapsedGibbsComputer>
 collapsed_gibbs(const matrix_t& X, size_t z,
                 const allocation_model::AllocModelParams& model_params,
-                size_t max_iter = 1000);
+                size_t max_iter = 1000, double eps=1e-50);
 
 /**
  * @brief Compute tensor \f$S\f$, the solution of BLD problem \cite
@@ -332,7 +333,7 @@ collapsed_gibbs(const matrix_t& X, size_t z,
  */
 tensord<3> collapsed_icm(const matrix_t& X, size_t z,
                          const allocation_model::AllocModelParams& model_params,
-                         size_t max_iter = 1000);
+                         size_t max_iter = 1000, double eps=1e-50);
 
 /**
  * @brief Compute tensor \f$S\f$, the solution of BLD problem \cite

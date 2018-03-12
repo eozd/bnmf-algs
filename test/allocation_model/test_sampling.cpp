@@ -264,13 +264,18 @@ TEST_CASE("Parameter checks on sample ones", "[sample_ones]") {
         X = matrix_t::Zero(0, 1);
         REQUIRE_THROWS(sample_ones(X));
 
-        X = matrix_t::Zero(1, 1);
+        X = matrix_t::Ones(1, 1);
         REQUIRE_NOTHROW(sample_ones(X));
     }
 
     SECTION("Matrix X with negative entries throws exception") {
         matrix_t X = matrix_t::Zero(5, 5);
         X(2, 3) = -1e-50;
+        REQUIRE_THROWS(sample_ones(X));
+    }
+
+    SECTION("Zero matrix throws exception") {
+        matrix_t X = matrix_t::Zero(5, 5);
         REQUIRE_THROWS(sample_ones(X));
     }
 
@@ -301,14 +306,6 @@ TEST_CASE("Parameter checks on sample ones", "[sample_ones]") {
         std::copy(gen.begin(), gen.end(), std::back_inserter(res));
 
         REQUIRE(res.size() == static_cast<size_t>(X.sum()));
-
-        X = matrix_t::Zero(1, 1);
-        gen = sample_ones(X);
-        res.clear();
-
-        std::copy(gen.begin(), gen.end(), std::back_inserter(res));
-
-        REQUIRE(res.empty());
     }
 }
 

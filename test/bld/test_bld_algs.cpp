@@ -280,7 +280,7 @@ TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
         // Test if S_{::+} = X
         tensord<2> sum_S = S.sum(shape<1>({2}));
         matrix_t sum_S_mat = Eigen::Map<matrix_t>(
-                sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
+            sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
         REQUIRE(X.isApprox(sum_S_mat, 1e-10));
         // todo: check if S is an integer tensor
     }
@@ -346,7 +346,7 @@ TEST_CASE("Algorithm checks on bld_add", "[bld_add]") {
         // Test if S_{::+} = X
         tensord<2> sum_S = S.sum(shape<1>({2}));
         matrix_t sum_S_mat = Eigen::Map<matrix_t>(
-                sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
+            sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
         REQUIRE(X.isApprox(sum_S_mat));
     }
 }
@@ -372,10 +372,45 @@ TEST_CASE("Parameter checks on collapsed gibbs", "[collapsed_gibbs]") {
     z--;
     X = matrix_t::Constant(x + 1, y, 5);
     REQUIRE_THROWS(bld::collapsed_gibbs(X, z, model_params));
+
+    SECTION("Zero matrix throws exception") {
+        X = matrix_t::Zero(x, y);
+        REQUIRE_THROWS(bld::collapsed_gibbs(X, z, model_params));
+    }
 }
 
 TEST_CASE("Algorithm checks on collapsed gibbs", "[collapsed_gibbs]") {
+    size_t x = 8, y = 10, z = 3;
+    shape<3> tensor_shape{x, y, z};
 
+    SECTION("Test against the results of ppmf.py implementation on "
+            "Experiments.ipynb") {
+        matrix_t X(x, y);
+        X << 6., 3., 6., 5., 6., 6., 7., 10., 12., 2., 1., 5., 5., 3., 1., 2.,
+            8., 3., 2., 7., 3., 11., 5., 5., 2., 5., 5., 2., 0., 11., 1., 0.,
+            4., 1., 1., 1., 1., 4., 1., 4., 8., 2., 3., 12., 10., 15., 6., 8.,
+            18., 2., 10., 10., 5., 7., 8., 9., 9., 9., 24., 7., 4., 0., 1., 1.,
+            5., 4., 2., 2., 9., 2., 4., 1., 3., 2., 7., 5., 4., 7., 10., 0.;
+
+        AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
+                                      std::vector<double>(z, 1.0));
+
+        auto gen = bld::collapsed_gibbs(X, z, model_params);
+        for (const auto& sample : gen)
+            ;
+
+        tensord<3> S = *gen.begin();
+
+        double log_marginal = log_marginal_S(S, model_params);
+
+        REQUIRE(log_marginal >= -390);
+        REQUIRE(sparseness(S) >= 0.40);
+
+        tensord<2> sum_S = S.sum(shape<1>({2}));
+        matrix_t sum_S_mat = Eigen::Map<matrix_t>(
+            sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
+        REQUIRE(X.isApprox(sum_S_mat));
+    }
 }
 
 TEST_CASE("Parameter checks on collapsed icm", "[collapsed_icm]") {

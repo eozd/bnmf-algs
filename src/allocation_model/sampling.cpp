@@ -344,6 +344,10 @@ allocation_model::sample_ones(const matrix_t& X, bool replacement, size_t n) {
     if ((X.array() < 0).any()) {
         throw std::invalid_argument("Matrix X must be nonnegative");
     }
+    if ((X.array().abs() <= std::numeric_limits<double>::epsilon()).all()) {
+        throw std::invalid_argument(
+            "Matrix X must have at least one nonzero element");
+    }
 
     size_t num_samples;
     if (replacement) {
