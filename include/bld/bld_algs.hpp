@@ -58,29 +58,29 @@ class CollapsedGibbsComputer {
      *
      * This function constructs the probability distribution of each \f$z\f$
      * event in a multinomial distribution, draws a single sample and increments
-     * @code S_prev(x, y, k), U_ipk(x, k), U_ppk(k), U_pjk(y, k) @endcode
+     * @code S_prev(i, j, k), U_ipk(i, k), U_ppk(k), U_pjk(j, k) @endcode
      * entries.
      *
-     * @param x Row of U_ipk and alpha parameter to use.
-     * @param y Row of U_pjk to use.
+     * @param i Row of U_ipk and alpha parameter to use.
+     * @param j Row of U_pjk to use.
      * @param S_prev Previously computed tensor \f$S\f$.
      */
-    void increment_sampling(size_t x, size_t y, tensord<3>& S_prev);
+    void increment_sampling(size_t i, size_t j, tensord<3>& S_prev);
     /**
      * @brief Sample a single multinomial variable and decremnet corresponding
      * U_ipk, U_ppk, U_pjk and S_prev entries.
      *
      * This function constructs the probability distribution of each \f$z\f$
-     * event in a multinomial distribution by using @code S_prev(x, y, :)
+     * event in a multinomial distribution by using @code S_prev(i, j, :)
      * @endcode fiber, draws a sample from multinomial and decrements
-     * @code S_prev(x, y, k), U_ipk(x, k), U_ppk(k), U_pjk(y, k) @endcode
+     * @code S_prev(i, j, k), U_ipk(i, k), U_ppk(k), U_pjk(j, k) @endcode
      * entries.
      *
-     * @param x Row of S_prev.
-     * @param y Column of S_prev.
+     * @param i Row of S_prev.
+     * @param j Column of S_prev.
      * @param S_prev Previously computed tensor \f$S\f$.
      */
-    void decrement_sampling(size_t x, size_t y, tensord<3>& S_prev);
+    void decrement_sampling(size_t i, size_t j, tensord<3>& S_prev);
 
   private:
     allocation_model::AllocModelParams model_params;

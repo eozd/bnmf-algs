@@ -366,7 +366,7 @@ details::CollapsedGibbsComputer::CollapsedGibbsComputer(
                                 model_params.alpha.end(), 0.0)),
       rnd_gen(util::make_gsl_rng(gsl_rng_taus)) {}
 
-void details::CollapsedGibbsComputer::increment_sampling(size_t x, size_t y,
+void details::CollapsedGibbsComputer::increment_sampling(size_t i, size_t j,
                                                          tensord<3>& S_prev) {
     vector_t prob(1, U_ppk.cols());
     Eigen::Map<vector_t> beta(model_params.beta.data(), 1,
@@ -374,8 +374,8 @@ void details::CollapsedGibbsComputer::increment_sampling(size_t x, size_t y,
     std::vector<unsigned int> multinomial_sample(
         static_cast<unsigned long>(U_ppk.cols()));
 
-    auto alpha_row = U_ipk.row(x).array() + model_params.alpha[x];
-    auto beta_row = (U_pjk.row(y) + beta).array();
+    auto alpha_row = U_ipk.row(i).array() + model_params.alpha[i];
+    auto beta_row = (U_pjk.row(j) + beta).array();
     auto sum_alpha_row = U_ppk.array() + sum_alpha;
     prob = alpha_row * beta_row / sum_alpha_row;
 
@@ -385,13 +385,13 @@ void details::CollapsedGibbsComputer::increment_sampling(size_t x, size_t y,
         multinomial_sample.begin(),
         std::max_element(multinomial_sample.begin(), multinomial_sample.end()));
 
-    ++S_prev(x, y, k);
-    ++U_ipk(x, k);
+    ++S_prev(i, j, k);
+    ++U_ipk(i, k);
     ++U_ppk(k);
-    ++U_pjk(y, k);
+    ++U_pjk(j, k);
 }
 
-void details::CollapsedGibbsComputer::decrement_sampling(size_t x, size_t y,
+void details::CollapsedGibbsComputer::decrement_sampling(size_t i, size_t j,
                                                          tensord<3>& S_prev) {
     vector_t prob(1, U_ppk.cols());
     Eigen::Map<vector_t> beta(model_params.beta.data(), 1,
@@ -400,10 +400,10 @@ void details::CollapsedGibbsComputer::decrement_sampling(size_t x, size_t y,
         static_cast<unsigned long>(U_ppk.cols()));
 
     // todo: can we take a fiber from S with contiguous memory?
-    for (long i = 0; i < S_prev.dimension(0); ++i) {
-        for (long j = 0; j < S_prev.dimension(1); ++j) {
+    for (long m = 0; m < S_prev.dimension(0); ++m) {
+        for (long n = 0; n < S_prev.dimension(1); ++n) {
             for (long k = 0; k < S_prev.dimension(2); ++k) {
-                prob(k) = S_prev(i, j, k);
+                prob(k) = S_prev(m, n, k);
             }
         }
     }
@@ -414,24 +414,24 @@ void details::CollapsedGibbsComputer::decrement_sampling(size_t x, size_t y,
         multinomial_sample.begin(),
         std::max_element(multinomial_sample.begin(), multinomial_sample.end()));
 
-    --S_prev(x, y, k);
-    --U_ipk(x, k);
+    --S_prev(i, j, k);
+    --U_ipk(i, k);
     --U_ppk(k);
-    --U_pjk(y, k);
+    --U_pjk(j, k);
 }
 
 void details::CollapsedGibbsComputer::operator()(size_t curr_step,
                                                  tensord<3>& S_prev) {
-    size_t x, y;
+    size_t i, j;
     if (curr_step == 0) {
         for (const auto& pair : one_sampler_no_repl) {
-            std::tie(x, y) = pair;
-            increment_sampling(x, y, S_prev);
+            std::tie(i, j) = pair;
+            increment_sampling(i, j, S_prev);
         }
     } else {
-        std::tie(x, y) = *(++one_sampler_repl.begin());
-        decrement_sampling(x, y, S_prev);
-        increment_sampling(x, y, S_prev);
+        std::tie(i, j) = *(++one_sampler_repl.begin());
+        decrement_sampling(i, j, S_prev);
+        increment_sampling(i, j, S_prev);
     }
 }
 
@@ -450,4 +450,90 @@ collapsed_gibbs(const matrix_t& X, size_t z,
     ++gen.begin();
 
     return gen;
+}
+
+tensord<3> collapsed_icm(const matrix_t& X, size_t z,
+                         const allocation_model::AllocModelParams& model_params,
+                         size_t max_iter = 1000) {
+    const auto x = static_cast<size_t>(X.rows());
+    const auto y = static_cast<size_t>(X.cols());
+
+    tensord<3> U(x, y, z);
+    U.setZero();
+
+    matrix_t U_ipk = matrix_t::Zero(x, z);
+    vector_t U_ppk = vector_t::Zero(z);
+    matrix_t U_pjk = matrix_t::Zero(y, z);
+
+    const double sum_alpha = std::accumulate(model_params.alpha.begin(),
+                                             model_params.alpha.end(), 0.0);
+
+    vector_t prob(1, U_ppk.cols());
+    Eigen::Map<const vector_t> beta(model_params.beta.data(), 1,
+                                    model_params.beta.size());
+
+    // initializing increment sampling without multinomial
+    size_t i, j;
+    for (const auto& pair : allocation_model::sample_ones(X)) {
+        std::tie(i, j) = pair;
+
+        auto alpha_row = U_ipk.row(i).array() + model_params.alpha[i];
+        auto beta_row = (U_pjk.row(j) + beta).array();
+        auto sum_alpha_row = U_ppk.array() + sum_alpha;
+        prob = alpha_row * beta_row / sum_alpha_row;
+
+        auto k = std::distance(
+            prob.data(),
+            std::max_element(prob.data(), prob.data() + prob.cols()));
+
+        ++U(i, j, k);
+        ++U_ipk(i, k);
+        ++U_ppk(k);
+        ++U_pjk(j, k);
+    }
+
+    std::vector<unsigned int> multinomial_sample(
+        static_cast<unsigned long>(U_ppk.cols()));
+    auto rnd_gen = util::make_gsl_rng(gsl_rng_taus);
+
+    for (const auto& pair : allocation_model::sample_ones(X, true, max_iter)) {
+        std::tie(i, j) = pair;
+
+        // decrement sampling
+        for (long m = 0; m < U.dimension(0); ++m) {
+            for (long n = 0; n < U.dimension(1); ++n) {
+                for (long k = 0; k < U.dimension(2); ++k) {
+                    prob(k) = U(m, n, k);
+                }
+            }
+        }
+
+        gsl_ran_multinomial(rnd_gen.get(), static_cast<size_t>(prob.cols()), 1,
+                            prob.data(), multinomial_sample.data());
+        auto k = std::distance(multinomial_sample.begin(),
+                               std::max_element(multinomial_sample.begin(),
+                                                multinomial_sample.end()));
+
+        --U(i, j, k);
+        --U_ipk(i, k);
+        --U_ppk(k);
+        --U_pjk(j, k);
+
+        // increment sampling
+        auto alpha_row = U_ipk.row(i).array() + model_params.alpha[i];
+        auto beta_row = (U_pjk.row(j) + beta).array();
+        auto sum_alpha_row = U_ppk.array() + sum_alpha;
+        prob = alpha_row * beta_row / sum_alpha_row;
+
+        k = std::distance(
+            prob.data(),
+            std::max_element(prob.data(), prob.data() + prob.cols()));
+
+        ++U(i, j, k);
+        ++U_ipk(i, k);
+        ++U_ppk(k);
+        ++U_pjk(j, k);
+    }
+
+    return U;
 }
