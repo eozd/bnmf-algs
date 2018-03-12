@@ -436,9 +436,9 @@ void details::CollapsedGibbsComputer::operator()(size_t curr_step,
 }
 
 util::Generator<tensord<3>, details::CollapsedGibbsComputer>
-collapsed_gibbs(const matrix_t& X, size_t z,
-                const allocation_model::AllocModelParams& model_params,
-                size_t max_iter = 1000) {
+bld::collapsed_gibbs(const matrix_t& X, size_t z,
+                     const allocation_model::AllocModelParams& model_params,
+                     size_t max_iter) {
 
     tensord<3> init_val(X.rows(), X.cols(), z);
     init_val.setZero();
@@ -452,9 +452,10 @@ collapsed_gibbs(const matrix_t& X, size_t z,
     return gen;
 }
 
-tensord<3> collapsed_icm(const matrix_t& X, size_t z,
-                         const allocation_model::AllocModelParams& model_params,
-                         size_t max_iter = 1000) {
+tensord<3>
+bld::collapsed_icm(const matrix_t& X, size_t z,
+                   const allocation_model::AllocModelParams& model_params,
+                   size_t max_iter) {
     const auto x = static_cast<size_t>(X.rows());
     const auto y = static_cast<size_t>(X.cols());
 
@@ -536,4 +537,277 @@ tensord<3> collapsed_icm(const matrix_t& X, size_t z,
     }
 
     return U;
+}
+
+/* ===================== bld_appr IMPLEMENTATION ============================ */
+
+static void update_X_hat(const matrix_t& nu, const matrix_t& mu,
+                         matrix_t& X_hat) {
+    X_hat = nu * mu;
+}
+
+static void update_orig_over_appr(const matrix_t& X, const matrix_t& X_hat,
+                                  const matrix_t& eps_mat,
+                                  matrix_t& orig_over_appr) {
+    orig_over_appr = X.array() / (X_hat + eps_mat).array();
+}
+
+static void update_orig_over_appr_squared(const matrix_t& X,
+                                          const matrix_t& X_hat,
+                                          const matrix_t& eps_mat,
+                                          matrix_t& orig_over_appr_squared) {
+    matrix_t appr_squared = X_hat.array().pow(2);
+    orig_over_appr_squared = X.array() / (appr_squared + eps_mat).array();
+}
+
+static void update_S(const matrix_t& orig_over_appr, const matrix_t& nu,
+                     const matrix_t& mu, tensord<3>& S) {
+    auto x = static_cast<size_t>(S.dimension(0));
+    auto y = static_cast<size_t>(S.dimension(1));
+    auto z = static_cast<size_t>(S.dimension(2));
+
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t j = 0; j < y; ++j) {
+            for (size_t k = 0; k < z; ++k) {
+                S(i, j, k) = orig_over_appr(i, j) * nu(i, k) * mu(k, j);
+            }
+        }
+    }
+}
+
+static void update_alpha_eph(const vector_t& alpha, const tensord<3>& S,
+                             matrix_t& alpha_eph) {
+    auto x = static_cast<size_t>(S.dimension(0));
+    auto z = static_cast<size_t>(S.dimension(2));
+
+    tensord<2> S_ipk_tensor = S.sum(shape<1>({1}));
+    Eigen::Map<matrix_t> S_ipk(S_ipk_tensor.data(), x, z);
+    alpha_eph = S_ipk.array().colwise() + alpha.transpose().array();
+}
+
+static void update_beta_eph(const vector_t& beta, const tensord<3>& S,
+                            matrix_t& beta_eph) {
+    auto y = static_cast<size_t>(S.dimension(1));
+    auto z = static_cast<size_t>(S.dimension(2));
+
+    tensord<2> S_pjk_tensor = S.sum(shape<1>({0}));
+    Eigen::Map<matrix_t> S_pjk(S_pjk_tensor.data(), y, z);
+    beta_eph = S_pjk.array().rowwise() + beta.array();
+}
+
+static void update_grad_plus(const matrix_t& beta_eph, const tensord<3>& S,
+                             tensord<3>& grad_plus) {
+    auto x = static_cast<size_t>(grad_plus.dimension(0));
+    auto y = static_cast<size_t>(grad_plus.dimension(1));
+    auto z = static_cast<size_t>(grad_plus.dimension(2));
+
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t j = 0; j < y; ++j) {
+            for (size_t k = 0; k < z; ++k) {
+                grad_plus(i, j, k) =
+                    gsl_sf_psi(beta_eph(j, k)) - gsl_sf_psi(S(i, j, k) + 1);
+            }
+        }
+    }
+}
+
+static void update_grad_minus(const matrix_t& alpha_eph, matrix_t& grad_minus) {
+    auto x = static_cast<size_t>(grad_minus.rows());
+    auto z = static_cast<size_t>(grad_minus.cols());
+
+    vector_t alpha_eph_sum = alpha_eph.colwise().sum();
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t k = 0; k < z; ++k) {
+            grad_minus(i, k) =
+                gsl_sf_psi(alpha_eph_sum(k)) - gsl_sf_psi(alpha_eph(i, k));
+        }
+    }
+}
+
+static void update_nu(const matrix_t& orig_over_appr,
+                      const matrix_t& orig_over_appr_squared,
+                      const matrix_t& mu, const tensord<3>& grad_plus,
+                      const matrix_t& grad_minus, double eps, matrix_t& nu) {
+    auto x = static_cast<size_t>(grad_plus.dimension(0));
+    auto y = static_cast<size_t>(grad_plus.dimension(1));
+    auto z = static_cast<size_t>(grad_plus.dimension(2));
+
+    matrix_t nom = matrix_t::Zero(x, z);
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t j = 0; j < y; ++j) {
+            for (size_t k = 0; k < z; ++k) {
+                nom(i, k) +=
+                    orig_over_appr(i, j) * mu(k, j) * grad_plus(i, j, k);
+            }
+        }
+    }
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t j = 0; j < y; ++j) {
+            for (size_t k = 0; k < z; ++k) {
+                for (size_t c = 0; c < z; ++c) {
+                    nom(i, k) += orig_over_appr_squared(i, j) * mu(k, j) *
+                                 nu(i, c) * mu(c, j) * grad_minus(i, c);
+                }
+            }
+        }
+    }
+    matrix_t denom = matrix_t::Zero(x, z);
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t j = 0; j < y; ++j) {
+            for (size_t k = 0; k < z; ++k) {
+                denom(i, k) +=
+                    orig_over_appr(i, j) * mu(k, j) * grad_minus(i, k);
+            }
+        }
+    }
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t j = 0; j < y; ++j) {
+            for (size_t k = 0; k < z; ++k) {
+                for (size_t c = 0; c < z; ++c) {
+                    denom(i, k) += orig_over_appr_squared(i, j) * mu(k, j) *
+                                   nu(i, c) * mu(c, j) * grad_plus(i, j, c);
+                }
+            }
+        }
+    }
+
+    matrix_t eps_mat = matrix_t::Constant(x, z, eps);
+    nu = nom.array() / (denom.array() + eps);
+
+    // normalize
+    vector_t nu_rowsum =
+        nu.rowwise().sum() + vector_t::Constant(nu.rows(), eps);
+    nu = nu.array().colwise() / nu_rowsum.transpose().array();
+}
+
+static void update_mu(const matrix_t& orig_over_appr,
+                      const matrix_t& orig_over_appr_squared,
+                      const matrix_t& nu, const tensord<3>& grad_plus,
+                      const matrix_t& grad_minus, double eps, matrix_t& mu) {
+    auto x = static_cast<size_t>(grad_plus.dimension(0));
+    auto y = static_cast<size_t>(grad_plus.dimension(1));
+    auto z = static_cast<size_t>(grad_plus.dimension(2));
+
+    matrix_t nom = matrix_t::Zero(x, z);
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t j = 0; j < y; ++j) {
+            for (size_t k = 0; k < z; ++k) {
+                nom(k, j) +=
+                    orig_over_appr(i, j) * nu(i, k) * grad_plus(i, j, k);
+            }
+        }
+    }
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t j = 0; j < y; ++j) {
+            for (size_t k = 0; k < z; ++k) {
+                for (size_t c = 0; c < z; ++c) {
+                    nom(k, j) += orig_over_appr_squared(i, j) * nu(i, k) *
+                                 nu(i, c) * mu(c, j) * grad_minus(i, c);
+                }
+            }
+        }
+    }
+    matrix_t denom = matrix_t::Zero(x, z);
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t j = 0; j < y; ++j) {
+            for (size_t k = 0; k < z; ++k) {
+                denom(k, j) +=
+                    orig_over_appr(i, j) * nu(i, k) * grad_minus(i, k);
+            }
+        }
+    }
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t j = 0; j < y; ++j) {
+            for (size_t k = 0; k < z; ++k) {
+                for (size_t c = 0; c < z; ++c) {
+                    denom(k, j) += orig_over_appr_squared(i, j) * nu(i, k) *
+                                   nu(i, c) * mu(c, j) * grad_plus(i, j, c);
+                }
+            }
+        }
+    }
+
+    matrix_t eps_mat = matrix_t::Constant(x, z, eps);
+    mu = nom.array() / (denom.array() + eps);
+
+    // normalize
+    vector_t mu_colsum =
+        mu.colwise().sum() + vector_t::Constant(mu.cols(), eps);
+    mu = mu.array().rowwise() / mu_colsum.array();
+}
+
+std::tuple<tensord<3>, matrix_t, matrix_t>
+bld::bld_appr(const matrix_t& X, size_t z,
+              const allocation_model::AllocModelParams& model_params,
+              size_t max_iter, double eps) {
+    auto x = static_cast<size_t>(X.rows());
+    auto y = static_cast<size_t>(X.cols());
+
+    Eigen::Map<const vector_t> alpha(model_params.alpha.data(), 1,
+                                     model_params.alpha.size());
+    Eigen::Map<const vector_t> beta(model_params.beta.data(), 1,
+                                    model_params.beta.size());
+
+    matrix_t nu(x, z);
+    matrix_t mu(y, z);
+    // initialize nu and mu using Dirichlet
+    {
+        auto rnd_gen = util::make_gsl_rng(gsl_rng_taus);
+        std::vector<double> dirichlet_params(z, 1);
+
+        // remark: following code depends on the fact that matrix_t is row major
+        for (size_t i = 0; i < x; ++i) {
+            gsl_ran_dirichlet(rnd_gen.get(), z, dirichlet_params.data(),
+                              nu.data() + i * z);
+        }
+        for (size_t j = 0; j < y; ++j) {
+            gsl_ran_dirichlet(rnd_gen.get(), z, dirichlet_params.data(),
+                              mu.data() + j * z);
+        }
+
+        mu.transposeInPlace();
+    }
+
+    tensord<3> grad_plus(x, y, z);
+    matrix_t grad_minus(x, z);
+    tensord<3> S(x, y, z);
+    matrix_t eps_mat = matrix_t::Constant(x, y, eps);
+    matrix_t X_hat, orig_over_appr, orig_over_appr_squared, alpha_eph, beta_eph;
+    for (size_t eph = 0; eph < max_iter; ++eph) {
+        // update helpers
+        update_X_hat(nu, mu, X_hat);
+        update_orig_over_appr(X, X_hat, eps_mat, orig_over_appr);
+        update_orig_over_appr_squared(X, X_hat, eps_mat,
+                                      orig_over_appr_squared);
+        update_S(orig_over_appr, nu, mu, S);
+        update_alpha_eph(alpha, S, alpha_eph);
+        update_beta_eph(beta, S, beta_eph);
+        update_grad_plus(beta_eph, S, grad_plus);
+        update_grad_minus(alpha_eph, grad_minus);
+
+        // update nu
+        update_nu(orig_over_appr, orig_over_appr_squared, mu, grad_plus,
+                  grad_minus, eps, nu);
+
+        // update helpers
+        update_X_hat(nu, mu, X_hat);
+        update_orig_over_appr(X, X_hat, eps_mat, orig_over_appr);
+        update_orig_over_appr_squared(X, X_hat, eps_mat,
+                                      orig_over_appr_squared);
+        update_S(orig_over_appr, nu, mu, S);
+        update_alpha_eph(alpha, S, alpha_eph);
+        update_beta_eph(beta, S, beta_eph);
+        update_grad_plus(beta_eph, S, grad_plus);
+        update_grad_minus(alpha_eph, grad_minus);
+
+        // update mu
+        update_mu(orig_over_appr, orig_over_appr_squared, nu, grad_plus,
+                  grad_minus, eps, mu);
+    }
+
+    update_X_hat(nu, mu, X_hat);
+    update_orig_over_appr(X, X_hat, eps_mat, orig_over_appr);
+    update_S(orig_over_appr, nu, mu, S);
+
+    return {S, nu, mu};
 }
