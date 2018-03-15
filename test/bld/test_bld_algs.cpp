@@ -466,7 +466,7 @@ TEST_CASE("Algorithm checks on collapsed icm", "[collapsed_icm]") {
 
         tensord<2> sum_S = S.sum(shape<1>({2}));
         matrix_t sum_S_mat = Eigen::Map<matrix_t>(
-                sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
+            sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
         REQUIRE(X.isApprox(sum_S_mat));
     }
 }
@@ -512,5 +512,29 @@ TEST_CASE("Algorithm checks on bld approximate", "[bld_appr]") {
     }
 
     SECTION("Test against the results of ppmf.py implementation on "
-            "Experiments.ipynb") {}
+            "Experiments.ipynb") {
+        matrix_t X(x, y);
+        X << 2., 0., 2., 2., 0., 2., 1., 0., 1., 3., 5., 4., 0., 2., 2., 6., 2.,
+            1., 4., 5., 1., 13., 6., 9., 5., 8., 6., 6., 11., 12., 6., 2., 1.,
+            4., 9., 7., 6., 10., 4., 8., 5., 5., 4., 3., 1., 0., 4., 8., 3., 1.,
+            0., 9., 2., 1., 2., 7., 5., 3., 8., 3., 9., 8., 4., 5., 11., 9., 4.,
+            6., 5., 12., 2., 6., 3., 3., 3., 6., 5., 3., 6., 4.;
+
+        AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
+                                      std::vector<double>(z, 1.0));
+
+        tensord<3> S;
+        matrix_t nu, mu;
+        std::tie(S, nu, mu) = bld::bld_appr(X, z, model_params);
+
+        double log_marginal = log_marginal_S(S, model_params);
+
+        REQUIRE(log_marginal >= -280);
+        REQUIRE(sparseness(S) >= 0.50);
+
+        tensord<2> sum_S = S.sum(shape<1>({2}));
+        matrix_t sum_S_mat = Eigen::Map<matrix_t>(
+            sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
+        REQUIRE(X.isApprox(sum_S_mat));
+    }
 }

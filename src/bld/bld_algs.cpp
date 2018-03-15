@@ -668,13 +668,12 @@ static void update_nu(const matrix_t& orig_over_appr,
         }
     }
 
-    matrix_t eps_mat = matrix_t::Constant(x, z, eps);
-    nu = nom.array() / (denom.array() + eps);
+    nu = nu.array() * nom.array() / (denom.array() + eps);
 
     // normalize
-    vector_t nu_rowsum =
+    vector_t nu_rowsum_plus_eps =
         nu.rowwise().sum() + vector_t::Constant(nu.rows(), eps).transpose();
-    nu = nu.array().colwise() / nu_rowsum.transpose().array();
+    nu = nu.array().colwise() / nu_rowsum_plus_eps.transpose().array();
 }
 
 static void update_mu(const matrix_t& orig_over_appr,
@@ -724,13 +723,12 @@ static void update_mu(const matrix_t& orig_over_appr,
         }
     }
 
-    matrix_t eps_mat = matrix_t::Constant(x, z, eps);
-    mu = nom.array() / (denom.array() + eps);
+    mu = mu.array() * nom.array() / (denom.array() + eps);
 
     // normalize
-    vector_t mu_colsum =
+    vector_t mu_colsum_plus_eps =
         mu.colwise().sum() + vector_t::Constant(mu.cols(), eps);
-    mu = mu.array().rowwise() / mu_colsum.array();
+    mu = mu.array().rowwise() / mu_colsum_plus_eps.array();
 }
 
 std::tuple<tensord<3>, matrix_t, matrix_t>
