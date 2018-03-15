@@ -15,17 +15,6 @@ namespace bnmf_algs {
  */
 namespace nmf {
 /**
- * @brief Nonnegative matrix factorization variant.
- */
-enum NMFVariant {
-    KL, ///< NMF using Kullback-Leibler divergence as error measure.
-        /// See \cite lee-seung-algs.
-
-    Euclidean ///< NMF using Euclidean distance as error measure.
-              /// See \cite lee-seung-algs.
-};
-
-/**
  * @brief Compute nonnegative matrix factorization of a matrix.
  *
  * According to the NMF model, nonnegative matrix X is factorized into two
@@ -37,64 +26,99 @@ enum NMFVariant {
  *
  * @param X (m x n) nonnegative matrix.
  * @param r Inner dimension of the factorization. Must be positive.
- * @param variant NMF variant. See enum bnmf_algs::NMFVariant.
+ * @param beta \f$\beta\f$ parameter to use during multiplicative updates.
+ * \f$\beta = 0\$ corresponds to Itakuro-Saito divergence, \f$\beta = 1\f$
+ * corresponds to Kullback-Leibler divergence and \f$\beta = 2\f$ corresponds to
+ * Euclidean cost (square of Euclidean distance). Note that \f$beta\f$ values
+ * different than these values may result in considerably slower convergence.
  * @param max_iter Maximum number of iterations. If set to 0, the algorithm
  *                  runs until convergence.
- * @param tolerance Convergence measure. For steps
- *                 \f$ i \f$ and \f$ i+1 \f$, if
- *                 \f$ |X-WH|_{i+1} - |X-WH|_i \leq tolerance \f$, the
- *                 algorithm is assumed to have converged. Must be
- *                 nonnegative.
  *
- * @remark The algorithm terminates when at least one of the termination
- *          conditions related to max_iter and tolerance is satisfied.
  * @return std::pair of W and H matrices.
  *
  * @throws std::invalid_argument if \f$X\f$ is not nonnegative, if r is not
  * positive, epsilon is not positive
  */
-std::pair<matrix_t, matrix_t>
-nmf(const matrix_t& X, size_t r, NMFVariant variant, size_t max_iter = 1000,
-    double tolerance = std::numeric_limits<double>::epsilon());
+std::pair<matrix_t, matrix_t> nmf(const matrix_t& X, size_t r, double beta,
+                                  size_t max_iter = 1000);
 
 /**
- * @brief Compute the Euclidean cost as defined in \cite lee-seung-algs.
+ * @brief Compute the \f$\beta\f$-divergence as defined in \cite
+ * fevotte2011algorithms.
  *
- * Euclidean cost is defined as
+ * This function computes the \f$\beta\f$-divergence between two scalars which
+ * is given as
  *
- * \f$ \sum_{ij} (A_{ij} - B_{ij})^2 \f$
+ * \f[
+ * d_{\beta}(x|y) =
+ * \begin{cases}
+ *   \frac{1}{\beta(\beta - 1)}(x^{\beta} + (\beta - 1)y^{\beta} - \beta
+ * xy^{\beta - 1}), & \beta \in \mathcal{R}\setminus \{0,1\} \\
+ *   x\log{\frac{x}{y}} - x + y, & \beta = 1 \\
+ *   \frac{x}{y} - \log{\frac{x}{y}} - 1, & \beta = 0
+ * \end{cases}
+ * \f]
  *
- * for matrices A and B of the same shape.
+ * Regular cost functions in NMF can be obtained using certain values of
+ * \f$\beta\f$. In particular, \f$\beta = 0\$ corresponds to Itakuro-Saito
+ * divergence, \f$\beta = 1\f$ corresponds to Kullback-Leibler divergence and
+ * \f$\beta = 2\f$ corresponds to Euclidean cost (square of Euclidean distance).
  *
- * @param A First matrix.
- * @param B Second matrix.
+ * @param x First value.
+ * @param y Second value.
+ * @param beta \f$\beta\f$-divergence parameter.
  *
- * @return Euclidean cost between A and B.
- *
- * @remark If matrices A and B have different shape, the result is undefined.
+ * @return \f$\beta\f$-divergence between the two scalars.
  */
-double euclidean_cost(const matrix_t& A, const matrix_t& B);
+double beta_divergence(double x, double y, double beta);
 
 /**
- * @brief Compute the KL-divergence cost as defined in \cite lee-seung-algs.
+ * @brief Compute the \f$\beta\f$-divergence as defined in \cite
+ * fevotte2011algorithms.
  *
- * This function computes the KL-divergence cost from A to B which is defined
- * as
+ * This function computes the \f$\beta\f$-divergence between each corresponding
+ * item in the given two sequences and then returns the summed divergence value.
  *
- * \f$ \sum_{ij} \big( A_{ij}log(\frac{A_{ij}}{B_{ij}}) - A_{ij} + B_{ij}
- * \big)\f$
+ * @see nmf::beta_divergence.
  *
- * for matrices A and B of the same shape. If \f$ A_{ij} = 0 \f$ or
- * \f$ B_{ij} = 0\f$, then the first term in the equation is not calculated
- * for that element pair.
+ * @tparam InputIterator1 Iterator type of the first sequence.
+ * @tparam InputIterator2 Iterator type of the second sequence.
+ * @param first_begin Beginning of the first sequence.
+ * @param first_end End of the first sequence.
+ * @param second_begin Beginning of the second sequence.
+ * @param beta \f$\beta\f$-divergence parameter. @see nmf::beta_divergence.
  *
- * @param A First matrix.
- * @param B Second matrix.
- *
- * @return KL-divergence cost from A to B.
- *
- * @remark If matrices A and B have different shape, the result is undefined.
+ * @return Sum of \f$\beta\f$-divergence of each corresponding element in the
+ * given two sequences.
  */
-double kl_cost(const matrix_t& A, const matrix_t& B);
+template <typename InputIterator1, typename InputIterator2>
+double beta_divergence(InputIterator1 first_begin, InputIterator1 first_end,
+                       InputIterator2 second_begin, double beta) {
+    // todo: parallelize
+    return std::inner_product(
+        first_begin, first_end, second_begin, 0.0,
+        [beta](double x, double y) { return beta_divergence(x, y, beta); },
+        std::plus<>());
+}
+
+/**
+ * @brief Return \f$\beta\f$-divergence between two vectors/matrices/tensors
+ * as defined in bnmf_algs::vector_t, bnmf_algs::matrix_t, bnmf_algs::tensord.
+ *
+ * @tparam Tensor A contiguous data holder type with data() and size() members.
+ *
+ * @param X First tensor-like object (vector/matrix/tensor).
+ * @param Y Second tensor-like object (vector/matrix/tensor).
+ * @param beta \f$\beta\f$-divergence parameter. @see nmf::beta_divergence.
+ *
+ * @return Sum of \f$\beta\f$-divergence of each pair of corresponding elements
+ * in the given two tensor-like objects.
+ */
+template <typename Tensor>
+double beta_divergence(const Tensor& X, const Tensor& Y, double beta) {
+    const auto size = X.size();
+
+    return beta_divergence(X.data(), X.data() + size, Y.data(), beta);
+}
 } // namespace nmf
 } // namespace bnmf_algs
