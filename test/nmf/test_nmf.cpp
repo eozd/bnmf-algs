@@ -14,7 +14,7 @@ TEST_CASE("Euclidean NMF constraint checks", "[nmf]") {
 
     matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
     matrix_t W, H;
-    std::tie(W, H) = nmf::nmf(X, r, 0);
+    std::tie(W, H) = nmf::nmf(X, r, 2);
 
     SECTION("Check returned matrices' shapes") {
         REQUIRE(W.rows() == m);
@@ -41,7 +41,7 @@ TEST_CASE("Euclidean NMF small matrix convergence check", "[nmf]") {
     matrix_t W, H;
 
     auto before = high_resolution_clock::now();
-    std::tie(W, H) = nmf::nmf(X, r, 2);
+    std::tie(W, H) = nmf::nmf(X, r, 2, 500);
     auto after = high_resolution_clock::now();
 
     milliseconds elapsed = duration_cast<milliseconds>(after - before);
@@ -55,7 +55,7 @@ TEST_CASE("KL NMF small matrix convergence check", "[nmf]") {
     matrix_t W, H;
 
     auto before = high_resolution_clock::now();
-    std::tie(W, H) = nmf::nmf(X, r, 1, 1000);
+    std::tie(W, H) = nmf::nmf(X, r, 1, 500);
     auto after = high_resolution_clock::now();
 
     milliseconds elapsed = duration_cast<milliseconds>(after - before);

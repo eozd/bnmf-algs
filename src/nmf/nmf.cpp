@@ -1,8 +1,11 @@
 #include "nmf/nmf.hpp"
+#include <chrono>
+#include <iostream>
 
 #include <cmath>
 #include <limits>
 #include <stdexcept>
+using namespace std::chrono;
 
 using namespace bnmf_algs;
 
@@ -35,38 +38,11 @@ double nmf::beta_divergence(double x, double y, double beta) {
     return nom / (beta * (beta - 1));
 }
 
-/**
- * @brief Compute delta1 function as defined in Derivation Sketch for NMF Using
- * \f$\beta\f$-divergence.
- *
- * delta1 function is defined as
- *
- * \f$ \sum_j Y(i, j)H(k, j) \f$.
- *
- * @param H H matrix in NMF where \f$X \sim WH\f$.
- * @param Y Matrix to apply delta1 function in-place.
- */
-static void delta1(const matrix_t& H, matrix_t& Y) {
-
-}
-
-/**
- * @brief Compute delta2 function as defined in Derivation Sketch for NMF Using
- * \f$\beta\f$-divergence.
- *
- * delta2 function is defined as
- *
- * \f$ \sum_i Y(i, j)W(i, k)\f$.
- *
- * @param W W matrix in NMF where \f$X \sim WH\f$.
- * @param Y Matrix to apply delta2 function in-place.
- */
-static void delta2(const matrix_t& W, matrix_t& Y) {}
-
 std::pair<matrix_t, matrix_t> nmf::nmf(const matrix_t& X, size_t r, double beta,
                                        size_t max_iter) {
-    const auto m = static_cast<size_t>(X.rows());
-    const auto n = static_cast<size_t>(X.cols());
+    const auto x = static_cast<size_t>(X.rows());
+    const auto y = static_cast<size_t>(X.cols());
+    const auto z = r;
 
     {
         auto error_msg = nmf_check_parameters(X, r);
@@ -76,35 +52,70 @@ std::pair<matrix_t, matrix_t> nmf::nmf(const matrix_t& X, size_t r, double beta,
     }
 
     if (X.isZero(0)) {
-        return std::make_pair(matrix_t::Zero(m, r), matrix_t::Zero(r, n));
+        return std::make_pair(matrix_t::Zero(x, z), matrix_t::Zero(z, y));
     }
 
-    matrix_t W = matrix_t::Random(m, r) + matrix_t::Ones(m, r);
-    matrix_t H = matrix_t::Random(r, n) + matrix_t::Ones(r, n);
+    matrix_t W = matrix_t::Random(x, z) + matrix_t::Ones(x, z);
+    matrix_t H = matrix_t::Random(z, y) + matrix_t::Ones(z, y);
 
     if (max_iter == 0) {
         return std::make_pair(W, H);
     }
 
-    double p = 2 - beta;
+    const double p = 2 - beta;
+    const double eps = std::numeric_limits<double>::epsilon();
+    const auto p_int = (int)p;
+    const bool is_p_int = std::abs(p_int - p) <= eps;
+
+    matrix_t X_hat, nom_W(x, z), denom_W(x, z), nom_H(z, y), denom_H(z, y);
     while (max_iter-- > 0) {
-        matrix_t X_hat = W * H;
-
-        matrix_t nom = X.array() / X_hat.array().pow(p);
-        matrix_t denom = X_hat.array().pow(1 - p);
-        delta1(H, nom);
-        delta1(H, denom);
-
-        W = W.array() * nom.array() / denom.array();
-
+        // update approximation
         X_hat = W * H;
 
-        nom = X.array() / X_hat.array().pow(p);
-        denom = X_hat.array().pow(1 - p);
-        delta2(W, nom);
-        delta2(W, denom);
+        // update W
+        if (is_p_int && p == 0) {
+            // Euclidean NMF
+            nom_W = X * H.transpose();
+            denom_W = X_hat * H.transpose();
+        } else if (is_p_int && p == 1) {
+            // KL NMF
+            nom_W = (X.array() / X_hat.array()).matrix() * H.transpose();
+            denom_W = matrix_t::Ones(x, y) * H.transpose();
+        } else if (is_p_int && p == 2) {
+            // Itakuro-Saito NMF
+            nom_W =
+                (X.array() / X_hat.array().square()).matrix() * H.transpose();
+            denom_W = (X_hat.array().inverse()).matrix() * H.transpose();
+        } else {
+            // general case
+            nom_W = (X.array() / X_hat.array().pow(p)).matrix() * H.transpose();
+            denom_W = (X_hat.array().pow(1 - p)).matrix() * H.transpose();
+        }
+        W = W.array() * nom_W.array() / denom_W.array();
 
-        H = H.array() * nom.array() / denom.array();
+        // update approximation
+        X_hat = W * H;
+
+        // update H
+        if (is_p_int && p == 0) {
+            // Euclidean NMF
+            nom_H = W.transpose() * X;
+            denom_H = W.transpose() * X_hat;
+        } else if (is_p_int && p == 1) {
+            // KL NMF
+            nom_H = W.transpose() * (X.array() / X_hat.array()).matrix();
+            denom_H = W.transpose() * matrix_t::Ones(x, y);
+        } else if (is_p_int && p == 2) {
+            // Itakuro-Saito NMF
+            nom_H =
+                W.transpose() * (X.array() / X_hat.array().square()).matrix();
+            denom_H = W.transpose() * (X_hat.array().inverse()).matrix();
+        } else {
+            // general case
+            nom_H = W.transpose() * (X.array() / X_hat.array().pow(p)).matrix();
+            denom_H = W.transpose() * (X_hat.array().pow(1 - p)).matrix();
+        }
+        H = H.array() * nom_H.array() / denom_H.array();
     }
     return std::make_pair(W, H);
 }

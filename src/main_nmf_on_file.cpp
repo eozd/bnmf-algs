@@ -1,4 +1,5 @@
-#include "bnmf_algs.hpp"
+#include "defs.hpp"
+#include "nmf/nmf.hpp"
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -14,7 +15,7 @@ int main() {
     // TODO: Get the file name from console arguments
     // TODO: Improve file parsing code to allow scientific notation and multiple
     // spaces
-    std::ifstream datafile("../olivetti.txt");
+    std::ifstream datafile("olivetti.txt");
     std::vector<double> data;
     int n_rows = 0;
     std::string line;
@@ -35,11 +36,11 @@ int main() {
     auto n_cols = data.size() / n_rows;
     std::cout << '(' << n_rows << ", " << n_cols << ')' << std::endl;
 
-    Eigen::Map<bnmf_algs::Matrix> X(data.data(), n_rows, n_cols);
+    Eigen::Map<bnmf_algs::matrix_t> X(data.data(), n_rows, n_cols);
 
-    bnmf_algs::Matrix W, H;
+    bnmf_algs::matrix_t W, H;
     std::tie(W, H) =
-        bnmf_algs::nmf(X, 20, bnmf_algs::NMFVariant::Euclidean, 500);
+        bnmf_algs::nmf::nmf(X, 64, 1, 2000);
 
     std::ofstream w_file("W.txt", std::ios_base::trunc);
     std::ofstream h_file("H.txt", std::ios_base::trunc);
