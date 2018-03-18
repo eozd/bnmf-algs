@@ -64,13 +64,15 @@ std::pair<matrix_t, matrix_t> nmf(const matrix_t& X, size_t r, double beta,
  * divergence, \f$\beta = 1\f$ corresponds to Kullback-Leibler divergence and
  * \f$\beta = 2\f$ corresponds to Euclidean cost (square of Euclidean distance).
  *
- * @param x First value.
+ * @param x First value. If beta is 0 (IS) or 1 (KL), the terms containing x
+ * is not used during IS or KL computation.
  * @param y Second value.
  * @param beta \f$\beta\f$-divergence parameter.
+ * @param eps Epsilon value to prevent division by 0.
  *
  * @return \f$\beta\f$-divergence between the two scalars.
  */
-double beta_divergence(double x, double y, double beta);
+double beta_divergence(double x, double y, double beta, double eps = 1e-50);
 
 /**
  * @brief Compute the \f$\beta\f$-divergence as defined in \cite
@@ -87,18 +89,20 @@ double beta_divergence(double x, double y, double beta);
  * @param first_end End of the first sequence.
  * @param second_begin Beginning of the second sequence.
  * @param beta \f$\beta\f$-divergence parameter. @see nmf::beta_divergence.
+ * @param eps Epsilon value to prevent division by 0.
  *
  * @return Sum of \f$\beta\f$-divergence of each corresponding element in the
  * given two sequences.
  */
 template <typename InputIterator1, typename InputIterator2>
 double beta_divergence(InputIterator1 first_begin, InputIterator1 first_end,
-                       InputIterator2 second_begin, double beta) {
+                       InputIterator2 second_begin, double beta,
+                       double eps = 1e-50) {
     // todo: parallelize
-    return std::inner_product(
-        first_begin, first_end, second_begin, 0.0,
-        [beta](double x, double y) { return beta_divergence(x, y, beta); },
-        std::plus<>());
+    return std::inner_product(first_begin, first_end, second_begin, 0.0,
+                              std::plus<>(), [beta, eps](double x, double y) {
+                                  return beta_divergence(x, y, beta, eps);
+                              });
 }
 
 /**
@@ -110,15 +114,17 @@ double beta_divergence(InputIterator1 first_begin, InputIterator1 first_end,
  * @param X First tensor-like object (vector/matrix/tensor).
  * @param Y Second tensor-like object (vector/matrix/tensor).
  * @param beta \f$\beta\f$-divergence parameter. @see nmf::beta_divergence.
+ * @param eps Epsilon value to prevent division by 0.
  *
  * @return Sum of \f$\beta\f$-divergence of each pair of corresponding elements
  * in the given two tensor-like objects.
  */
 template <typename Tensor>
-double beta_divergence(const Tensor& X, const Tensor& Y, double beta) {
+double beta_divergence(const Tensor& X, const Tensor& Y, double beta,
+                       double eps = 1e-50) {
     const auto size = X.size();
 
-    return beta_divergence(X.data(), X.data() + size, Y.data(), beta);
+    return beta_divergence(X.data(), X.data() + size, Y.data(), beta, eps);
 }
 } // namespace nmf
 } // namespace bnmf_algs

@@ -25,16 +25,28 @@ static std::string nmf_check_parameters(const matrix_t& X, size_t r) {
     return "";
 }
 
-double nmf::beta_divergence(double x, double y, double beta) {
-    constexpr double eps = std::numeric_limits<double>::epsilon();
-
-    if (std::abs(beta) <= eps) {
-        return x / y - std::log(x / y) - 1;
-    } else if (std::abs(beta - 1) <= eps) {
-        return x * std::log(x / y) - x + y;
+double nmf::beta_divergence(double x, double y, double beta, double eps) {
+    if (std::abs(beta) <= std::numeric_limits<double>::epsilon()) {
+        // Itakuro Saito
+        if (std::abs(x) <= std::numeric_limits<double>::epsilon()) {
+            return -1;
+        }
+        return x / (y + eps) - std::log(x / (y + eps)) - 1;
+    } else if (std::abs(beta - 1) <= std::numeric_limits<double>::epsilon()) {
+        // KL
+        double logpart;
+        if (std::abs(x) <= std::numeric_limits<double>::epsilon()) {
+            logpart = 0;
+        } else {
+            logpart = x * std::log(x / (y + eps));
+        }
+        return logpart - x + y;
     }
+
+    // general case
     double nom = std::pow(x, beta) + (beta - 1) * std::pow(y, beta) -
                  beta * x * std::pow(y, beta - 1);
+    // beta != 0 && beta != 1
     return nom / (beta * (beta - 1));
 }
 

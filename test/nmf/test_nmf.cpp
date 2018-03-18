@@ -91,13 +91,10 @@ TEST_CASE("Euclidean NMF invalid parameters", "[nmf]") {
         REQUIRE_THROWS(nmf::nmf(X, r, 2));
     }
 
-    SECTION("Invalid inner dimension") {
-        REQUIRE_THROWS(nmf::nmf(X, 0, 2));
-    }
-
+    SECTION("Invalid inner dimension") { REQUIRE_THROWS(nmf::nmf(X, 0, 2)); }
 }
 
-TEST_CASE("Euclidean NMF degenerate cases", "[degenerate]") {
+TEST_CASE("Euclidean NMF degenerate cases", "[nmf]") {
     int m = 500, n = 400, r = 20;
 
     SECTION("X == 0") {
@@ -108,5 +105,204 @@ TEST_CASE("Euclidean NMF degenerate cases", "[degenerate]") {
 
         REQUIRE(W.isZero(0));
         REQUIRE(H.isZero(0));
+    }
+}
+
+TEST_CASE("Test beta divergence for single values", "[beta-divergence]") {
+    double x, y, beta;
+
+    SECTION("x == 0 and y == 0") {
+        x = 0, y = 0;
+
+        beta = 0;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(-1));
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(0));
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(0));
+    }
+
+    SECTION("y == 1") {
+        x = 0, y = 1;
+
+        beta = 0;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(-1));
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(1));
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(0.5));
+
+        x = 1;
+
+        beta = 0;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(0));
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(0));
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(0));
+    }
+
+    SECTION("General case") {
+        x = 2, y = 15;
+
+        beta = 0;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(1.148236353875598));
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(8.97019395891547));
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(84.5));
+
+        x = 15;
+
+        beta = 0;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(0));
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(0));
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(0));
+    }
+}
+
+TEST_CASE("Test beta divergence for sequences", "[beta-divergence]") {
+    std::vector<double> x, y;
+    double beta;
+
+    SECTION("General case") {
+        x = {1, 2, 3, 4, 5};
+        y = {5, 4, 3, 2, 1};
+
+        beta = 0;
+        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+                Approx(3.6999999999999993));
+
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+                Approx(7.824046010856292));
+
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+                Approx(20));
+    }
+
+    SECTION("Only x contains 0") {
+        x = {1, 2, 0, 4, 5};
+        y = {5, 4, 3, 2, 1};
+
+        beta = 0;
+        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+                Approx(2.7));
+
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+                Approx(10.824046010856292));
+
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+                Approx(24.5));
+    }
+
+
+    SECTION("Only y contains 0") {
+        double eps_32bit = std::numeric_limits<float>::epsilon();
+        x = {1, 2, 3, 4, 5};
+        y = {5, 4, 3, 0, 1};
+
+        beta = 0;
+        REQUIRE(Approx(33554417.06446767) ==
+                nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta,
+                                     eps_32bit));
+
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta,
+                                     eps_32bit) ==
+                Approx(72.36617534461104));
+
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+                Approx(26));
+    }
+
+    SECTION("Overlapping 0s in x and y") {
+        x = {1, 2, 0, 4, 5};
+        y = {5, 4, 0, 2, 1};
+
+        beta = 0;
+        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+                Approx(2.7));
+
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+                Approx(7.824046010856292));
+
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+                Approx(20));
+    }
+}
+
+TEST_CASE("Test beta divergence for tensor-like objects", "[beta-divergence]") {
+    vector_t x(5), y(5);
+    double beta;
+
+    SECTION("General case") {
+        x << 1, 2, 3, 4, 5;
+        y << 5, 4, 3, 2, 1;
+
+        beta = 0;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(3.6999999999999993));
+
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(7.824046010856292));
+
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(20));
+    }
+
+    SECTION("Only x contains 0") {
+        x << 1, 2, 0, 4, 5;
+        y << 5, 4, 3, 2, 1;
+
+        beta = 0;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(2.7));
+
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(10.824046010856292));
+
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(24.5));
+    }
+
+    SECTION("Only y contains 0") {
+        double eps_32bit = std::numeric_limits<float>::epsilon();
+        x << 1, 2, 3, 4, 5;
+        y << 5, 4, 3, 0, 1;
+
+        beta = 0;
+        REQUIRE(Approx(33554417.06446767) ==
+                nmf::beta_divergence(x, y, beta, eps_32bit));
+
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x, y, beta, eps_32bit) ==
+                Approx(72.36617534461104));
+
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x, y, beta) == Approx(26));
+    }
+
+    SECTION("Overlapping 0s in x and y") {
+        x << 1, 2, 0, 4, 5;
+        y << 5, 4, 0, 2, 1;
+
+        beta = 0;
+        REQUIRE(nmf::beta_divergence(x, y, beta) ==
+                Approx(2.7));
+
+        beta = 1;
+        REQUIRE(nmf::beta_divergence(x, y, beta) ==
+                Approx(7.824046010856292));
+
+        beta = 2;
+        REQUIRE(nmf::beta_divergence(x, y, beta) ==
+                Approx(20));
     }
 }
