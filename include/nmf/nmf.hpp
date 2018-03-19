@@ -37,6 +37,8 @@ namespace nmf {
  *
  * @return std::pair of W and H matrices.
  *
+ * @todo Add SVD initialization. See \cite boutsidis2008svd.
+ *
  * @throws std::invalid_argument if \f$X\f$ is not nonnegative, if r is not
  * positive, epsilon is not positive
  */

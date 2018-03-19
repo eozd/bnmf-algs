@@ -16,11 +16,9 @@ in C++.
 ### Building
 To build the project type the following commands in the project root directory:
 ```
-mkdir -p build
-cd build
-cmake ..
-make
+./build.sh Release
 ```
+Afterwards, all the executables are placed inside the build directory.
 
 ### Tests
 To run the tests after building the project, type

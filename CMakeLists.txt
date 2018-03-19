@@ -5,12 +5,8 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14 -Wall -pedantic -g -O0 -fprofile-arcs -ftest-coverage")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lgcov")
-
-# Optimized build
-# TODO: Use Debug and Release build types instead of commenting
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -O3 -fopenmp")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -Wall -pedantic -g -O0 -fprofile-arcs -ftest-coverage")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -Wall -pedantic -O3 -fopenmp")
 
 include_directories("include")
 
@@ -44,5 +40,5 @@ target_link_libraries(bnmf_algs gsl gslcblas)
 add_executable (tests ${TEST_SRC_FILES})
 target_link_libraries(tests bnmf_algs)
 
-#add_executable(dataset_nmf src/main_nmf_on_file.cpp)
-#target_link_libraries(dataset_nmf bnmf_algs)
+add_executable(dataset_nmf src/main_nmf_on_file.cpp)
+target_link_libraries(dataset_nmf bnmf_algs)
