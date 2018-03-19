@@ -27,11 +27,13 @@ class CollapsedGibbsComputer {
      * @param model_params Allocation model parameters. See
      * bnmf_algs::allocation_model::AllocModelParams.
      * @param max_iter Maximum number of iterations.
+     * @param eps Floating point epsilon value to be used to prevent division by
+     * 0 errors.
      */
     explicit CollapsedGibbsComputer(
         const matrix_t& X, size_t z,
-        const allocation_model::AllocModelParams& model_params,
-        size_t max_iter, double eps);
+        const allocation_model::AllocModelParams& model_params, size_t max_iter,
+        double eps);
 
     /**
      * @brief Function call operator that will compute the next tensor sample
@@ -280,6 +282,8 @@ tensord<3> bld_add(const matrix_t& X, size_t z,
  * @param model_params Allocation model parameters. See
  * bnmf_algs::allocation_model::AllocModelParams.
  * @param max_iter Maximum number of iterations.
+ * @param eps Floating point epsilon value to be used to prevent division by 0
+ * errors.
  *
  * @return util::Generator object that will generate a sequence of \f$S\f$
  * tensors using details::CollapsedGibbsComputer as its Computer type.
@@ -291,7 +295,7 @@ tensord<3> bld_add(const matrix_t& X, size_t z,
 util::Generator<tensord<3>, details::CollapsedGibbsComputer>
 collapsed_gibbs(const matrix_t& X, size_t z,
                 const allocation_model::AllocModelParams& model_params,
-                size_t max_iter = 1000, double eps=1e-50);
+                size_t max_iter = 1000, double eps = 1e-50);
 
 /**
  * @brief Compute tensor \f$S\f$, the solution of BLD problem \cite
@@ -322,6 +326,8 @@ collapsed_gibbs(const matrix_t& X, size_t z,
  * @param model_params Allocation model parameters. See
  * bnmf_algs::allocation_model::AllocModelParams.
  * @param max_iter Maximum number of iterations.
+ * @param eps Floating point epsilon value to be used to prevent division by 0
+ * errors.
  *
  * @return Tensor \f$S\f$ of size \f$x \times y \times z\f$ where \f$X =
  * S_{ij+}\f$.
@@ -332,13 +338,13 @@ collapsed_gibbs(const matrix_t& X, size_t z,
  */
 tensord<3> collapsed_icm(const matrix_t& X, size_t z,
                          const allocation_model::AllocModelParams& model_params,
-                         size_t max_iter = 1000, double eps=1e-50);
+                         size_t max_iter = 1000, double eps = 1e-50);
 
 /**
  * @brief Compute tensor \f$S\f$, the solution of BLD problem \cite
  * kurutmazbayesian, and optimization matrices \f$\mu\f$ and \f$\nu\f$ from
  * matrix \f$X\f$ using the approximate multiplicative algorithm given in
- * \kurutmazbayesian.
+ * \cite kurutmazbayesian.
  *
  * According to Allocation Model \cite kurutmazbayesian,
  *
@@ -357,7 +363,7 @@ tensord<3> collapsed_icm(const matrix_t& X, size_t z,
  * \f]
  *
  * This algorithm finds the optimal \f$S\f$ using the multiplicative algorithm
- * employing Lagrange multipliers as given in \kurutmazbayesian:
+ * employing Lagrange multipliers as given in \cite kurutmazbayesian:
  *
  * \f[
  * S_{ijk} = X_{ij}\frac{\nu_{ik}\mu_{kj}}{\sum_c \nu_{ic}\mu{cj}}.

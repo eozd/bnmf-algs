@@ -22,15 +22,16 @@ namespace nmf {
  *
  *          X = WH
  *
- * where X is (m x n), W is (m x r) and H is (r x n) nonnegative matrices.
+ * where X is (m x n), W is (m x r) and H is (r x n) nonnegative matrices. For
+ * original NMF paper, see \cite lee-seung-nmf and \cite lee-seung-algs.
  *
  * @param X (m x n) nonnegative matrix.
  * @param r Inner dimension of the factorization. Must be positive.
- * @param beta \f$\beta\f$ parameter to use during multiplicative updates.
- * \f$\beta = 0\$ corresponds to Itakuro-Saito divergence, \f$\beta = 1\f$
- * corresponds to Kullback-Leibler divergence and \f$\beta = 2\f$ corresponds to
- * Euclidean cost (square of Euclidean distance). Note that \f$beta\f$ values
- * different than these values may result in considerably slower convergence.
+ * @param beta \f$\beta\f$-divergence parameter. \f$\beta = 0\f$ corresponds to
+ * Itakuro-Saito divergence, \f$\beta = 1\f$ corresponds to Kullback-Leibler
+ * divergence and \f$\beta = 2\f$ corresponds to Euclidean cost (square of
+ * Euclidean distance). Note that beta values different than these values
+ * may result in considerably slower convergence.
  * @param max_iter Maximum number of iterations. If set to 0, the algorithm
  *                  runs until convergence.
  *
@@ -43,8 +44,7 @@ std::pair<matrix_t, matrix_t> nmf(const matrix_t& X, size_t r, double beta,
                                   size_t max_iter = 1000);
 
 /**
- * @brief Compute the \f$\beta\f$-divergence as defined in \cite
- * fevotte2011algorithms.
+ * @brief Compute the \f$\beta\f$-divergence as defined in \cite fevotte2011.
  *
  * This function computes the \f$\beta\f$-divergence between two scalars which
  * is given as
@@ -60,12 +60,12 @@ std::pair<matrix_t, matrix_t> nmf(const matrix_t& X, size_t r, double beta,
  * \f]
  *
  * Regular cost functions in NMF can be obtained using certain values of
- * \f$\beta\f$. In particular, \f$\beta = 0\$ corresponds to Itakuro-Saito
+ * \f$\beta\f$. In particular, \f$\beta = 0\f$ corresponds to Itakuro-Saito
  * divergence, \f$\beta = 1\f$ corresponds to Kullback-Leibler divergence and
  * \f$\beta = 2\f$ corresponds to Euclidean cost (square of Euclidean distance).
  *
- * @param x First value. If beta is 0 (IS) or 1 (KL), the terms containing x
- * is not used during IS or KL computation.
+ * @param x First value. If \f$x=0\f$ and beta is 0 (IS) or 1 (KL), the terms
+ * containing x is not used during IS or KL computation.
  * @param y Second value.
  * @param beta \f$\beta\f$-divergence parameter.
  * @param eps Epsilon value to prevent division by 0.
@@ -75,24 +75,23 @@ std::pair<matrix_t, matrix_t> nmf(const matrix_t& X, size_t r, double beta,
 double beta_divergence(double x, double y, double beta, double eps = 1e-50);
 
 /**
- * @brief Compute the \f$\beta\f$-divergence as defined in \cite
- * fevotte2011algorithms.
+ * @brief Compute the \f$\beta\f$-divergence as defined in \cite fevotte2011.
  *
  * This function computes the \f$\beta\f$-divergence between each corresponding
  * item in the given two sequences and then returns the summed divergence value.
- *
- * @see nmf::beta_divergence.
  *
  * @tparam InputIterator1 Iterator type of the first sequence.
  * @tparam InputIterator2 Iterator type of the second sequence.
  * @param first_begin Beginning of the first sequence.
  * @param first_end End of the first sequence.
  * @param second_begin Beginning of the second sequence.
- * @param beta \f$\beta\f$-divergence parameter. @see nmf::beta_divergence.
+ * @param beta \f$\beta\f$-divergence parameter.
  * @param eps Epsilon value to prevent division by 0.
  *
  * @return Sum of \f$\beta\f$-divergence of each corresponding element in the
  * given two sequences.
+ *
+ * @see nmf::beta_divergence.
  */
 template <typename InputIterator1, typename InputIterator2>
 double beta_divergence(InputIterator1 first_begin, InputIterator1 first_end,
@@ -113,11 +112,13 @@ double beta_divergence(InputIterator1 first_begin, InputIterator1 first_end,
  *
  * @param X First tensor-like object (vector/matrix/tensor).
  * @param Y Second tensor-like object (vector/matrix/tensor).
- * @param beta \f$\beta\f$-divergence parameter. @see nmf::beta_divergence.
+ * @param beta \f$\beta\f$-divergence parameter.
  * @param eps Epsilon value to prevent division by 0.
  *
  * @return Sum of \f$\beta\f$-divergence of each pair of corresponding elements
  * in the given two tensor-like objects.
+ *
+ * @see nmf::beta_divergence.
  */
 template <typename Tensor>
 double beta_divergence(const Tensor& X, const Tensor& Y, double beta,
