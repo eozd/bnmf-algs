@@ -347,8 +347,8 @@ details::CollapsedGibbsComputer::CollapsedGibbsComputer(
     const allocation_model::AllocModelParams& model_params, size_t max_iter,
     double eps)
     : model_params(model_params),
-      one_sampler_repl(allocation_model::sample_ones(X, true, max_iter)),
-      one_sampler_no_repl(allocation_model::sample_ones(X, false)),
+      one_sampler_repl(util::sample_ones(X, true, max_iter)),
+      one_sampler_no_repl(util::sample_ones(X, false)),
       U_ipk(matrix_t::Zero(X.rows(), z)), U_ppk(vector_t::Zero(z)),
       U_pjk(matrix_t::Zero(X.cols(), z)),
       sum_alpha(std::accumulate(model_params.alpha.begin(),
@@ -474,7 +474,7 @@ bld::collapsed_icm(const matrix_t& X, size_t z,
 
     // initializing increment sampling without multinomial
     size_t i, j;
-    for (const auto& pair : allocation_model::sample_ones(X)) {
+    for (const auto& pair : util::sample_ones(X)) {
         std::tie(i, j) = pair;
 
         vector_t alpha_row = U_ipk.row(i).array() + model_params.alpha[i];
@@ -497,7 +497,7 @@ bld::collapsed_icm(const matrix_t& X, size_t z,
         static_cast<unsigned long>(U_ppk.cols()));
     auto rnd_gen = util::make_gsl_rng(gsl_rng_taus);
 
-    for (const auto& pair : allocation_model::sample_ones(X, true, max_iter)) {
+    for (const auto& pair : util::sample_ones(X, true, max_iter)) {
         std::tie(i, j) = pair;
 
         // decrement sampling

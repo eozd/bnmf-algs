@@ -40,5 +40,26 @@ target_link_libraries(bnmf_algs gsl gslcblas)
 add_executable (tests ${TEST_SRC_FILES})
 target_link_libraries(tests bnmf_algs)
 
-add_executable(dataset_nmf src/main_nmf_on_file.cpp)
-target_link_libraries(dataset_nmf bnmf_algs)
+# add_executable(dataset_nmf src/main_nmf_on_file.cpp)
+# target_link_libraries(dataset_nmf bnmf_algs)
+#
+# add_executable(bld_add_bench benchmark/bld_add_benchmark.cpp)
+# target_link_libraries(bld_add_bench bnmf_algs)
+#
+# add_executable(bld_appr_bench benchmark/bld_appr_benchmark.cpp)
+# target_link_libraries(bld_appr_bench bnmf_algs)
+#
+# add_executable(bld_mult_bench benchmark/bld_mult_benchmark.cpp)
+# target_link_libraries(bld_mult_bench bnmf_algs)
+#
+# add_executable(collapsed_gibbs_bench benchmark/collapsed_gibbs_benchmark.cpp)
+# target_link_libraries(collapsed_gibbs_bench bnmf_algs)
+#
+# add_executable(collapsed_icm_bench benchmark/collapsed_icm_benchmark.cpp)
+# target_link_libraries(collapsed_icm_bench bnmf_algs)
+#
+# add_executable(nmf_bench benchmark/nmf_benchmark.cpp)
+# target_link_libraries(nmf_bench bnmf_algs)
+#
+# add_executable(seq_greedy_bld_bench benchmark/seq_greedy_bld_benchmark.cpp)
+# target_link_libraries(seq_greedy_bld_bench bnmf_algs)
