@@ -1,8 +1,9 @@
 #pragma once
 
 #include <util/util.hpp>
+#include <util/sampling.hpp>
 #include "allocation_model/alloc_model_params.hpp"
-#include "allocation_model/sampling.hpp"
+#include "allocation_model/alloc_model_funcs.hpp"
 #include "defs.hpp"
 #include "util/generator.hpp"
 #include "util/wrappers.hpp"

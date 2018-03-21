@@ -1,7 +1,7 @@
 #include <random>
 
 #include "../catch2.hpp"
-#include "allocation_model/sampling.hpp"
+#include "allocation_model/alloc_model_funcs.hpp"
 #include "util/util.hpp"
 #include <bitset>
 #include <iostream>

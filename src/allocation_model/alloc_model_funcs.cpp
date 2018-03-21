@@ -2,7 +2,7 @@
 #include <gsl/gsl_sf_gamma.h>
 #include <iostream>
 
-#include "allocation_model/sampling.hpp"
+#include "allocation_model/alloc_model_funcs.hpp"
 #include "util/wrappers.hpp"
 
 using namespace bnmf_algs;

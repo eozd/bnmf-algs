@@ -17,22 +17,23 @@ include_directories(SYSTEM ${GSL_INCLUDE_DIRS})
 
 set(LIB_SRC_FILES
         src/nmf/nmf.cpp
-        src/allocation_model/sampling.cpp
+        src/allocation_model/alloc_model_funcs.cpp
         src/util/wrappers.cpp
         src/bld/bld_algs.cpp
         src/allocation_model/alloc_model_params.cpp
         src/util/util.cpp
-        include/util/generator.hpp)
+        src/util/sampling.cpp)
 
 set(TEST_SRC_FILES
         test/nmf/test_nmf.cpp
         test/include_catch.cpp
         test/util/test_wrappers.cpp
-        test/allocation_model/test_sampling.cpp
+        test/allocation_model/test_alloc_model_funcs.cpp
         test/util/test_util.cpp
         test/bld/test_bld_algs.cpp
         test/allocation_model/test_alloc_model_params.cpp
-        test/util/test_generator.cpp)
+        test/util/test_generator.cpp
+        test/util/test_sampling.cpp)
 
 add_library(bnmf_algs SHARED ${LIB_SRC_FILES})
 target_link_libraries(bnmf_algs gsl gslcblas)
@@ -40,8 +41,8 @@ target_link_libraries(bnmf_algs gsl gslcblas)
 add_executable (tests ${TEST_SRC_FILES})
 target_link_libraries(tests bnmf_algs)
 
-# add_executable(dataset_nmf src/main_nmf_on_file.cpp)
-# target_link_libraries(dataset_nmf bnmf_algs)
+add_executable(dataset_nmf src/main_nmf_on_file.cpp)
+target_link_libraries(dataset_nmf bnmf_algs)
 #
 # add_executable(bld_add_bench benchmark/bld_add_benchmark.cpp)
 # target_link_libraries(bld_add_bench bnmf_algs)

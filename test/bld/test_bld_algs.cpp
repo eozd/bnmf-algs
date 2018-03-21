@@ -1,5 +1,5 @@
 #include "../catch2.hpp"
-#include "allocation_model/sampling.hpp"
+#include "allocation_model/alloc_model_funcs.hpp"
 #include "bld/bld_algs.hpp"
 #include "util/util.hpp"
 #include <iostream>
@@ -65,7 +65,7 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
         double log_marginal = log_marginal_S(S, model_params);
 
         // Test marginal and sparseness
-        REQUIRE(log_marginal >= -265);
+        REQUIRE(log_marginal >= -270);
         REQUIRE(sparseness(S) >= 0.6);
 
         // Test if S_{::+} = X

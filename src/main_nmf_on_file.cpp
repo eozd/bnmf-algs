@@ -1,5 +1,6 @@
 #include "defs.hpp"
 #include "nmf/nmf.hpp"
+#include <bld/bld_algs.hpp>
 #include <fstream>
 #include <iostream>
 #include <vector>
@@ -15,15 +16,19 @@ using namespace bnmf_algs;
  */
 int main(int argc, char** argv) {
     // TODO: Improve file parsing code to allow scientific notation and multiple
-    if (argc != 5) {
+    if (argc != 6) {
         std::cout << "usage: " << argv[0]
-                  << " filename n_components beta max_iter" << std::endl;
+                  << " alg filename n_components beta max_iter\n\n"
+                  << "where alg is one of <nmf | seq_greedy_bld | bld_mult | "
+                     "bld_add | bld_appr | collapsed_gibbs | collapsed_icm>"
+                  << std::endl;
         return -1;
     }
-    std::string filename(argv[1]);
-    size_t n_components = std::stoul(argv[2]);
-    double beta = std::stod(argv[3]);
-    size_t max_iter = std::stoul(argv[4]);
+    std::string alg(argv[1]);
+    std::string filename(argv[2]);
+    size_t n_components = std::stoul(argv[3]);
+    double beta = std::stod(argv[4]);
+    size_t max_iter = std::stoul(argv[5]);
 
     std::ifstream datafile(filename);
     std::vector<double> data;
@@ -45,13 +50,51 @@ int main(int argc, char** argv) {
     }
     auto n_cols = data.size() / n_rows;
 
-    Eigen::Map<matrix_t> X(data.data(), n_rows, n_cols);
+    matrix_t X = Eigen::Map<matrix_t>(data.data(), n_rows, n_cols);
 
+    std::vector<double> alpha_dirichlet(X.rows(), 0.05);
+    std::vector<double> beta_dirichlet(n_components, 10);
+    beta_dirichlet.back() = 60;
+    allocation_model::AllocModelParams params(100, 1, alpha_dirichlet,
+                                              beta_dirichlet);
+
+    tensord<3> S;
     matrix_t W, H;
-    std::tie(W, H) = nmf::nmf(X, n_components, beta, max_iter);
+    vector_t L;
+    if (alg == "nmf") {
+        std::tie(W, H) = nmf::nmf(X, n_components, beta, max_iter);
+    } else if (alg == "seq_greedy_bld") {
+        S = bld::seq_greedy_bld(X, n_components, params);
+        std::tie(W, H, L) = bld::bld_fact(S, params);
+    } else if (alg == "bld_mult") {
+        S = bld::bld_mult(X, n_components, params, max_iter);
+        std::tie(W, H, L) = bld::bld_fact(S, params);
+    } else if (alg == "bld_add") {
+        S = bld::bld_add(X, n_components, params, max_iter);
+        std::tie(W, H, L) = bld::bld_fact(S, params);
+    } else if (alg == "bld_appr") {
+        S = std::get<0>(bld::bld_appr(X, n_components, params, max_iter));
+        std::tie(W, H, L) = bld::bld_fact(S, params);
+    } else if (alg == "collapsed_gibbs") {
+        auto gen = bld::collapsed_gibbs(X, n_components, params, max_iter);
+        for (const auto& _ : gen)
+            ;
+        S = *gen.begin();
+        std::tie(W, H, L) = bld::bld_fact(S, params);
+    } else if (alg == "collapsed_icm") {
+        S = bld::collapsed_icm(X, n_components, params, max_iter);
+        std::tie(W, H, L) = bld::bld_fact(S, params);
+    } else {
+        std::cout << "Invalid algorithm" << std::endl;
+        return -1;
+    }
 
+    std::ofstream s_file("S.txt", std::ios_base::trunc);
     std::ofstream w_file("W.txt", std::ios_base::trunc);
     std::ofstream h_file("H.txt", std::ios_base::trunc);
+    std::ofstream l_file("L.txt", std::ios_base::trunc);
+    s_file << S;
     w_file << W;
     h_file << H;
+    l_file << L;
 }
