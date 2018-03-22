@@ -73,6 +73,8 @@ struct AllocModelParams {
      * @param tensor_shape Shape of tensor \f$S_{x \times y \times z}\f$.
      */
     explicit AllocModelParams(const shape<3>& tensor_shape);
+
+    AllocModelParams() = default;
 };
 
 } // namespace allocation_model
