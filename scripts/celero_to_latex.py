@@ -164,7 +164,7 @@ def main():
     with open(filepath, 'r') as f:
         lines = [line.strip() for line in f.readlines()]
 
-    lines = lines[:-1]
+    lines = lines[1:-1]
 
     resolution = lines[0]
     col_names = split_celero_row(lines[1])
