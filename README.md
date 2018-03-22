@@ -12,20 +12,39 @@ in C++.
 2. g++ 5 and above
 3. Eigen 3.3.0 and above
 4. GSL 2.1 and above
+5. [Celero](https://github.com/DigitalInBlue/Celero) 2.2.0 and above (**optional**)
 
 ### Building
 To build the project type the following commands in the project root directory:
 ```
-./build.sh Release
+./build.sh release
 ```
-Afterwards, all the executables are placed inside the build directory.
+Afterwards, bnmf-algs shared library **libbnmf_algs.so** should be placed in build directory.
+
+#### Clean
+You can clean the built library, tests and benchmarks by running
+```
+./build.sh clean
+```
+This command removes all cmake related folders/files and all previously built targets.
 
 ### Tests
-To run the tests after building the project, type
+To build the tests run:
 ```
-./tests
+./build.sh release test
 ```
-inside the ```build``` directory.
+To run the tests after building, type
+```
+./build/tests
+```
+
+### Benchmarks
+To build the benchmarks Celero library must be installed on your system (see Requirements section). After installing Celero, build the benchmarks by running:
+```
+./build.sh release bench
+```
+Then, several benchmark executable are placed in build directory. You can execute any of them to get Celero benchmark outputs.
+
 
 ### Documentation
 
