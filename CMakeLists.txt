@@ -62,6 +62,12 @@ if (BUILD_BENCH)
     target_include_directories(seq_greedy_bld_bench PUBLIC /usr/local/include/celero)
     target_link_libraries(seq_greedy_bld_bench /usr/local/lib/libcelero.so)
     target_link_libraries(seq_greedy_bld_bench bnmf_algs)
+
+    add_executable(bld_mult_bench benchmark/bld_mult_benchmark.cpp)
+    target_include_directories(bld_mult_bench PUBLIC /usr/local/include/celero)
+    target_link_libraries(bld_mult_bench /usr/local/lib/libcelero.so)
+    target_link_libraries(bld_mult_bench bnmf_algs)
+
 endif (BUILD_BENCH)
 
 # add_executable(bld_add_bench benchmark/bld_add_benchmark.cpp)
@@ -76,6 +82,3 @@ endif (BUILD_BENCH)
 #
 # add_executable(collapsed_icm_bench benchmark/collapsed_icm_benchmark.cpp)
 # target_link_libraries(collapsed_icm_bench bnmf_algs)
-#
-#
-
