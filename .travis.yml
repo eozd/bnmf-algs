@@ -62,7 +62,7 @@ before_install:
 script:
     - mkdir -p build
     - cd build
-    - cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=${CXX} ..
+    - BNMF_ALGS_TRAVIS_CMAKE=1 cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=${CXX} ..
     - make -j6
     - ./tests
 
