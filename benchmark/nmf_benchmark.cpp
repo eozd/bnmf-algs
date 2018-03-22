@@ -16,6 +16,7 @@ size_t r;
 double beta;
 size_t max_iter;
 
+
 BASELINE(100x100, beta_0, 0, 1) {
     r = 15, beta = 0, max_iter = 1000;
     matrix_t X = make_matrix(100, 100);
@@ -63,17 +64,17 @@ BASELINE(300x100, beta_0, 0, 1) {
 }
 
 BENCHMARK(300x100, beta_1, 0, 1) {
-r = 15, beta = 1, max_iter = 1000;
-matrix_t X = make_matrix(300, 100);
-celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
+    r = 15, beta = 1, max_iter = 1000;
+    matrix_t X = make_matrix(300, 100);
+    celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
-
 
 BENCHMARK(300x100, beta_2, 0, 1) {
     r = 15, beta = 2, max_iter = 1000;
     matrix_t X = make_matrix(300, 100);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
+
 
 
 BASELINE(400x100, beta_0, 0, 1) {
@@ -87,7 +88,8 @@ BENCHMARK(400x100, beta_1, 0, 1) {
     matrix_t X = make_matrix(400, 100);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
-BENCHMARK(400x100, beta_2, 0, 1) {
+
+BASELINE(400x100, beta_2, 0, 1) {
     r = 15, beta = 2, max_iter = 1000;
     matrix_t X = make_matrix(400, 100);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));

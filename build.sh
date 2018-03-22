@@ -42,11 +42,15 @@ elif [[ ${build} == "clean" ]]; then
 	rm -rf build/CMakeFiles ||:
 	rm -rf build/CMakeCache.txt ||:
 	rm -rf build/cmake_install.cmake ||:
+	rm -rf build/Makefile ||:
+
 	rm -rf build/dataset_nmf ||:
 	rm -rf build/libbnmf_algs.so ||:
 	rm -rf build/nmf_bench ||:
 	rm -rf build/tests ||:
-	rm -rf build/Makefile ||:
+	rm -rf build/bld_mult_bench ||:
+	rm -rf build/nmf_seq_greedy_bld_matrix_elems ||:
+	rm -rf build/seq_greedy_bld_bench ||:
 	exit
 else
 	echo "Unknown build type: Use one of debug, release, clean"
