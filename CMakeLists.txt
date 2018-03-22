@@ -38,12 +38,21 @@ set(TEST_SRC_FILES
 add_library(bnmf_algs SHARED ${LIB_SRC_FILES})
 target_link_libraries(bnmf_algs gsl gslcblas)
 
-add_executable (tests ${TEST_SRC_FILES})
-target_link_libraries(tests bnmf_algs)
+if (BUILD_TESTING)
+	add_executable (tests ${TEST_SRC_FILES})
+	target_link_libraries(tests bnmf_algs)
+endif (BUILD_TESTING)
 
-add_executable(dataset_nmf src/main_nmf_on_file.cpp)
-target_link_libraries(dataset_nmf bnmf_algs)
-#
+if (BUILD_BENCH)
+	add_executable(dataset_nmf src/main_nmf_on_file.cpp)
+	target_link_libraries(dataset_nmf bnmf_algs)
+
+	add_executable(nmf_bench benchmark/nmf_benchmark.cpp)
+	target_include_directories(nmf_bench PUBLIC /usr/local/include/celero)
+	target_link_libraries(nmf_bench /usr/local/lib/libcelero.so)
+	target_link_libraries(nmf_bench bnmf_algs)
+endif (BUILD_BENCH)
+
 # add_executable(bld_add_bench benchmark/bld_add_benchmark.cpp)
 # target_link_libraries(bld_add_bench bnmf_algs)
 #
@@ -59,12 +68,6 @@ target_link_libraries(dataset_nmf bnmf_algs)
 # add_executable(collapsed_icm_bench benchmark/collapsed_icm_benchmark.cpp)
 # target_link_libraries(collapsed_icm_bench bnmf_algs)
 #
-if(NOT ENV{BNMF_ALGS_TRAVIS_CMAKE})
-	add_executable(nmf_bench benchmark/nmf_benchmark.cpp)
-	target_include_directories(nmf_bench PUBLIC /usr/local/include/celero)
-	target_link_libraries(nmf_bench /usr/local/lib/libcelero.so)
-	target_link_libraries(nmf_bench bnmf_algs)
-endif(NOT ENV{BNMF_ALGS_TRAVIS_CMAKE})
 #
 # add_executable(seq_greedy_bld_bench benchmark/seq_greedy_bld_benchmark.cpp)
 # target_link_libraries(seq_greedy_bld_bench bnmf_algs)
