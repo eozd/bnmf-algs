@@ -47,10 +47,16 @@ if (BUILD_BENCH)
 	add_executable(dataset_nmf src/main_nmf_on_file.cpp)
 	target_link_libraries(dataset_nmf bnmf_algs)
 
+
 	add_executable(nmf_bench benchmark/nmf_benchmark.cpp)
 	target_include_directories(nmf_bench PUBLIC /usr/local/include/celero)
 	target_link_libraries(nmf_bench /usr/local/lib/libcelero.so)
 	target_link_libraries(nmf_bench bnmf_algs)
+
+	add_executable(bld_mult_bench benchmark/nmf_seq_greedy_bld_matrix_elems.cpp)
+	target_include_directories(bld_mult_bench PUBLIC /usr/local/include/celero)
+	target_link_libraries(bld_mult_bench /usr/local/lib/libcelero.so)
+	target_link_libraries(bld_mult_bench bnmf_algs)
 endif (BUILD_BENCH)
 
 # add_executable(bld_add_bench benchmark/bld_add_benchmark.cpp)
@@ -59,8 +65,6 @@ endif (BUILD_BENCH)
 # add_executable(bld_appr_bench benchmark/bld_appr_benchmark.cpp)
 # target_link_libraries(bld_appr_bench bnmf_algs)
 #
-# add_executable(bld_mult_bench benchmark/bld_mult_benchmark.cpp)
-# target_link_libraries(bld_mult_bench bnmf_algs)
 #
 # add_executable(collapsed_gibbs_bench benchmark/collapsed_gibbs_benchmark.cpp)
 # target_link_libraries(collapsed_gibbs_bench bnmf_algs)

@@ -81,8 +81,6 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
     int ii, jj;
     vector_t ll(z);
     for (int i = 0; i < (int)sum; ++i) {
-        std::cout << i << std::endl;
-
         // choose the next index
         size_t idx = util::choice(rand_gen, cum_prob);
 
