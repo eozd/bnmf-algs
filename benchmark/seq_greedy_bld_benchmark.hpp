@@ -1,5 +1,10 @@
 #pragma once
 
+/**
+ * This is the benchmark file to test bnmf_algs::bld::seq_greedy_bld algorithm
+ * performance with various beta parameters when matrix size is increased.
+ */
+
 #include <celero/Celero.h>
 
 #include "bench_utils.hpp"
@@ -8,13 +13,12 @@
 #include <iostream>
 
 namespace seq_greedy_bld_bench_vars {
-    long x = 100;
-    long y = 100;
-    long beg = 0;
-    long scale = 5;
-    size_t r = 17;
+long x = 100;
+long y = 100;
+long beg = 0;
+long scale = 5;
+size_t r = 17;
 } // namespace seq_greedy_bld_bench_vars
-
 
 BASELINE(seq_greedy_bld, 100x100, 1, 1) {
     using namespace bnmf_algs;
@@ -106,4 +110,3 @@ BENCHMARK(seq_greedy_bld, 100x400, 1, 1) {
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::seq_greedy_bld(X, r, params));
 }
-

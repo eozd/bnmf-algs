@@ -1,5 +1,10 @@
 #pragma once
 
+/**
+ * This is the benchmark file to test bnmf_algs::bld::collapsed_gibbs algorithm
+ * performance when matrix size is increased.
+ */
+
 #include <celero/Celero.h>
 
 #include "bench_utils.hpp"
@@ -8,15 +13,14 @@
 #include <iostream>
 
 namespace collapsed_gibbs_bench_vars {
-    long x = 100;
-    long y = 100;
-    long beg = 0;
-    long scale = 5;
-    size_t r = 17;
+long x = 100;
+long y = 100;
+long beg = 0;
+long scale = 5;
+size_t r = 17;
 
-    auto do_nothing = [] (const auto& param) -> void {};
+auto do_nothing = [](const auto& param) -> void {};
 } // namespace collapsed_gibbs_bench_vars
-
 
 BASELINE(collapsed_gibbs, 100x100, 1, 1) {
     using namespace bnmf_algs;
@@ -29,7 +33,8 @@ BASELINE(collapsed_gibbs, 100x100, 1, 1) {
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     auto gen = bld::collapsed_gibbs(X, r, params);
-    celero::DoNotOptimizeAway(std::for_each(gen.begin(), gen.end(), do_nothing));
+    celero::DoNotOptimizeAway(
+        std::for_each(gen.begin(), gen.end(), do_nothing));
 }
 
 BENCHMARK(collapsed_gibbs, 200x100, 1, 1) {
@@ -43,7 +48,8 @@ BENCHMARK(collapsed_gibbs, 200x100, 1, 1) {
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     auto gen = bld::collapsed_gibbs(X, r, params);
-    celero::DoNotOptimizeAway(std::for_each(gen.begin(), gen.end(), do_nothing));
+    celero::DoNotOptimizeAway(
+        std::for_each(gen.begin(), gen.end(), do_nothing));
 }
 
 BENCHMARK(collapsed_gibbs, 300x100, 1, 1) {
@@ -57,7 +63,8 @@ BENCHMARK(collapsed_gibbs, 300x100, 1, 1) {
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     auto gen = bld::collapsed_gibbs(X, r, params);
-    celero::DoNotOptimizeAway(std::for_each(gen.begin(), gen.end(), do_nothing));
+    celero::DoNotOptimizeAway(
+        std::for_each(gen.begin(), gen.end(), do_nothing));
 }
 
 BENCHMARK(collapsed_gibbs, 400x100, 1, 1) {
@@ -71,7 +78,8 @@ BENCHMARK(collapsed_gibbs, 400x100, 1, 1) {
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     auto gen = bld::collapsed_gibbs(X, r, params);
-    celero::DoNotOptimizeAway(std::for_each(gen.begin(), gen.end(), do_nothing));
+    celero::DoNotOptimizeAway(
+        std::for_each(gen.begin(), gen.end(), do_nothing));
 }
 
 BENCHMARK(collapsed_gibbs, 100x200, 1, 1) {
@@ -85,7 +93,8 @@ BENCHMARK(collapsed_gibbs, 100x200, 1, 1) {
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     auto gen = bld::collapsed_gibbs(X, r, params);
-    celero::DoNotOptimizeAway(std::for_each(gen.begin(), gen.end(), do_nothing));
+    celero::DoNotOptimizeAway(
+        std::for_each(gen.begin(), gen.end(), do_nothing));
 }
 
 BENCHMARK(collapsed_gibbs, 100x300, 1, 1) {
@@ -99,7 +108,8 @@ BENCHMARK(collapsed_gibbs, 100x300, 1, 1) {
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     auto gen = bld::collapsed_gibbs(X, r, params);
-    celero::DoNotOptimizeAway(std::for_each(gen.begin(), gen.end(), do_nothing));
+    celero::DoNotOptimizeAway(
+        std::for_each(gen.begin(), gen.end(), do_nothing));
 }
 
 BENCHMARK(collapsed_gibbs, 100x400, 1, 1) {
@@ -113,6 +123,6 @@ BENCHMARK(collapsed_gibbs, 100x400, 1, 1) {
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     auto gen = bld::collapsed_gibbs(X, r, params);
-    celero::DoNotOptimizeAway(std::for_each(gen.begin(), gen.end(), do_nothing));
+    celero::DoNotOptimizeAway(
+        std::for_each(gen.begin(), gen.end(), do_nothing));
 }
-

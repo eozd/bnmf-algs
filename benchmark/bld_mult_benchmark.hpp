@@ -1,5 +1,10 @@
 #pragma once
 
+/**
+ * This is the benchmark file to test bnmf_algs::bld::bld_mult algorithm
+ * performance when matrix size is increased.
+ */
+
 #include <celero/Celero.h>
 
 #include "bench_utils.hpp"
@@ -8,13 +13,12 @@
 #include <iostream>
 
 namespace bld_mult_bench_vars {
-    long x = 10;
-    long y = 100;
-    long beg = 0;
-    long scale = 5;
-    size_t r = 17;
+long x = 10;
+long y = 100;
+long beg = 0;
+long scale = 5;
+size_t r = 17;
 } // namespace bld_mult_bench_vars
-
 
 BASELINE(bld_mult, 100x100, 1, 1) {
     using namespace bnmf_algs;
@@ -106,4 +110,3 @@ BENCHMARK(bld_mult, 100x400, 1, 1) {
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params));
 }
-

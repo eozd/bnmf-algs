@@ -1,3 +1,10 @@
+#pragma once
+
+/**
+ * This is the benchmark file to test bnmf_algs::nmf::nmf algorithm performance
+ * with various beta parameters when matrix size is increased.
+ */
+
 #include <celero/Celero.h>
 
 #include "bench_utils.hpp"
@@ -6,15 +13,14 @@
 #include <iostream>
 
 namespace nmf_bench_vars {
-    size_t r = 15;
-    double beta;
-    long x = 100;
-    long y = 100;
-    long beg = 0;
-    long scale = 10;
-    size_t max_iter = 1000;
-}
-
+size_t r = 15;
+double beta;
+long x = 100;
+long y = 100;
+long beg = 0;
+long scale = 10;
+size_t max_iter = 1000;
+} // namespace nmf_bench_vars
 
 /********************************* 100x100 ************************************/
 

@@ -1,5 +1,10 @@
 #pragma once
 
+/**
+ * This is the benchmark file to test bnmf_algs::bld::bld_add algorithm
+ * performance when matrix size is increased.
+ */
+
 #include <celero/Celero.h>
 
 #include "bench_utils.hpp"
@@ -14,7 +19,6 @@ long beg = 0;
 long scale = 5;
 size_t r = 17;
 } // namespace bld_add_bench_vars
-
 
 BASELINE(bld_add, 100x100, 1, 1) {
     using namespace bnmf_algs;

@@ -2,8 +2,14 @@
 
 CELERO_MAIN
 
-/*********************** INCLUDE BENCHMARK HEADER BELOW ***********************/
+/**
+ * This file is the source file for becnhmarks. Each benhmark should be
+ * defined on its own header. Then, the benchmark header must be included
+ * as seen below. This will automatically add the benchmark group to the list
+ * of all available benchmark groups.
+ */
 
+/*********************** INCLUDE BENCHMARK HEADER BELOW ***********************/
 
 #include "bld_add_benchmark.hpp"
 #include "bld_appr_benchmark.hpp"

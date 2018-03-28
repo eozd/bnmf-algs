@@ -1,5 +1,10 @@
 #pragma once
 
+/**
+ * This is the benchmark file to test bnmf_algs::bld::collapsed_icm algorithm
+ * performance when matrix size is increased.
+ */
+
 #include <celero/Celero.h>
 
 #include "bench_utils.hpp"
@@ -8,13 +13,12 @@
 #include <iostream>
 
 namespace collapsed_icm_bench_vars {
-    long x = 100;
-    long y = 100;
-    long beg = 0;
-    long scale = 5;
-    size_t r = 17;
+long x = 100;
+long y = 100;
+long beg = 0;
+long scale = 5;
+size_t r = 17;
 } // namespace collapsed_icm_bench_vars
-
 
 BASELINE(collapsed_icm, 100x100, 1, 1) {
     using namespace bnmf_algs;
@@ -106,4 +110,3 @@ BENCHMARK(collapsed_icm, 100x400, 1, 1) {
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::collapsed_icm(X, r, params));
 }
-
