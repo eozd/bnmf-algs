@@ -43,8 +43,17 @@ To build the benchmarks Celero library must be installed on your system (see Req
 ```
 ./build.sh release bench
 ```
-Then, several benchmark executable are placed in build directory. You can execute any of them to get Celero benchmark outputs.
+This will create a benchmark executable in ```build/benchmark```.
 
+To see the list of benchmarks, type
+```
+./build/benchmark -l
+```
+
+To run a specific benchmark with name X, type
+```
+./build/benchmark -g X
+```
 
 ### Documentation
 
