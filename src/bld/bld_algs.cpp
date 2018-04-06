@@ -27,7 +27,6 @@ check_bld_params(const matrix_t& X, size_t z,
     return "";
 }
 
-
 tensord<3>
 bld::seq_greedy_bld(const matrix_t& X, size_t z,
                     const allocation_model::AllocModelParams& model_params) {
@@ -37,55 +36,52 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
             throw std::invalid_argument(error_msg);
         }
     }
+
     long x = X.rows();
     long y = X.cols();
-    double sig_alpha = std::accumulate(model_params.alpha.begin(),
-                                       model_params.alpha.end(), 0.0);
-
-    double sum = 0;
-    using index = std::pair<int, int>;
-    using val_index = std::pair<double, index>;
-    //std::vector<std::pair<int, int>> nonzero_indices;
-    //std::vector<double> nonzero_values;
-    std::vector<val_index> vals_probs;
-    for (int i = 0; i < x; ++i) {
-        for (int j = 0; j < y; ++j) {
-            double val = X(i, j);
-            if (val > 0) {
-                sum += val;
-                vals_probs.emplace_back(val, std::make_pair(i, j));
-                //nonzero_indices.emplace_back(i, j);
-                //nonzero_values.push_back(val);
-            }
-        }
-    }
 
     // exit early if sum is 0
-    if (std::abs(sum) <= std::numeric_limits<double>::epsilon()) {
+    if (std::abs(X.sum()) <= std::numeric_limits<double>::epsilon()) {
         tensord<3> S(x, y, z);
         S.setZero();
         return S;
     }
 
+    // store value and index of each entry of matrix X
+    using index = std::pair<int, int>;
+    using val_index = std::pair<double, index>;
+    std::vector<val_index> vals_probs;
+    for (int i = 0; i < x; ++i) {
+        for (int j = 0; j < y; ++j) {
+            double val = X(i, j);
+            if (val > 0) {
+                vals_probs.emplace_back(val, std::make_pair(i, j));
+            }
+        }
+    }
+
+
     // store values and their indices in a max heap
-    auto cmp = [] (const val_index& left, const val_index& right) {
+    auto cmp = [](const val_index& left, const val_index& right) {
         return left.first < right.first;
     };
     std::make_heap(vals_probs.begin(), vals_probs.end(), cmp);
 
-
+    // variables to update during the iterations
     tensord<3> S(x, y, z);
     S.setZero();
     matrix_t S_ipk = matrix_t::Zero(x, z); // S_{i+k}
     vector_t S_ppk = vector_t::Zero(z);    // S_{++k}
     matrix_t S_pjk = matrix_t::Zero(y, z); // S_{+jk}
+    vector_t log_marginal_change(z);
+    double sum_alpha = std::accumulate(model_params.alpha.begin(),
+                                       model_params.alpha.end(), 0.0);
 
-    int ii, jj;
-    vector_t ll(z);
-    for (int i = 0; i < (int)sum; ++i) {
+    while (!vals_probs.empty()) {
         // choose the index of the highest current value (deterministic)
         std::pop_heap(vals_probs.begin(), vals_probs.end(), cmp);
         auto& curr_sample = vals_probs.back();
+        int ii, jj;
         std::tie(ii, jj) = curr_sample.second;
 
         // decrement sample's value
@@ -97,14 +93,16 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
 
         // calculate the increase in log marginal if elem is put into kth bin
         for (size_t k = 0; k < z; ++k) {
-            ll[k] = std::log(model_params.alpha[ii] + S_ipk(ii, k)) -
-                    std::log(sig_alpha + S_ppk(k));
-            ll[k] += -(std::log(1 + S(ii, jj, k)) -
-                       std::log(model_params.beta[k] + S_pjk(jj, k)));
+            log_marginal_change[k] =
+                std::log(model_params.alpha[ii] + S_ipk(ii, k)) -
+                std::log(sum_alpha + S_ppk(k));
+            log_marginal_change[k] +=
+                -(std::log(1 + S(ii, jj, k)) -
+                  std::log(model_params.beta[k] + S_pjk(jj, k)));
         }
 
         // find the bin with the highest log marginal increase
-        auto ll_begin = ll.data();
+        auto ll_begin = log_marginal_change.data();
         auto kmax = std::max_element(ll_begin, ll_begin + z) - ll_begin;
 
         // increase the corresponding bin accumulators
@@ -835,4 +833,3 @@ bld::bld_appr(const matrix_t& X, size_t z,
 
     return std::make_tuple(S, nu, mu);
 }
-
