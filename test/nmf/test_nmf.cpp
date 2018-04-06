@@ -108,6 +108,40 @@ TEST_CASE("Euclidean NMF degenerate cases", "[nmf]") {
     }
 }
 
+TEST_CASE("IS NMF small matrix convergence check", "[nmf]") {
+    int m = 50, n = 10, r = 10;
+
+    matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
+    matrix_t W, H;
+
+    auto before = high_resolution_clock::now();
+    std::tie(W, H) = nmf::nmf(X, r, 0, 500);
+    auto after = high_resolution_clock::now();
+
+    milliseconds elapsed = duration_cast<milliseconds>(after - before);
+    REQUIRE(elapsed.count() <= 1000);
+}
+
+TEST_CASE("IS NMF constraint checks", "[nmf]") {
+    int m = 10, n = 5, r = 2;
+
+    matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
+    matrix_t W, H;
+    std::tie(W, H) = nmf::nmf(X, r, 0);
+
+    SECTION("Check returned matrices' shapes") {
+        REQUIRE(W.rows() == m);
+        REQUIRE(W.cols() == r);
+        REQUIRE(H.rows() == r);
+        REQUIRE(H.cols() == n);
+    }
+
+    SECTION("Check that returned matrices are nonnegative") {
+        REQUIRE(W.minCoeff() >= 0);
+        REQUIRE(H.minCoeff() >= 0);
+    }
+}
+
 TEST_CASE("Test beta divergence for single values", "[beta-divergence]") {
     double x, y, beta;
 
