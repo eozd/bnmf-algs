@@ -1,10 +1,12 @@
 #include "defs.hpp"
 #include "nmf/nmf.hpp"
 #include <bld/bld_algs.hpp>
+#include <chrono>
 #include <fstream>
 #include <iostream>
 #include <vector>
 
+using namespace std::chrono;
 using namespace bnmf_algs;
 
 /**
@@ -52,16 +54,18 @@ int main(int argc, char** argv) {
 
     matrix_t X = Eigen::Map<matrix_t>(data.data(), n_rows, n_cols);
 
-    std::vector<double> alpha_dirichlet(X.rows(), 0.05);
+    std::vector<double> alpha_dirichlet(X.rows(), 1);
     std::vector<double> beta_dirichlet(n_components, 10);
-    beta_dirichlet.back() = 60;
+    beta_dirichlet.back() = 30;
     allocation_model::AllocModelParams params(100, 1, alpha_dirichlet,
                                               beta_dirichlet);
-    //std::vector<double> alpha_dirichlet(X.rows(), 1);
-    //std::vector<double> beta_dirichlet(n_components, 1);
-    //allocation_model::AllocModelParams params(40, 1, alpha_dirichlet,
+    // std::vector<double> alpha_dirichlet(X.rows(), 1);
+    // std::vector<double> beta_dirichlet(n_components, 1);
+    // allocation_model::AllocModelParams params(40, 1, alpha_dirichlet,
     //                                          beta_dirichlet);
 
+    std::cout << "Computing the factorization" << std::endl;
+    auto alg_begin_time = high_resolution_clock::now();
     tensord<3> S;
     matrix_t W, H;
     vector_t L;
@@ -92,6 +96,11 @@ int main(int argc, char** argv) {
         std::cout << "Invalid algorithm" << std::endl;
         return -1;
     }
+    auto alg_end_time = high_resolution_clock::now();
+    std::cout
+        << "Total time: "
+        << duration_cast<milliseconds>(alg_end_time - alg_begin_time).count()
+        << " milliseconds" << std::endl;
 
     std::ofstream s_file("S.txt", std::ios_base::trunc);
     std::ofstream w_file("W.txt", std::ios_base::trunc);
