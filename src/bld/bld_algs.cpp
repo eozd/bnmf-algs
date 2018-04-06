@@ -47,26 +47,6 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
         return S;
     }
 
-    // store value and index of each entry of matrix X
-    using index = std::pair<int, int>;
-    using val_index = std::pair<double, index>;
-    std::vector<val_index> vals_probs;
-    for (int i = 0; i < x; ++i) {
-        for (int j = 0; j < y; ++j) {
-            double val = X(i, j);
-            if (val > 0) {
-                vals_probs.emplace_back(val, std::make_pair(i, j));
-            }
-        }
-    }
-
-
-    // store values and their indices in a max heap
-    auto cmp = [](const val_index& left, const val_index& right) {
-        return left.first < right.first;
-    };
-    std::make_heap(vals_probs.begin(), vals_probs.end(), cmp);
-
     // variables to update during the iterations
     tensord<3> S(x, y, z);
     S.setZero();
@@ -77,19 +57,11 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
     double sum_alpha = std::accumulate(model_params.alpha.begin(),
                                        model_params.alpha.end(), 0.0);
 
-    while (!vals_probs.empty()) {
-        // choose the index of the highest current value (deterministic)
-        std::pop_heap(vals_probs.begin(), vals_probs.end(), cmp);
-        auto& curr_sample = vals_probs.back();
-        int ii, jj;
-        std::tie(ii, jj) = curr_sample.second;
-
-        // decrement sample's value
-        --curr_sample.first;
-        if (curr_sample.first <= 0) {
-            vals_probs.pop_back();
-        }
-        std::push_heap(vals_probs.begin(), vals_probs.end(), cmp);
+    // sample X matrix one by one
+    auto matrix_sampler = util::sample_ones(X, false);
+    int ii, jj;
+    for (const auto& sample : matrix_sampler) {
+        std::tie(ii, jj) = sample;
 
         // calculate the increase in log marginal if elem is put into kth bin
         for (size_t k = 0; k < z; ++k) {
