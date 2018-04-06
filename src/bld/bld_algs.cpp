@@ -43,15 +43,19 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
                                        model_params.alpha.end(), 0.0);
 
     double sum = 0;
-    std::vector<std::pair<int, int>> nonzero_indices;
-    std::vector<double> nonzero_values;
+    using index = std::pair<int, int>;
+    using val_index = std::pair<double, index>;
+    //std::vector<std::pair<int, int>> nonzero_indices;
+    //std::vector<double> nonzero_values;
+    std::vector<val_index> vals_probs;
     for (int i = 0; i < x; ++i) {
         for (int j = 0; j < y; ++j) {
             double val = X(i, j);
             if (val > 0) {
                 sum += val;
-                nonzero_indices.emplace_back(i, j);
-                nonzero_values.push_back(val);
+                vals_probs.emplace_back(val, std::make_pair(i, j));
+                //nonzero_indices.emplace_back(i, j);
+                //nonzero_values.push_back(val);
             }
         }
     }
@@ -63,12 +67,11 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
         return S;
     }
 
-    // store cumulative probabilities (weights)
-    vector_t cum_prob(nonzero_values.size());
-    cum_prob(0) = nonzero_values[0];
-    for (size_t i = 1; i < nonzero_values.size(); ++i) {
-        cum_prob(i) = cum_prob(i - 1) + nonzero_values[i];
-    }
+    // store values and their indices in a max heap
+    auto cmp = [] (const val_index& left, const val_index& right) {
+        return left.first < right.first;
+    };
+    std::make_heap(vals_probs.begin(), vals_probs.end(), cmp);
 
 
     tensord<3> S(x, y, z);
@@ -77,24 +80,22 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
     vector_t S_ppk = vector_t::Zero(z);    // S_{++k}
     matrix_t S_pjk = matrix_t::Zero(y, z); // S_{+jk}
 
-    auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
     int ii, jj;
     vector_t ll(z);
     for (int i = 0; i < (int)sum; ++i) {
-        // choose the next index
-        size_t idx = util::choice(rand_gen, cum_prob);
+        // choose the index of the highest current value (deterministic)
+        std::pop_heap(vals_probs.begin(), vals_probs.end(), cmp);
+        auto& curr_sample = vals_probs.back();
+        std::tie(ii, jj) = curr_sample.second;
 
-        // decrement corresponding value
-        double val = std::min(1.0, nonzero_values[idx]);
-        nonzero_values[idx] -= val;
+        // decrement sample's value
+        --curr_sample.first;
+        if (curr_sample.first <= 0) {
+            vals_probs.pop_back();
+        }
+        std::push_heap(vals_probs.begin(), vals_probs.end(), cmp);
 
-        // update cumulative probabilities (weights)
-        vector_t diff = vector_t::Constant(cum_prob.cols(), val);
-        diff.head(idx) = vector_t::Zero(idx);
-        cum_prob -= diff;
-
-        std::tie(ii, jj) = nonzero_indices[idx];
-        
+        // calculate the increase in log marginal if elem is put into kth bin
         for (size_t k = 0; k < z; ++k) {
             ll[k] = std::log(model_params.alpha[ii] + S_ipk(ii, k)) -
                     std::log(sig_alpha + S_ppk(k));
@@ -102,9 +103,11 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
                        std::log(model_params.beta[k] + S_pjk(jj, k)));
         }
 
+        // find the bin with the highest log marginal increase
         auto ll_begin = ll.data();
         auto kmax = std::max_element(ll_begin, ll_begin + z) - ll_begin;
 
+        // increase the corresponding bin accumulators
         ++S(ii, jj, kmax);
         ++S_ipk(ii, kmax);
         ++S_ppk(kmax);
