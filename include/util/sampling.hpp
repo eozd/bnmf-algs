@@ -18,27 +18,42 @@ namespace bnmf_algs {
 namespace details {
 
 /**
- * @brief Computer type that will compute the next sample when its operator() is
- * invoked.
+ * @brief Computer type that will compute the next sample from a given matrix
+ * without replacement when its operator() is invoked.
  *
- * SampleOnesComputer will generate the next std::pair<int, int> value from the
- * previous value given to its operator(). This operation is performed in-place.
+ * SampleOnesNoReplaceComputer will generate the next std::pair<int, int> value
+ * from the previous value passed to its operator(). This operation is
+ * performed in-place.
+ *
+ * When computing the next sample, a systematic sampling technique is used. Each
+ * element and its index in the matrix to sample is stored in a heap. Then, at
+ * each call to operator(), indices of the highest value is returned. Since the
+ * sampling is performed without replacement, the found value is decremented and
+ * pushed back to the heap.
  */
-class SampleOnesComputer {
+class SampleOnesNoReplaceComputer {
   public:
     /**
-     * @brief Construct a new SampleOnesComputer.
+     * @brief Construct a new SampleOnesNoReplaceComputer.
+     *
+     * This method constructs the data structures that will be used during
+     * sampling procedure. In particular, a max heap of elements and their
+     * indices is constructed in linear time.
      *
      * @param X Matrix \f$X\f$ that will be used during sampling.
-     * @param replacement Whether to sample with replacement.
+     *
+     * @remark Time complexity is \f$O(N)\f$ where \f$N\f$ is the number of
+     * nonzero entries in matrix parameter X.
      */
-    explicit SampleOnesComputer(const matrix_t& X, bool replacement);
+    explicit SampleOnesNoReplaceComputer(const matrix_t& X);
 
     /**
-     * @brief Function call operator that will compute the next sample in-place.
+     * @brief Function call operator that will compute the next sample without
+     * replacement in-place.
      *
      * After this function exits, the object referenced by prev_val will be
-     * modified to store the next sample.
+     * modified to store the next sample. To read a general description of the
+     * sampling procedure, refer to class documentation.
      *
      * Note that SampleOnesComputer object satisfies the
      * bnmf_algs::util::Generator and bnmf_algs::util::ComputationIterator
@@ -48,18 +63,76 @@ class SampleOnesComputer {
      *
      * @param curr_step Current step of the sampling computation.
      * @param prev_val Previously sampled value to modify in-place.
+     *
+     * @remark Time complexity is \f$O(\log{N})\f$ where \f$N\f$ is the
+     * number of nonzero entries of matrix parameter X that are not completely
+     * sampled yet.
      */
     void operator()(size_t curr_step, std::pair<int, int>& prev_val);
 
+    // computation variables
   private:
     using index = std::pair<int, int>;
     using val_index = std::pair<double, index>;
-    bool replacement;
+
+    std::vector<val_index> vals_indices;
+    std::function<bool(const val_index&, const val_index&)> no_repl_comp;
+};
+
+/**
+ * @brief Computer type that will compute the next sample from a given matrix
+ * with replacement when its operator() is invoked.
+ *
+ * SampleOnesNoReplaceComputer will generate the next std::pair<int, int> value
+ * from the previous value passed to its operator(). This operation is
+ * performed in-place.
+ *
+ * When computing the next sample, a simple inverse CDF sampling technique is
+ * used. Given matrix is thought of as a single dimensional array and its
+ * entries are considered as values of a probability mass function. Cumulative
+ * distribution of PMF is calculated in the constructor. At each call to
+ * operator(), index of the sample is found using binary search.
+ */
+class SampleOnesReplaceComputer {
+  public:
+    /**
+     * @brief Construct a new SampleOnesComputer.
+     *
+     * This method constructs the data structures to use during sampling
+     * procedure. In particular, a cumulative probability array is calculated in
+     * linear time.
+     *
+     * @param X Matrix \f$X\f$ that will be used during sampling.
+     * @param replacement Whether to sample with replacement.
+     *
+     * @remark Time complexity is \f$O(N)\f$ where \f$N\f$ is the number of
+     * entries of matrix parameter X.
+     */
+    explicit SampleOnesReplaceComputer(const matrix_t& X);
+
+    /**
+     * @brief Function call operator that will compute the next sample in-place.
+     *
+     * After this function exits, the object referenced by prev_val will be
+     * modified to store the next sample. To read a general description of
+     * sampling procedure, refer to class documentation.
+     *
+     * Note that SampleOnesComputer object satisfies the
+     * bnmf_algs::util::Generator and bnmf_algs::util::ComputationIterator
+     * Computer interface. Hence, a sequence of samples may be generated
+     * efficiently by using this Computer with bnmf_algs::util::Generator or
+     * bnmf_algs::util::ComputationIterator.
+     *
+     * @param curr_step Current step of the sampling computation.
+     * @param prev_val Previously sampled value to modify in-place.
+     *
+     * @remark Time complexity is \f$O(N)\f$ where \f$N\f$ is the number of
+     * entries of matrix parameter X.
+     */
+    void operator()(size_t curr_step, std::pair<int, int>& prev_val);
 
     // computation variables
   private:
-    std::vector<val_index> vals_indices;
-    std::function<bool(const val_index&, const val_index&)> no_repl_comp;
     vector_t cum_prob;
     long X_cols;
     double X_sum;
@@ -70,28 +143,47 @@ namespace util {
 
 /**
  * @brief Return a bnmf_algs::util::Generator that will generate a sequence of
- * samples by using details::SampleOnesComputer as its Computer.
+ * samples from the given matrix without replacement by using
+ * details::SampleOnesNoReplaceComputer as its Computer.
  *
- * This function returns a bnmf_algs::util::Generator object that will produce
- * a sequence of samples by generating the samples using SampleOnesComputer.
- * Since the return value is a generator, only a single sample is stored in the
- * memory at a given time.
+ * This function samples the given matrix X one by one until all the entries of
+ * the matrix are sampled. The returned util::Generator object will return the
+ * indices of the next sample one at a time. Since the return value is a
+ * generator, only a single sample is stored in the memory at a given time.
  *
- * @param X Matrix \f$X\f$ from the Allocation Model \cite kurutmazbayesian.
- * @see bnmf_algs::allocation_model
- * @param replacement If true, sample with replacement.
- * @param n If replacement is true, then n is the number of samples that will be
- * generated. If replacement is false, then floor of sum of \f$X\f$ many samples
- * will be generated.
+ * @param X Matrix to sample one by one without replacement.
  *
  * @return A bnmf_algs::util::Generator type that can be used to generate a
- * sequence of samples.
+ * sequence of samples from the given matrix.
  *
  * @throws std::invalid_argument if matrix \f$X\f$ has no element, if matrix
  * \f$X\f$ contains negative entries.
  */
-util::Generator<std::pair<int, int>, details::SampleOnesComputer>
-sample_ones(const matrix_t& X, bool replacement = false, size_t n = 1);
+util::Generator<std::pair<int, int>, details::SampleOnesNoReplaceComputer>
+sample_ones_noreplace(const matrix_t& X);
+
+/**
+ * @brief Return a bnmf_algs::util::Generator that will generate a sequence of
+ * samples from the given matrix with replacement by using
+ * details::SampleOnesReplaceComputer as its Computer.
+ *
+ * This function considers the given matrix X as a probability mass function and
+ * samples random indices according to the magnitude of the entries. Entries
+ * with higher values are more likely to be sampled more often. The returned
+ * util::Generator object will return the indices of the next sample one at a
+ * time. Since the return value is a generator, only a single sample is stored
+ * in the memory at a given time.
+ *
+ * @param X Matrix to sample one by one with replacement.
+ *
+ * @return A bnmf_algs::util::Generator type that can be used to generate a
+ * sequence of samples from the given matrix.
+ *
+ * @throws std::invalid_argument if matrix \f$X\f$ has no element, if matrix
+ * \f$X\f$ contains negative entries.
+ */
+util::Generator<std::pair<int, int>, details::SampleOnesReplaceComputer>
+sample_ones_replace(const matrix_t& X, size_t num_samples);
 
 /**
  * @brief Choose a random sample according to the given cumulative probability
@@ -124,8 +216,9 @@ sample_ones(const matrix_t& X, bool replacement = false, size_t n = 1);
  * this function always returns end iterator.
  */
 template <typename RandomIterator>
-RandomIterator choice(RandomIterator cum_prob_begin, RandomIterator cum_prob_end,
-              const bnmf_algs::util::gsl_rng_wrapper& gsl_rng) {
+RandomIterator choice(RandomIterator cum_prob_begin,
+                      RandomIterator cum_prob_end,
+                      const bnmf_algs::util::gsl_rng_wrapper& gsl_rng) {
     // if the distribution is empty, return end iterator
     if (cum_prob_begin == cum_prob_end) {
         return cum_prob_end;

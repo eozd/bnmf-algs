@@ -90,9 +90,9 @@ class CollapsedGibbsComputer {
     allocation_model::AllocModelParams model_params;
     // computation variables
   private:
-    util::Generator<std::pair<int, int>, details::SampleOnesComputer>
+    util::Generator<std::pair<int, int>, details::SampleOnesReplaceComputer>
         one_sampler_repl;
-    util::Generator<std::pair<int, int>, details::SampleOnesComputer>
+    util::Generator<std::pair<int, int>, details::SampleOnesNoReplaceComputer>
         one_sampler_no_repl;
     matrix_t U_ipk;
     vector_t U_ppk;
