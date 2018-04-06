@@ -43,6 +43,9 @@ void details::SampleOnesComputer::operator()(size_t curr_step,
         prev_val.first = static_cast<int>(m / X_cols);
         prev_val.second = static_cast<int>(m % X_cols);
     } else {
+        if (vals_indices.empty()) {
+            return;
+        }
         // max heap sampling (deterministic)
         std::pop_heap(vals_indices.begin(), vals_indices.end(), no_repl_comp);
         auto& curr_sample = vals_indices.back();

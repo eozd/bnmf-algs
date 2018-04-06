@@ -53,7 +53,6 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
     matrix_t S_ipk = matrix_t::Zero(x, z); // S_{i+k}
     vector_t S_ppk = vector_t::Zero(z);    // S_{++k}
     matrix_t S_pjk = matrix_t::Zero(y, z); // S_{+jk}
-    vector_t log_marginal_change(z);
     double sum_alpha = std::accumulate(model_params.alpha.begin(),
                                        model_params.alpha.end(), 0.0);
 
@@ -63,19 +62,23 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
     for (const auto& sample : matrix_sampler) {
         std::tie(ii, jj) = sample;
 
-        // calculate the increase in log marginal if elem is put into kth bin
+        // find the bin that increases log marginal the largest when it is
+        // incremented
+        size_t kmax = 0;
+        double curr_max = std::numeric_limits<double>::lowest();
         for (size_t k = 0; k < z; ++k) {
-            log_marginal_change[k] =
+            double log_marginal_change =
                 std::log(model_params.alpha[ii] + S_ipk(ii, k)) -
                 std::log(sum_alpha + S_ppk(k));
-            log_marginal_change[k] +=
+            log_marginal_change +=
                 -(std::log(1 + S(ii, jj, k)) -
                   std::log(model_params.beta[k] + S_pjk(jj, k)));
-        }
 
-        // find the bin with the highest log marginal increase
-        auto ll_begin = log_marginal_change.data();
-        auto kmax = std::max_element(ll_begin, ll_begin + z) - ll_begin;
+            if (log_marginal_change > curr_max) {
+                curr_max = log_marginal_change;
+                kmax = k;
+            }
+        }
 
         // increase the corresponding bin accumulators
         ++S(ii, jj, kmax);

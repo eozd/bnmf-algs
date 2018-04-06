@@ -54,9 +54,9 @@ int main(int argc, char** argv) {
 
     matrix_t X = Eigen::Map<matrix_t>(data.data(), n_rows, n_cols);
 
-    std::vector<double> alpha_dirichlet(X.rows(), 1);
+    std::vector<double> alpha_dirichlet(X.rows(), 0.05);
     std::vector<double> beta_dirichlet(n_components, 10);
-    beta_dirichlet.back() = 30;
+    beta_dirichlet.back() = 60;
     allocation_model::AllocModelParams params(100, 1, alpha_dirichlet,
                                               beta_dirichlet);
     // std::vector<double> alpha_dirichlet(X.rows(), 1);
