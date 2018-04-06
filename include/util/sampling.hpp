@@ -52,11 +52,15 @@ class SampleOnesComputer {
     void operator()(size_t curr_step, std::pair<int, int>& prev_val);
 
   private:
+    using index = std::pair<int, int>;
+    using val_index = std::pair<double, index>;
     bool replacement;
 
     // computation variables
   private:
-    vector_t X_cumsum;
+    std::vector<val_index> vals_indices;
+    std::function<bool(const val_index&, const val_index&)> no_repl_comp;
+    vector_t cum_prob;
     long X_cols;
     double X_sum;
     util::gsl_rng_wrapper rnd_gen;

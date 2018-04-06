@@ -4,43 +4,62 @@ using namespace bnmf_algs;
 
 details::SampleOnesComputer::SampleOnesComputer(const matrix_t& X,
                                                 bool replacement)
-    : replacement(replacement), X_cumsum(vector_t(X.cols() * X.rows())),
-      X_cols(X.cols()),
-      X_sum(replacement ? X.array().sum() : std::floor(X.array().sum())),
+    : replacement(replacement), vals_indices(),
+      no_repl_comp([](const val_index& left, const val_index& right) {
+          return left.first < right.first;
+      }),
+      cum_prob(), X_cols(X.cols()), X_sum(X.array().sum()),
       rnd_gen(util::make_gsl_rng(gsl_rng_taus)) {
 
-    auto X_arr = X.array();
-    X_cumsum(0) = X_arr(0);
-    for (int i = 1; i < X_arr.size(); ++i) {
-        X_cumsum(i) = X_cumsum(i - 1) + X_arr(i);
+    if (replacement) {
+        cum_prob = vector_t(X.rows() * X.cols());
+        auto X_arr = X.array();
+        cum_prob(0) = X_arr(0);
+        for (int i = 1; i < X_arr.size(); ++i) {
+            cum_prob(i) = cum_prob(i - 1) + X_arr(i);
+        }
+    } else {
+        for (int i = 0; i < X.rows(); ++i) {
+            for (int j = 0; j < X.cols(); ++j) {
+                double val = X(i, j);
+                if (val > 0) {
+                    vals_indices.emplace_back(val, std::make_pair(i, j));
+                }
+            }
+        }
+        std::make_heap(vals_indices.begin(), vals_indices.end(), no_repl_comp);
     }
 }
 
 void details::SampleOnesComputer::operator()(size_t curr_step,
                                              std::pair<int, int>& prev_val) {
-    double u = gsl_ran_flat(rnd_gen.get(), 0, 1);
-
-    vector_t cum_prob;
     if (replacement) {
-        cum_prob = X_cumsum.array() / X_sum;
+        // inverse CDF sampling
+        double* begin = cum_prob.data();
+        double* end = cum_prob.data() + cum_prob.cols();
+        auto it = util::choice(begin, end, rnd_gen);
+        long m = it - begin;
+
+        prev_val.first = static_cast<int>(m / X_cols);
+        prev_val.second = static_cast<int>(m % X_cols);
     } else {
-        cum_prob = X_cumsum.array() / (X_sum - curr_step);
+        // max heap sampling (deterministic)
+        std::pop_heap(vals_indices.begin(), vals_indices.end(), no_repl_comp);
+        auto& curr_sample = vals_indices.back();
+        int ii, jj;
+        std::tie(ii, jj) = curr_sample.second;
+
+        // decrement sample's value
+        --curr_sample.first;
+        if (curr_sample.first <= 0) {
+            vals_indices.pop_back();
+        }
+        std::push_heap(vals_indices.begin(), vals_indices.end(), no_repl_comp);
+
+        // store results
+        prev_val.first = ii;
+        prev_val.second = jj;
     }
-
-    double* begin = cum_prob.data();
-    double* end = cum_prob.data() + cum_prob.cols();
-    auto it = std::upper_bound(begin, end, u);
-
-    long m = it - begin;
-
-    if (!replacement) {
-        vector_t diff = vector_t::Constant(X_cumsum.cols(), 1);
-        diff.head(m) = vector_t::Zero(m);
-        X_cumsum -= diff;
-    }
-
-    prev_val.first = static_cast<int>(m / X_cols);
-    prev_val.second = static_cast<int>(m % X_cols);
 }
 
 util::Generator<std::pair<int, int>, details::SampleOnesComputer>
