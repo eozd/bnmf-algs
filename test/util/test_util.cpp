@@ -305,3 +305,4 @@ TEST_CASE("Test normalize", "[normalize] [normalized]") {
         REQUIRE(res.coeff());
     }
 }
+

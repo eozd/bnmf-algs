@@ -72,14 +72,3 @@ util::sample_ones(const matrix_t& X, bool replacement, size_t n) {
 
     return gen;
 }
-
-size_t util::choice(const bnmf_algs::util::gsl_rng_wrapper& gsl_rng,
-                    bnmf_algs::vector_t& cum_prob) {
-    double p = gsl_ran_flat(gsl_rng.get(), 0, cum_prob(cum_prob.cols() - 1));
-
-    double* beg = cum_prob.data();
-    double* end = beg + cum_prob.cols();
-    auto it = std::upper_bound(beg, end, p);
-
-    return static_cast<size_t>(it - beg);
-}

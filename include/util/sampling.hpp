@@ -96,17 +96,44 @@ sample_ones(const matrix_t& X, bool replacement = false, size_t n = 1);
  * This function chooses a sample (index) from the given cumulative probability
  * distribution. Given distribution does not have to be normalized and it is
  * not normalized inside this function. A sample is drawn uniformly from the
- * range [0, cum_prob(N -1)] and then the corresponding index is found using
+ * range [0, max_cum_prob] and then the corresponding index is found using
  * binary search.
  *
+ * @tparam RandomIterator An iterator that satisfies RandomIterator interface.
+ * This function runs in O(logn) time with RandomIterators due to the efficiency
+ * in finding difference of RandomIterator types.
+ *
+ * @param cum_prob_begin Beginning of the cumulative probability range.
+ * @param cum_prob_end End of the cumulative probability range.
  * @param gsl_rng GSL random number generator object.
- * @param cum_prob Cumulative probability (weight) distribution.
- * @return Index of the random sample.
+ *
+ * @return Iterator to the cumulative distribution value of the chosen value. If
+ * no value was chosen, returns cum_prob_end.
  *
  * @remark Complexity is \f$\Theta(logn)\f$.
+ *
+ * @remark If all the values in the given cumulative distribution is 0, this
+ * function always returns the given end iterator. This means that no values
+ * were chosen.
+ *
+ * @remark If the given cumulative distribution is empty (begin == end), then
+ * this function always returns end iterator.
  */
-size_t choice(const bnmf_algs::util::gsl_rng_wrapper& gsl_rng,
-              bnmf_algs::vector_t& cum_prob);
+template <typename RandomIterator>
+RandomIterator choice(RandomIterator cum_prob_begin, RandomIterator cum_prob_end,
+              const bnmf_algs::util::gsl_rng_wrapper& gsl_rng) {
+    // if the distribution is empty, return end iterator
+    if (cum_prob_begin == cum_prob_end) {
+        return cum_prob_end;
+    }
+
+    // get a uniform random number in the range [0, max_cum_prob).
+    auto max_val = *(std::prev(cum_prob_end));
+    double p = gsl_ran_flat(gsl_rng.get(), 0, max_val);
+
+    // find the iterator using binary search
+    return std::upper_bound(cum_prob_begin, cum_prob_end, p);
+}
 
 } // namespace util
 } // namespace bnmf_algs
