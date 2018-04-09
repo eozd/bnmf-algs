@@ -1,12 +1,12 @@
 #pragma once
 
-#include <util/util.hpp>
-#include <util/sampling.hpp>
-#include "allocation_model/alloc_model_params.hpp"
 #include "allocation_model/alloc_model_funcs.hpp"
+#include "allocation_model/alloc_model_params.hpp"
 #include "defs.hpp"
 #include "util/generator.hpp"
 #include "util/wrappers.hpp"
+#include <util/sampling.hpp>
+#include <util/util.hpp>
 
 namespace bnmf_algs {
 namespace details {
@@ -128,7 +128,12 @@ namespace bld {
  * S^* = \underset{S_{::+}=X}{\arg \max}\text{ }p(S).
  * \f]
  *
- * \todo Explain sequential greedy algorithm. (first need to understand)
+ * Sequential greedy BLD algorithm works by greedily allocating each entry of
+ * input matrix, \f$X_{ij}\f$, one by one to its corresponding bin
+ * \f$S_{ijk}\f$. \f$k\f$ is chosen by considering the increase in log
+ * marginal value of tensor \f$S\f$ when \f$S_{ijk}\f$ is increased by \f$1\f$.
+ * At a given time, \f$i, j\f$ is chosen as the indices of the largest entry of
+ * matrix \f$X\f$.
  *
  * @param X Nonnegative matrix of size \f$x \times y\f$ to decompose.
  * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
@@ -141,6 +146,10 @@ namespace bld {
  *
  * @throws std::invalid_argument if matrix \f$X\f$ is not nonnegative, if size
  * of alpha is not \f$x\f$, if size of beta is not \f$z\f$.
+ *
+ * @remark Worst-case time complexity is \f$O(xy +
+ * z(\log{xy})\sum_{ij}X_{ij})\f$ for a matrix \f$X_{x \times y}\f$ and output
+ * tensor \f$S_{x \times y \times z}\f$.
  */
 tensord<3>
 seq_greedy_bld(const matrix_t& X, size_t z,
@@ -192,7 +201,24 @@ bld_fact(const tensord<3>& S,
  * S^* = \underset{S_{::+}=X}{\arg \max}\text{ }p(S).
  * \f]
  *
- * \todo Explain multiplicative algorithm (first need to understand)
+ * Multiplicative BLD algorithm solves a constrained optimization problem over
+ * the set of tensors whose sum over their third index is equal to \f$X\f$.
+ * Let's denote this set with \f$\Omega_X = \{S | S_{ij+} = X_{ij}\}\f$. To make
+ * the optimization easier the constraints on the found tensors are relaxed by
+ * searching over \f$\mathcal{R}^{x \times y \times z}\f$ and defining a
+ * projection function \f$\phi : \mathcal{R}^{x \times y \times z} \rightarrow
+ * \Omega_X\f$ such that \f$\phi(Z) = S\f$ where \f$Z\f$ is the solution of the
+ * unconstrained problem and \f$S\f$ is the solution of the original constrained
+ * problem.
+ *
+ * In this algorithm, \f$\phi\f$ is chosen such that
+ *
+ * \f[
+ *     S_{ijk} = \phi(Z_{ijk}) = \frac{Z_{ijk}X_{ij}}{\sum_{k'}Z_{ijk'}}
+ * \f]
+ *
+ * This particular choice of \f$\phi\f$ leads to multiplicative update rules
+ * implemented in this algorithm.
  *
  * @param X Nonnegative matrix of size \f$x \times y\f$ to decompose.
  * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
@@ -234,7 +260,24 @@ tensord<3> bld_mult(const matrix_t& X, size_t z,
  * S^* = \underset{S_{::+}=X}{\arg \max}\text{ }p(S).
  * \f]
  *
- * \todo Explain additive gradient ascent algorithm (first need to understand)
+ * Additive BLD algorithm solves a constrained optimization problem over
+ * the set of tensors whose sum over their third index is equal to \f$X\f$.
+ * Let's denote this set with \f$\Omega_X = \{S | S_{ij+} = X_{ij}\}\f$. To make
+ * the optimization easier the constraints on the found tensors are relaxed by
+ * searching over \f$\mathcal{R}^{x \times y \times z}\f$ and defining a
+ * projection function \f$\phi : \mathcal{R}^{x \times y \times z} \rightarrow
+ * \Omega_X\f$ such that \f$\phi(Z) = S\f$ where \f$Z\f$ is the solution of the
+ * unconstrained problem and \f$S\f$ is the solution of the original constrained
+ * problem.
+ *
+ * In this algorithm, \f$\phi\f$ is chosen such that
+ *
+ * \f[
+ *     S_{ijk} = \phi(Z_{ijk}) =
+ * X_{ij}\frac{\exp(Z_{ijk})}{\sum_{k'}\exp(Z_{ijk'})} \f]
+ *
+ * This particular choice of \f$\phi\f$ leads to additive update rules
+ * implemented in this algorithm.
  *
  * @param X Nonnegative matrix of size \f$x \times y\f$ to decompose.
  * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
