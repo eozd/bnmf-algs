@@ -100,7 +100,7 @@ namespace util {
  * @tparam T Type of the resulting values of the computation that will be
  * performed at each step.
  * @tparam Computer Type of the invocable computer object. May be a
- * functor/std::function/function pointer and so on.
+ * functor, std::function, function pointer and so on.
  */
 template <typename T, typename Computer>
 class ComputationIterator : public std::iterator<std::forward_iterator_tag, T> {

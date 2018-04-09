@@ -103,7 +103,6 @@ class SampleOnesReplaceComputer {
      * linear time.
      *
      * @param X Matrix \f$X\f$ that will be used during sampling.
-     * @param replacement Whether to sample with replacement.
      *
      * @remark Time complexity is \f$O(N)\f$ where \f$N\f$ is the number of
      * entries of matrix parameter X.
@@ -175,6 +174,7 @@ sample_ones_noreplace(const matrix_t& X);
  * in the memory at a given time.
  *
  * @param X Matrix to sample one by one with replacement.
+ * @param num_samples Number of samples to generate.
  *
  * @return A bnmf_algs::util::Generator type that can be used to generate a
  * sequence of samples from the given matrix.
