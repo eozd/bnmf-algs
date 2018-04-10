@@ -1,4 +1,5 @@
 #include "../catch2.hpp"
+#include <gsl/gsl_sf_psi.h>
 #include "util/util.hpp"
 #include <iostream>
 
@@ -306,3 +307,36 @@ TEST_CASE("Test normalize", "[normalize] [normalized]") {
     }
 }
 
+TEST_CASE("Test psi_appr", "[psi_appr]") {
+    SECTION("Values less than 1") {
+        constexpr double precision = 1e-10;
+        constexpr double step = 1e-5;
+        bool close = true;
+        for (double x = step; x < 1; x += step) {
+            double expected = gsl_sf_psi(x);
+            double actual = util::psi_appr(x);
+            if (std::abs(actual - expected) > precision) {
+                close = false;
+                break;
+            }
+        }
+
+        REQUIRE(close);
+    }
+
+    SECTION("Values greater than or equal to 1") {
+        constexpr double precision = 1e-12;
+        constexpr double step = 1e-3;
+        bool close = true;
+        for (double x = 1; x < 100; x += step) {
+            double expected = gsl_sf_psi(x);
+            double actual = util::psi_appr(x);
+            if (std::abs(actual - expected) > precision) {
+                close = false;
+                break;
+            }
+        }
+
+        REQUIRE(close);
+    }
+}
