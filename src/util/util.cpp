@@ -28,9 +28,9 @@ double util::sparseness(const tensord<3>& S) {
 
 double util::psi_appr(double x) noexcept {
     constexpr size_t N = 8;
-    constexpr std::array<double, N> coeff = {-1 / 2,      -1 / 12, 1 / 120,
-                                             -1 / 252,    1 / 240, -5 / 660,
-                                             691 / 32760, -1 / 12};
+    constexpr std::array<double, N> coeff = {-1. / 2,      -1. / 12, 1. / 120,
+                                             -1. / 252,    1. / 240, -5. / 660,
+                                             691. / 32760, -1. / 12};
 
     double extra = 0;
     for (; x <= 6; ++x) {
