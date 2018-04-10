@@ -6,7 +6,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -Wall -pedantic -g -O0 -fprofile-arcs -ftest-coverage")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -Wall -pedantic -O3 -fopenmp")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -Wall -pedantic -O3")
+
+if (OPENMP)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
+    add_definitions(-DUSE_OPENMP)
+endif (OPENMP)
+
+#if (CMAKE_BUILD_TYPE MATCHES RELEASE)
+    add_definitions(-DEIGEN_NO_DEBUG)
+#endif (CMAKE_BUILD_TYPE MATCHES RELEASE)
 
 include_directories("include")
 

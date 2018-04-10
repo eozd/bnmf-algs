@@ -1,8 +1,8 @@
 #pragma once
 
 #include "defs.hpp"
-#include "util/wrappers.hpp"
 #include "util/generator.hpp"
+#include "util/wrappers.hpp"
 #include <cstddef>
 #include <utility>
 
@@ -46,9 +46,10 @@ auto call(Function f, Tuple t, std::index_sequence<I...> seq) {
  * @brief Forward the elements of a tuple to a function and return the result.
  *
  * This function takes a function pointer and a
- * (std::tuple, std::array, std::pair) and invokes the function with the elements
- * of the tuple. Parameter list of the function and the template types of tuple
- * elements must be the same; otherwise, a compiler error would be issued.
+ * (std::tuple, std::array, std::pair) and invokes the function with the
+ * elements of the tuple. Parameter list of the function and the template types
+ * of tuple elements must be the same; otherwise, a compiler error would be
+ * issued.
  *
  * @tparam Function Function pointer type.
  * @tparam Tuple std::tuple, std::array, std::pair and so on such that
@@ -162,5 +163,41 @@ tensord<N> normalized(const tensord<N>& input, size_t axis,
     normalize(out, axis, type);
     return out;
 }
+
+/**
+ * @brief Calculate digamma function approximately using the first 8 terms of
+ * the asymptotic expansion of digamma function.
+ *
+ * Digamma function is defined as
+ *
+ * \f[
+ *     \psi(x) = \frac{\Gamma'(x)}{\Gamma(x)}
+ * \f]
+ *
+ * This function computes an approximation for \f$\psi(x)\f$ using the below
+ * formula:
+ *
+ * \f[
+ *     \psi(x) \approx \ln(x) - \frac{1}{2x} - \frac{1}{12x^2} +
+ * \frac{1}{120x^4} - \frac{1}{252x^6} + \frac{1}{240x^8} - \frac{5}{660x^{10}} +
+ * \frac{691}{32760x^{12}} - \frac{1}{12x^{14}}
+ * \f]
+ *
+ * This approximation is more accurate for larger values of \f$x\f$. When
+ * computing \f$\psi(x)\f$ for \f$x < 6\f$, the below recurrence relation is
+ * used to shift the \f$x\f$ value to use in the approximation formula to a
+ * value greater than \f$6\f$:
+ *
+ * \f[
+ *     \psi(x + 1) = \frac{1}{x} + \psi(x)
+ * \f]
+ *
+ * @param x Parameter to \f$\psi(x)\f$.
+ * @return \f$\psi(x)\f$.
+ *
+ * @see Appendix C.1 of @cite beal2003variational for a discussion of this
+ * method.
+ */
+double psi_appr(double x) noexcept;
 } // namespace util
 } // namespace bnmf_algs
