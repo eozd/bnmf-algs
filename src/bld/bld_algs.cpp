@@ -1,7 +1,9 @@
 #include "bld/bld_algs.hpp"
 #include "util/sampling.hpp"
+#include "util/util.hpp"
 #include <gsl/gsl_sf_psi.h>
-#include <iostream>
+#include <omp.h>
+#include <thread>
 
 using namespace bnmf_algs;
 
@@ -140,7 +142,7 @@ bld::bld_fact(const tensord<3>& S,
 
 tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
                          const allocation_model::AllocModelParams& model_params,
-                         size_t max_iter, double eps) {
+                         size_t max_iter, bool use_psi_appr, double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
         if (!error_msg.empty()) {
@@ -176,6 +178,8 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
     tensord<2> S_ijp(x, y); // S_{ij+}
     matrix_t alpha_eph(x, z);
     matrix_t beta_eph(y, z);
+
+    const auto psi_fn = use_psi_appr ? util::psi_appr : gsl_sf_psi;
     for (size_t eph = 0; eph < max_iter; ++eph) {
         // update S_pjk, S_ipk, S_ijp
         S_pjk = S.sum(shape<1>({0}));
@@ -197,8 +201,8 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
                 for (size_t k = 0; k < z; ++k) {
-                    grad_plus(i, j, k) =
-                        gsl_sf_psi(beta_eph(j, k)) - gsl_sf_psi(S(i, j, k) + 1);
+                    grad_plus(i, j, k) = psi_fn(beta_eph(j, k)) -
+                                         psi_fn(S(i, j, k) + 1);
                 }
             }
         }
@@ -206,8 +210,8 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
         vector_t alpha_eph_sum = alpha_eph.colwise().sum();
         for (int i = 0; i < x; ++i) {
             for (size_t k = 0; k < z; ++k) {
-                grad_minus(i, k) =
-                    gsl_sf_psi(alpha_eph_sum(k)) - gsl_sf_psi(alpha_eph(i, k));
+                grad_minus(i, k) = psi_fn(alpha_eph_sum(k)) -
+                                   psi_fn(alpha_eph(i, k));
             }
         }
         // update nom_mult, denom_mult

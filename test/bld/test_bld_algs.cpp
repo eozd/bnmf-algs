@@ -271,7 +271,8 @@ TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
         AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
                                       std::vector<double>(z, 1.0));
 
-        // todo: how to test if the results are correct?
+        // Test with exact digamma
+        // =======================
         tensord<3> S = bld::bld_mult(X, z, model_params, 2000);
         double log_marginal = log_marginal_S(S, model_params);
         REQUIRE(log_marginal >= -262);
@@ -282,6 +283,19 @@ TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
         matrix_t sum_S_mat = Eigen::Map<matrix_t>(
             sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
         REQUIRE(X.isApprox(sum_S_mat, 1e-10));
+
+        // Test with approximate digamma
+        // =============================
+        S = bld::bld_mult(X, z, model_params, 2000, true);
+        log_marginal = log_marginal_S(S, model_params);
+        REQUIRE(log_marginal >= -262);
+        REQUIRE(sparseness(S) >= 0.64);
+
+        // Test if S_{::+} = X
+        sum_S = S.sum(shape<1>({2}));
+        sum_S_mat = Eigen::Map<matrix_t>(
+                sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
+        REQUIRE(X.isApprox(sum_S_mat, 1e-4));
         // todo: check if S is an integer tensor
     }
 }

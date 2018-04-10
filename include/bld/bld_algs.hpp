@@ -226,6 +226,8 @@ bld_fact(const tensord<3>& S,
  * @param model_params Allocation model parameters. See
  * bnmf_algs::allocation_model::AllocModelParams.
  * @param max_iter Maximum number of iterations.
+ * @param use_psi_appr If true, use util::psi_appr function to compute the digamma
+ * function approximately. If false, compute the digamma function exactly.
  * @param eps Floating point epsilon value to be used to prevent division by 0
  * errors.
  *
@@ -238,7 +240,8 @@ bld_fact(const tensord<3>& S,
  */
 tensord<3> bld_mult(const matrix_t& X, size_t z,
                     const allocation_model::AllocModelParams& model_params,
-                    size_t max_iter = 1000, double eps = 1e-50);
+                    size_t max_iter = 1000, bool use_psi_appr = false,
+                    double eps = 1e-50);
 
 /**
  * @brief Compute tensor \f$S\f$, the solution of BLD problem \cite
