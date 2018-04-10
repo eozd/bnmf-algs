@@ -19,5 +19,6 @@ CELERO_MAIN
 #include "seq_greedy_bld_benchmark.hpp"
 #include "nmf_benchmark.hpp"
 #include "nmf_seq_greedy_bld_matrix_elems_benchmark.hpp"
+#include "psi_appr_benchmark.hpp"
 
 /*********************** INCLUDE BENCHMARK HEADER ABOVE ***********************/
