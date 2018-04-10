@@ -151,19 +151,33 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
     }
 
     long x = X.rows(), y = X.cols();
-    tensord<3> S(x, y, z);
 
     // initialize tensor S
+    tensord<3> S(x, y, z);
+    vector_t dirichlet_params = vector_t::Constant(z, 1);
+    #pragma omp parallel
     {
+
+#ifdef USE_OPENMP
+        const int num_threads = std::thread::hardware_concurrency();
+        int thread_id = omp_get_thread_num();
+        bool last_thread = thread_id + 1 == num_threads;
+        long num_rows = x / num_threads;
+        long beg = thread_id * num_rows;
+        long end = !last_thread ? beg + num_rows : x;
+#else
+        long beg = 0;
+        long end = x;
+#endif
+
         auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
-        std::vector<double> dirichlet_params(z, 1);
-        std::vector<double> dirichlet_variates(z);
-        for (int i = 0; i < x; ++i) {
+        vector_t dirichlet_variates(z);
+        for (long i = beg; i < end; ++i) {
             for (int j = 0; j < y; ++j) {
                 gsl_ran_dirichlet(rand_gen.get(), z, dirichlet_params.data(),
                                   dirichlet_variates.data());
                 for (size_t k = 0; k < z; ++k) {
-                    S(i, j, k) = X(i, j) * dirichlet_variates[k];
+                    S(i, j, k) = X(i, j) * dirichlet_variates(k);
                 }
             }
         }
@@ -173,31 +187,29 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
     matrix_t grad_minus(x, z);
     matrix_t nom_mult(x, y);
     matrix_t denom_mult(x, y);
-    tensord<2> S_pjk(y, z); // S_{+jk}
-    tensord<2> S_ipk(x, z); // S_{i+k}
-    tensord<2> S_ijp(x, y); // S_{ij+}
-    matrix_t alpha_eph(x, z);
-    matrix_t beta_eph(y, z);
+
+    Eigen::Map<const vector_t> alpha(model_params.alpha.data(),
+                                     model_params.alpha.size());
+    Eigen::Map<const vector_t> beta(model_params.beta.data(),
+                                    model_params.beta.size());
 
     const auto psi_fn = use_psi_appr ? util::psi_appr : gsl_sf_psi;
     for (size_t eph = 0; eph < max_iter; ++eph) {
         // update S_pjk, S_ipk, S_ijp
-        S_pjk = S.sum(shape<1>({0}));
-        S_ipk = S.sum(shape<1>({1}));
-        S_ijp = S.sum(shape<1>({2}));
-        // update alpha_eph
-        for (int i = 0; i < x; ++i) {
-            for (size_t k = 0; k < z; ++k) {
-                alpha_eph(i, k) = model_params.alpha[i] + S_ipk(i, k);
-            }
-        }
-        // update beta_eph
-        for (int j = 0; j < y; ++j) {
-            for (size_t k = 0; k < z; ++k) {
-                beta_eph(j, k) = model_params.beta[k] + S_pjk(j, k);
-            }
-        }
+        tensord<2> S_pjk_tensor = S.sum(shape<1>({0}));
+        tensord<2> S_ipk_tensor = S.sum(shape<1>({1}));
+        tensord<2> S_ijp_tensor = S.sum(shape<1>({2}));
+
+        Eigen::Map<matrix_t> S_pjk(S_pjk_tensor.data(), y, z);
+        Eigen::Map<matrix_t> S_ipk(S_ipk_tensor.data(), x, z);
+        Eigen::Map<matrix_t> S_ijp(S_ijp_tensor.data(), x, y);
+
+        matrix_t alpha_eph =
+            S_ipk.array().colwise() + alpha.transpose().array();
+        matrix_t beta_eph = S_pjk.array().rowwise() + beta.array();
+
         // update grad_plus
+        #pragma omp parallel for schedule(static)
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
                 for (size_t k = 0; k < z; ++k) {
@@ -208,6 +220,7 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
         }
         // update grad_minus
         vector_t alpha_eph_sum = alpha_eph.colwise().sum();
+        #pragma omp parallel for schedule(static)
         for (int i = 0; i < x; ++i) {
             for (size_t k = 0; k < z; ++k) {
                 grad_minus(i, k) = psi_fn(alpha_eph_sum(k)) -
@@ -215,6 +228,7 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
             }
         }
         // update nom_mult, denom_mult
+        #pragma omp parallel for schedule(static)
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
                 double xdiv = 1.0 / (X(i, j) + eps);
@@ -228,14 +242,15 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
             }
         }
         // update S
+        #pragma omp parallel for schedule(static)
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
                 double s_ij = S_ijp(i, j);
                 double x_over_s = X(i, j) / (s_ij + eps);
                 for (size_t k = 0; k < z; ++k) {
-                    S(i, j, k) *= (grad_plus(i, j, k) + nom_mult(i, j)) /
+                    S(i, j, k) *= (grad_plus(i, j, k) + nom_mult(i, j)) *
+                                  x_over_s /
                                   (grad_minus(i, k) + denom_mult(i, j) + eps);
-                    S(i, j, k) *= x_over_s;
                 }
             }
         }
