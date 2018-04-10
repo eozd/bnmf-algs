@@ -27,32 +27,77 @@ double util::sparseness(const tensord<3>& S) {
 }
 
 double util::psi_appr(double x) noexcept {
-    constexpr size_t N = 8;
-    constexpr std::array<double, N> coeff = {-1. / 2,      -1. / 12, 1. / 120,
-                                             -1. / 252,    1. / 240, -5. / 660,
-                                             691. / 32760, -1. / 12};
-
     double extra = 0;
-    for (; x <= 6; ++x) {
-        extra += 1 / x;
+
+    // write each case separately to minimize number of divisions as much as
+    // possible
+    if (x < 1) {
+        const double a = x + 1;
+        const double b = x + 2;
+        const double c = x + 3;
+        const double d = x + 4;
+        const double e = x + 5;
+        const double ab = a * b;
+        const double cd = c * d;
+        const double ex = e * x;
+
+        extra = ((a + b) * cd * ex + ab * d * ex + ab * c * ex + ab * cd * x +
+                 ab * cd * e) /
+                (ab * cd * ex);
+        x += 6;
+    } else if (x < 2) {
+        const double a = x + 1;
+        const double b = x + 2;
+        const double c = x + 3;
+        const double d = x + 4;
+        const double ab = a * b;
+        const double cd = c * d;
+        const double dx = d * x;
+
+        extra =
+            ((a + b) * c * dx + ab * dx + ab * c * x + ab * cd) / (ab * cd * x);
+        x += 5;
+    } else if (x < 3) {
+        const double a = x + 1;
+        const double b = x + 2;
+        const double c = x + 3;
+        const double ab = a * b;
+        const double cx = c * x;
+
+        extra = ((a + b) * cx + (c + x) * ab) / (ab * cx);
+        x += 4;
+    } else if (x < 4) {
+        const double a = x + 1;
+        const double b = x + 2;
+        const double ab = a * b;
+
+        extra = ((a + b) * x + ab) / (ab * x);
+        x += 3;
+    } else if (x < 5) {
+        const double a = x + 1;
+
+        extra = (a + x) / (a * x);
+        x += 2;
+    } else if (x < 6) {
+        extra = 1 / x;
+        x += 1;
     }
 
-    const double x2 = x * x;
-    const double x4 = x2 * x2;
-    const double x6 = x4 * x2;
-    const double x8 = x4 * x4;
-    std::array<double, N> denom = {x,  x2,      x4,      x6,
-                                   x8, x8 * x2, x8 * x4, x8 * x6};
+    double x2 = x * x;
+    double x4 = x2 * x2;
+    double x6 = x4 * x2;
+    double x8 = x6 * x2;
+    double x10 = x8 * x2;
+    double x12 = x10 * x2;
+    double x13 = x12 * x;
+    double x14 = x13 * x;
 
-    #pragma omp simd
-    for (size_t i = 0; i < N; ++i) {
-        denom[i] = coeff[i] / denom[i];
-    }
-
-    double res = std::log(x);
-    for (size_t i = 0; i < N; ++i) {
-        res += denom[i];
-    }
+    // write the result of the formula simplified using symbolic calculation
+    // to minimize the number of divisions
+    double res =
+        std::log(x) + (-360360 * x13 - 60060 * x12 + 6006 * x10 - 2860 * x8 +
+                       3003 * x6 - 5460 * x4 + 15202 * x2 - 60060) /
+                          (720720 * x14);
 
     return res - extra;
 }
