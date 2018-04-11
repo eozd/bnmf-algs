@@ -40,24 +40,46 @@ def split_celero_row(celero_row):
     return [word.strip() for word in celero_row.split('|')[1:-1]]
 
 
-def tab(string, count=1):
+def space(string, count=4):
     '''
-    Add count many tabs to the beginning of the given string.
+    Add count many spaces to the beginning of the given string.
 
     Parameters
     ----------
     string : str
-        String to shift with tabs.
+        String to shift with spaces.
 
     count : int
-        Number of tabs to put.
+        Number of spaces to put.
 
     Returns
     -------
     shifted_str : str
-        String shifted with count many tabs to the right.
+        String shifted with count many spaces to the right.
     '''
-    return '\t'*count + string
+    return ' ' * count + string
+
+
+def indent(string, level=1, num_spaces=4):
+    '''
+    Indent the given string given number of levels.
+
+    Parameters
+    ----------
+    string : str
+        String to indent.
+
+    level : int
+        Indentation level.
+
+    num_spaces : int
+        Number of spaces to put for an indent level.
+
+    Returns
+    -------
+        Indented string.
+    '''
+    return space(string, level * num_spaces)
 
 
 def newline(string, count=1):
@@ -77,7 +99,7 @@ def newline(string, count=1):
     newlined_str : str
         String that contains count many more newlines at the end.
     '''
-    return string + '\n'*count
+    return string + '\n' * count
 
 
 def bold(string):
@@ -126,26 +148,28 @@ def construct_latex_table(col_names, table, caption, label, resolution):
         LaTeX table version of the given parameters representing a Celero table.
     '''
     latex = newline(r'\begin{table}[H]')
-    latex += newline(tab(r'\centering'))
-    latex += newline(tab(r'\caption{' + caption + ' ({}) '.format(resolution) + r'}'))
-    latex += newline(tab(r'\label{' + label + r'}'))
-    latex += newline(tab(r'\begin{tabular}{|' + r'c|'*len(col_names) + r'}'))
-    latex += newline(tab(r'\hline', 2))
+    latex += newline(indent(r'\centering'))
+    latex += newline(
+        indent(r'\caption{' + caption + ' ({}) '.format(resolution) + r'}'))
+    latex += newline(indent(r'\label{' + label + r'}'))
+    latex += newline(
+        indent(r'\begin{tabular}{|' + r'c|' * len(col_names) + r'}'))
+    latex += newline(indent(r'\hline', level=2))
 
-    latex += tab('', 2)
+    latex += indent('', level=2)
     for name in col_names[:-1]:
         latex += bold(name) + ' &'
     latex += newline(bold(col_names[-1]) + r' \\')
 
-    latex += newline(tab(r'\hline', 2))
+    latex += newline(indent(r'\hline', level=2))
     for row in table:
-        latex += tab('', 2)
+        latex += indent('', level=2)
         for val in row[:-1]:
-            latex += val + r' & '
+            latex += val.replace('_', r'\_') + r' & '
         latex += newline(row[-1] + r' \\')
-        latex += newline(tab(r'\hline', 2))
+        latex += newline(indent(r'\hline', level=2))
 
-    latex += newline(tab(r'\end{tabular}'))
+    latex += newline(indent(r'\end{tabular}'))
     latex += newline(r'\end{table}')
 
     return latex
@@ -164,6 +188,7 @@ def main():
     with open(filepath, 'r') as f:
         lines = [line.strip() for line in f.readlines()]
 
+    lines = [line for line in lines if line]
     lines = lines[1:-1]
 
     resolution = lines[0]
@@ -173,8 +198,9 @@ def main():
     for row in lines[3:]:
         table.append(split_celero_row(row))
 
-    latex_table = construct_latex_table(col_names, table, caption, label, resolution)
-    print(latex_table)
+    latex_table = construct_latex_table(col_names, table, caption, label,
+                                        resolution)
+    print(latex_table, end='')
 
 
 if __name__ == '__main__':
