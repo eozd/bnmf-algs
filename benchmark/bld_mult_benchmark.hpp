@@ -20,6 +20,8 @@ long scale = 5;
 size_t r = 17;
 } // namespace bld_mult_bench_vars
 
+/**************************** Original bld_mult *******************************/
+
 BASELINE(bld_mult, 100x100, 1, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
@@ -30,7 +32,7 @@ BASELINE(bld_mult, 100x100, 1, 1) {
 
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
-    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params));
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
 
 BENCHMARK(bld_mult, 200x100, 1, 1) {
@@ -43,7 +45,7 @@ BENCHMARK(bld_mult, 200x100, 1, 1) {
 
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
-    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params));
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
 
 BENCHMARK(bld_mult, 300x100, 1, 1) {
@@ -56,7 +58,7 @@ BENCHMARK(bld_mult, 300x100, 1, 1) {
 
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
-    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params));
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
 
 BENCHMARK(bld_mult, 400x100, 1, 1) {
@@ -69,7 +71,7 @@ BENCHMARK(bld_mult, 400x100, 1, 1) {
 
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
-    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params));
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
 
 BENCHMARK(bld_mult, 100x200, 1, 1) {
@@ -82,7 +84,7 @@ BENCHMARK(bld_mult, 100x200, 1, 1) {
 
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
-    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params));
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
 
 BENCHMARK(bld_mult, 100x300, 1, 1) {
@@ -95,7 +97,7 @@ BENCHMARK(bld_mult, 100x300, 1, 1) {
 
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
-    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params));
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
 
 BENCHMARK(bld_mult, 100x400, 1, 1) {
@@ -108,5 +110,98 @@ BENCHMARK(bld_mult, 100x400, 1, 1) {
 
     matrix_t X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
-    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params));
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
+}
+
+/*********************** bld_mult with Approximate psi ************************/
+
+BASELINE(bld_mult_psi_appr, 100x100, 1, 1) {
+    using namespace bnmf_algs;
+    using namespace benchmark;
+    using namespace bld_mult_bench_vars;
+
+    x = 100;
+    y = 100;
+
+    matrix_t X = make_matrix(x, y, beg, scale);
+    auto params = make_params(x, y, r);
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
+}
+
+BENCHMARK(bld_mult_psi_appr, 200x100, 1, 1) {
+    using namespace bnmf_algs;
+    using namespace benchmark;
+    using namespace bld_mult_bench_vars;
+
+    x = 200;
+    y = 100;
+
+    matrix_t X = make_matrix(x, y, beg, scale);
+    auto params = make_params(x, y, r);
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
+}
+
+BENCHMARK(bld_mult_psi_appr, 300x100, 1, 1) {
+    using namespace bnmf_algs;
+    using namespace benchmark;
+    using namespace bld_mult_bench_vars;
+
+    x = 300;
+    y = 100;
+
+    matrix_t X = make_matrix(x, y, beg, scale);
+    auto params = make_params(x, y, r);
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
+}
+
+BENCHMARK(bld_mult_psi_appr, 400x100, 1, 1) {
+    using namespace bnmf_algs;
+    using namespace benchmark;
+    using namespace bld_mult_bench_vars;
+
+    x = 400;
+    y = 100;
+
+    matrix_t X = make_matrix(x, y, beg, scale);
+    auto params = make_params(x, y, r);
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
+}
+
+BENCHMARK(bld_mult_psi_appr, 100x200, 1, 1) {
+    using namespace bnmf_algs;
+    using namespace benchmark;
+    using namespace bld_mult_bench_vars;
+
+    x = 100;
+    y = 200;
+
+    matrix_t X = make_matrix(x, y, beg, scale);
+    auto params = make_params(x, y, r);
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
+}
+
+BENCHMARK(bld_mult_psi_appr, 100x300, 1, 1) {
+    using namespace bnmf_algs;
+    using namespace benchmark;
+    using namespace bld_mult_bench_vars;
+
+    x = 100;
+    y = 300;
+
+    matrix_t X = make_matrix(x, y, beg, scale);
+    auto params = make_params(x, y, r);
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
+}
+
+BENCHMARK(bld_mult_psi_appr, 100x400, 1, 1) {
+    using namespace bnmf_algs;
+    using namespace benchmark;
+    using namespace bld_mult_bench_vars;
+
+    x = 100;
+    y = 400;
+
+    matrix_t X = make_matrix(x, y, beg, scale);
+    auto params = make_params(x, y, r);
+    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
 }
