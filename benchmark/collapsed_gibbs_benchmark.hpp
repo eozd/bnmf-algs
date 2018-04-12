@@ -22,7 +22,7 @@ size_t r = 17;
 auto do_nothing = [](const auto& param) -> void {};
 } // namespace collapsed_gibbs_bench_vars
 
-BASELINE(collapsed_gibbs, 100x100, 1, 1) {
+BASELINE(collapsed_gibbs, 100x100, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace collapsed_gibbs_bench_vars;
@@ -37,7 +37,7 @@ BASELINE(collapsed_gibbs, 100x100, 1, 1) {
         std::for_each(gen.begin(), gen.end(), do_nothing));
 }
 
-BENCHMARK(collapsed_gibbs, 200x100, 1, 1) {
+BENCHMARK(collapsed_gibbs, 200x100, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace collapsed_gibbs_bench_vars;
@@ -52,7 +52,7 @@ BENCHMARK(collapsed_gibbs, 200x100, 1, 1) {
         std::for_each(gen.begin(), gen.end(), do_nothing));
 }
 
-BENCHMARK(collapsed_gibbs, 300x100, 1, 1) {
+BENCHMARK(collapsed_gibbs, 300x100, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace collapsed_gibbs_bench_vars;
@@ -67,7 +67,7 @@ BENCHMARK(collapsed_gibbs, 300x100, 1, 1) {
         std::for_each(gen.begin(), gen.end(), do_nothing));
 }
 
-BENCHMARK(collapsed_gibbs, 400x100, 1, 1) {
+BENCHMARK(collapsed_gibbs, 400x100, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace collapsed_gibbs_bench_vars;
@@ -82,7 +82,7 @@ BENCHMARK(collapsed_gibbs, 400x100, 1, 1) {
         std::for_each(gen.begin(), gen.end(), do_nothing));
 }
 
-BENCHMARK(collapsed_gibbs, 100x200, 1, 1) {
+BENCHMARK(collapsed_gibbs, 100x200, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace collapsed_gibbs_bench_vars;
@@ -97,7 +97,7 @@ BENCHMARK(collapsed_gibbs, 100x200, 1, 1) {
         std::for_each(gen.begin(), gen.end(), do_nothing));
 }
 
-BENCHMARK(collapsed_gibbs, 100x300, 1, 1) {
+BENCHMARK(collapsed_gibbs, 100x300, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace collapsed_gibbs_bench_vars;
@@ -112,7 +112,7 @@ BENCHMARK(collapsed_gibbs, 100x300, 1, 1) {
         std::for_each(gen.begin(), gen.end(), do_nothing));
 }
 
-BENCHMARK(collapsed_gibbs, 100x400, 1, 1) {
+BENCHMARK(collapsed_gibbs, 100x400, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace collapsed_gibbs_bench_vars;

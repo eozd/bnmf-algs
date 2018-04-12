@@ -20,7 +20,7 @@ long scale = 5;
 size_t r = 17;
 } // namespace seq_greedy_bld_bench_vars
 
-BASELINE(seq_greedy_bld, 100x100, 1, 1) {
+BASELINE(seq_greedy_bld, 100x100, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace seq_greedy_bld_bench_vars;
@@ -33,7 +33,7 @@ BASELINE(seq_greedy_bld, 100x100, 1, 1) {
     celero::DoNotOptimizeAway(bld::seq_greedy_bld(X, r, params));
 }
 
-BENCHMARK(seq_greedy_bld, 200x100, 1, 1) {
+BENCHMARK(seq_greedy_bld, 200x100, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace seq_greedy_bld_bench_vars;
@@ -46,7 +46,7 @@ BENCHMARK(seq_greedy_bld, 200x100, 1, 1) {
     celero::DoNotOptimizeAway(bld::seq_greedy_bld(X, r, params));
 }
 
-BENCHMARK(seq_greedy_bld, 300x100, 1, 1) {
+BENCHMARK(seq_greedy_bld, 300x100, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace seq_greedy_bld_bench_vars;
@@ -59,7 +59,7 @@ BENCHMARK(seq_greedy_bld, 300x100, 1, 1) {
     celero::DoNotOptimizeAway(bld::seq_greedy_bld(X, r, params));
 }
 
-BENCHMARK(seq_greedy_bld, 400x100, 1, 1) {
+BENCHMARK(seq_greedy_bld, 400x100, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace seq_greedy_bld_bench_vars;
@@ -72,7 +72,7 @@ BENCHMARK(seq_greedy_bld, 400x100, 1, 1) {
     celero::DoNotOptimizeAway(bld::seq_greedy_bld(X, r, params));
 }
 
-BENCHMARK(seq_greedy_bld, 100x200, 1, 1) {
+BENCHMARK(seq_greedy_bld, 100x200, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace seq_greedy_bld_bench_vars;
@@ -85,7 +85,7 @@ BENCHMARK(seq_greedy_bld, 100x200, 1, 1) {
     celero::DoNotOptimizeAway(bld::seq_greedy_bld(X, r, params));
 }
 
-BENCHMARK(seq_greedy_bld, 100x300, 1, 1) {
+BENCHMARK(seq_greedy_bld, 100x300, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace seq_greedy_bld_bench_vars;
@@ -98,7 +98,7 @@ BENCHMARK(seq_greedy_bld, 100x300, 1, 1) {
     celero::DoNotOptimizeAway(bld::seq_greedy_bld(X, r, params));
 }
 
-BENCHMARK(seq_greedy_bld, 100x400, 1, 1) {
+BENCHMARK(seq_greedy_bld, 100x400, 30, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace seq_greedy_bld_bench_vars;

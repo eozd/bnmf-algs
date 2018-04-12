@@ -13,9 +13,9 @@ if (OPENMP)
     add_definitions(-DUSE_OPENMP)
 endif (OPENMP)
 
-#if (CMAKE_BUILD_TYPE MATCHES RELEASE)
-    add_definitions(-DEIGEN_NO_DEBUG)
-#endif (CMAKE_BUILD_TYPE MATCHES RELEASE)
+if (CMAKE_BUILD_TYPE MATCHES RELEASE)
+    add_definitions(-DNDEBUG)
+endif (CMAKE_BUILD_TYPE MATCHES RELEASE)
 
 include_directories("include")
 
@@ -68,6 +68,3 @@ if (BUILD_BENCH)
     target_link_libraries(benchmark /usr/local/lib/libcelero.so)
     target_link_libraries(benchmark bnmf_algs)
 endif (BUILD_BENCH)
-
-
-
