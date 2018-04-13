@@ -12,14 +12,32 @@ in C++.
 2. g++ 5 and above
 3. Eigen 3.3.0 and above
 4. GSL 2.1 and above
-5. [Celero](https://github.com/DigitalInBlue/Celero) 2.2.0 and above (**optional**)
+
+### Optional Requirements
+1. [Celero](https://github.com/DigitalInBlue/Celero) 2.2.0 and above for benchmarking
+2. OpenMP for multithreaded parallel execution of certain operations on separate CPU cores
+3. CUDA 8 and above to run large matrix/tensor operations on an Nvidia GPU
 
 ### Building
-To build the project type the following commands in the project root directory:
+To configure the build process, edit build.config file with your editor. This
+file contains CMake flags to pass to cmake executable. Each option is described
+in the comments above it. For example, to enable OpenMP support, set
+
+```
+-DBUILD_OPENMP=ON
+```
+
+Similarly, to disable CUDA, set
+
+```
+-DBUILD_CUDA=OFF
+```
+
+After configuring, to build the project in release mode, simply type
 ```
 ./build.sh release
 ```
-Afterwards, bnmf-algs shared library **libbnmf_algs.so** should be placed in build directory.
+bnmf-algs shared library **libbnmf_algs.so** should be placed in build directory.
 
 #### Clean
 You can clean the built library, tests and benchmarks by running

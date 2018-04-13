@@ -49,6 +49,7 @@ elif [[ ${build} == "clean" ]]; then
 	rm -rf build/libbnmf_algs.so ||:
 	rm -rf build/benchmark ||:
 	rm -rf build/tests ||:
+	rm -rf build/cuda_exec ||:
 	exit
 else
 	echo "Unknown build type: Use one of debug, release, clean"
