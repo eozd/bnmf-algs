@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
         S = bld::seq_greedy_bld(X, n_components, params);
         std::tie(W, H, L) = bld::bld_fact(S, params);
     } else if (alg == "bld_mult") {
-        S = bld::bld_mult(X, n_components, params, max_iter);
+        S = bld::bld_mult(X, n_components, params, max_iter, true);
         std::tie(W, H, L) = bld::bld_fact(S, params);
     } else if (alg == "bld_add") {
         S = bld::bld_add(X, n_components, params, max_iter);
