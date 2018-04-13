@@ -68,7 +68,7 @@ set(CUDA_KERNEL_FILES
     src/cuda/tensor_ops.cu)
 
 set(CUDA_SRC_FILES
-    src/cuda/main_cuda.cpp)
+    src/main_cuda.cpp)
 
 add_library(bnmf_algs SHARED ${LIB_SRC_FILES})
 target_link_libraries(bnmf_algs gsl gslcblas)
