@@ -8,10 +8,11 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -Wall -pedantic -g -O0 -fprofile-arcs -ftest-coverage")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -Wall -pedantic -O3")
 
-if (OPENMP)
+if (BUILD_OPENMP)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
     add_definitions(-DUSE_OPENMP)
-endif (OPENMP)
+    add_definitions(-DEIGEN_USE_THREADS)
+endif (BUILD_OPENMP)
 
 if (CMAKE_BUILD_TYPE MATCHES RELEASE)
     add_definitions(-DNDEBUG)
@@ -32,7 +33,9 @@ if (BUILD_CUDA)
     add_definitions(-DUSE_CUDA)
     find_package(CUDA REQUIRED)
     set(CUDA_HOST_COMPILER g++-5)
-    set(CUDA_NVCC_FLAGS "-std=c++11")
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 -O3")
+    include_directories(${CUDA_INCLUDE_DIRS})
+    add_definitions(-DEIGEN_USE_GPU)
     CUDA_INCLUDE_DIRECTORIES(include ${EIGEN3_INCLUDE_DIR})
 endif (BUILD_CUDA)
 
@@ -61,7 +64,7 @@ set(BENCH_SRC_FILES
     benchmark/bench_utils.cpp)
 
 set(CUDA_KERNEL_FILES
-    src/cuda/cuda_kernel.cu)
+    src/cuda/tensor_ops.cu)
 
 set(CUDA_SRC_FILES
     src/cuda/main_cuda.cpp)
