@@ -2,12 +2,13 @@
 
 # Build the project.
 #
-# usage: ./build.sh <BUILD_TYPE> <TARGET> [<CMAKE_ARGS>...]
+# usage: ./build.sh <BUILD_TYPE> <TARGET>
 #
 # <BUILD_TYPE> must be debug, release, clean.
 # <TARGET> can be test, bench.
-# <CMAKE_ARGS> are arguments to forward to cmake. You can use any cmake argument
-# here such as -DCMAKE_CXX_COMPILER=g++-5.
+#
+# To pass additional CMake arguments to the build procedure, edit build.config
+# file.
 #
 # example usages:
 # 
@@ -63,8 +64,12 @@ elif [[ ! -z ${target} ]]; then
 	exit
 fi
 
+additional_flags=`cat build.config | grep -E '-' | tr '\n' ' ' | sed 's/.$//'`
+echo 'Following additional flags will be applied:'
+echo ${additional_flags} | tr ' ' '\n'
+echo
 
 mkdir -p build
 cd build
-cmake ${build} ${target} $* ..
+cmake ${build} ${target} ${additional_flags} ..
 make -j6
