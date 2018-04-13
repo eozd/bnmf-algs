@@ -48,5 +48,7 @@ void init();
 std::array<bnmf_algs::tensord<2>, 3>
 tensor_sums(const bnmf_algs::tensord<3>& tensor);
 
+double* apply_psi(double* begin, size_t num_elems);
+
 } // namespace cuda
 } // namespace bnmf_algs
