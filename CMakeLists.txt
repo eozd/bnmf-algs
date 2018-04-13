@@ -29,12 +29,13 @@ include_directories(SYSTEM ${GSL_INCLUDE_DIRS})
 
 if (BUILD_CUDA)
     # we are using CUDA 8 ---> the newest possible g++ is g++-5.
-    set(CMAKE_CXX_COMPILER g++-5)
+    set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 -O3")
+
     add_definitions(-DUSE_CUDA)
     find_package(CUDA REQUIRED)
-    set(CUDA_HOST_COMPILER g++-5)
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 -O3")
     include_directories(${CUDA_INCLUDE_DIRS})
+
     add_definitions(-DEIGEN_USE_GPU)
     CUDA_INCLUDE_DIRECTORIES(include ${EIGEN3_INCLUDE_DIR})
 endif (BUILD_CUDA)

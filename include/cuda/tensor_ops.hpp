@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include "defs.hpp"
 
 namespace bnmf_algs {
