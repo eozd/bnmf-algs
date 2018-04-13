@@ -19,10 +19,22 @@ endif (CMAKE_BUILD_TYPE MATCHES RELEASE)
 
 include_directories("include")
 
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 find_package(GSL REQUIRED)
 find_package(Eigen3 REQUIRED)
 include_directories(SYSTEM ${EIGEN3_INCLUDE_DIR})
 include_directories(SYSTEM ${GSL_INCLUDE_DIRS})
+
+if (BUILD_CUDA)
+    # we are using CUDA 8 ---> the newest possible g++ is g++-5.
+    set(CMAKE_CXX_COMPILER g++-5)
+    add_definitions(-DUSE_CUDA)
+    find_package(CUDA REQUIRED)
+    set(CUDA_HOST_COMPILER g++-5)
+    set(CUDA_NVCC_FLAGS "-std=c++11")
+    CUDA_INCLUDE_DIRECTORIES(include ${EIGEN3_INCLUDE_DIR})
+endif (BUILD_CUDA)
 
 set(LIB_SRC_FILES
     src/nmf/nmf.cpp
@@ -48,6 +60,12 @@ set(BENCH_SRC_FILES
     benchmark/benchmark.cpp
     benchmark/bench_utils.cpp)
 
+set(CUDA_KERNEL_FILES
+    src/cuda/cuda_kernel.cu)
+
+set(CUDA_SRC_FILES
+    src/cuda/main_cuda.cpp)
+
 add_library(bnmf_algs SHARED ${LIB_SRC_FILES})
 target_link_libraries(bnmf_algs gsl gslcblas)
 
@@ -65,6 +83,13 @@ if (BUILD_BENCH)
 
     add_executable(benchmark ${BENCH_SRC_FILES})
     target_include_directories(benchmark PUBLIC /usr/local/include/celero)
-    target_link_libraries(benchmark /usr/local/lib/libcelero.so)
+    target_link_libraries(benchmark /usr/local/lib/libcelero.so Threads::Threads)
     target_link_libraries(benchmark bnmf_algs)
 endif (BUILD_BENCH)
+
+# Build cuda code
+if (BUILD_CUDA)
+    CUDA_COMPILE(CUDA_OBJ_FILES ${CUDA_KERNEL_FILES})
+    add_executable(cuda_exec ${CUDA_SRC_FILES} ${CUDA_OBJ_FILES})
+    target_link_libraries(cuda_exec bnmf_algs ${CUDA_LIBRARIES})
+endif (BUILD_CUDA)
