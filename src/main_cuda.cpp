@@ -29,7 +29,7 @@ bool close(double a, double b, double eps) { return std::abs(a - b) <= eps; }
 //    tensord<3> S(x, y, z);
 //    S.setRandom();
 //
-//    // Reduction on CPU
+//    // Reduction on GPU
 //    begin = high_resolution_clock::now();
 //    auto sums = cuda::tensor_sums(S);
 //    const auto& S_pjk = sums[0];
@@ -60,19 +60,19 @@ bool close(double a, double b, double eps) { return std::abs(a - b) <= eps; }
 //    // Compare CPU and GPU results
 //    for (long i = 0; i < x; ++i) {
 //        for (long j = 0; j < y; ++j) {
-//            assert(close(S_ijp(i, j), E_ijp(i, j)));
+//            assert(close(S_ijp(i, j), E_ijp(i, j), 1e-13));
 //        }
 //    }
 //
 //    for (long i = 0; i < x; ++i) {
 //        for (long k = 0; k < z; ++k) {
-//            assert(close(S_ipk(i, k), E_ipk(i, k)));
+//            assert(close(S_ipk(i, k), E_ipk(i, k), 1e-13));
 //        }
 //    }
 //
 //    for (long j = 0; j < y; ++j) {
 //        for (long k = 0; k < z; ++k) {
-//            assert(close(S_pjk(j, k), E_pjk(j, k)));
+//            assert(close(S_pjk(j, k), E_pjk(j, k), 1e-13));
 //        }
 //    }
 //

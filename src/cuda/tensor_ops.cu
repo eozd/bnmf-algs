@@ -5,7 +5,6 @@
 #include <cuda_runtime.h>
 #include <unsupported/Eigen/CXX11/Tensor>
 
-
 using namespace bnmf_algs;
 
 void cuda::init() {
@@ -34,7 +33,7 @@ std::array<tensord<2>, 3> cuda::tensor_sums(const tensord<3>& tensor) {
     err = cudaMemcpy(in_data, tensor.data(), in_size, cudaMemcpyHostToDevice);
     assert(err == cudaSuccess);
 
-    // create GPU stream and device
+    // create GPU stream and device (default stream)
     Eigen::CudaStreamDevice stream;
     Eigen::GpuDevice dev(&stream);
 
@@ -94,41 +93,60 @@ double* cuda::apply_psi(double* begin, size_t num_elems) {
 
     cudaError_t err = cudaSuccess;
 
+    // allocate memory on GPU
     double* gpu_data;
     err = cudaMalloc((void**)(&gpu_data), size);
     assert(err == cudaSuccess);
 
+    // copy range to GPU
     cudaMemcpy(gpu_data, begin, size, cudaMemcpyHostToDevice);
     assert(err == cudaSuccess);
 
+    // grid/block dimensions
     size_t threads_per_block = 1024;
     size_t blocks_per_grid =
         (num_elems + threads_per_block - 1) / threads_per_block;
 
+    // apply kernel
     kernel::apply_psi<<<blocks_per_grid, threads_per_block>>>(gpu_data,
                                                               num_elems);
     err = cudaGetLastError();
     assert(err == cudaSuccess);
 
+    // copy from GPU to main memory
     cudaMemcpy(begin, gpu_data, size, cudaMemcpyDeviceToHost);
     assert(err == cudaSuccess);
 
+    // free GPU memory
     cudaFree(gpu_data);
     assert(err == cudaSuccess);
 
     return begin;
 }
 
+/**
+ * @brief Return ceiling of integer division between given parameters.
+ *
+ * This function returns \f$\ceil{\frac{a}{b}}\f$ for parameters a and b.
+ *
+ * @param a Nominator.
+ * @param b Denominator.
+ * @return Ceiling of \f$\frac{a}{b}\f$ as an integer.
+ */
 static size_t int_div_ceil(size_t a, size_t b) { return a / b + (a % b != 0); }
 
 void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
                                       const matrix_t& beta_eph,
                                       tensord<3>& grad_plus) {
-    cudaError_t err;
+    // tensor dimensions
     auto x = static_cast<size_t>(S.dimension(0));
     auto y = static_cast<size_t>(S.dimension(1));
     auto z = static_cast<size_t>(S.dimension(2));
 
+    cudaError_t err = cudaSuccess;
+
+    // make tensor extent object. Since we store tensors in row-major order,
+    // width of the allocation is the number of bytes of a single fiber.
     const auto tensor_extent = make_cudaExtent(z * sizeof(double), y, x);
 
     // allocate memory for S
@@ -138,9 +156,9 @@ void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
 
     // allocate memory for beta_eph
     double* beta_eph_gpu;
-    size_t pitch;
-    err =
-        cudaMallocPitch((void**)(&beta_eph_gpu), &pitch, z * sizeof(double), y);
+    size_t beta_eph_pitch;
+    err = cudaMallocPitch((void**)(&beta_eph_gpu), &beta_eph_pitch,
+                          z * sizeof(double), y);
     assert(err == cudaSuccess);
 
     // allocate memory for grad_plus
@@ -151,7 +169,7 @@ void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
     // send S tensor to GPU
     cudaMemcpy3DParms params_3D = {0};
     params_3D.srcPtr.ptr = (void*)S.data();
-    params_3D.srcPtr.pitch = S.dimension(2) * sizeof(double);
+    params_3D.srcPtr.pitch = S.dimension(2) * sizeof(double); // row major
     params_3D.srcPtr.xsize = S.dimension(2);
     params_3D.srcPtr.ysize = S.dimension(1);
     params_3D.dstPtr = S_gpu;
@@ -162,11 +180,12 @@ void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
     assert(err == cudaSuccess);
 
     // send beta_eph matrix to GPU
-    err = cudaMemcpy2D(beta_eph_gpu, pitch, beta_eph.data(), z * sizeof(double),
-                       z * sizeof(double), y, cudaMemcpyHostToDevice);
+    err = cudaMemcpy2D(beta_eph_gpu, beta_eph_pitch, beta_eph.data(),
+                       z * sizeof(double), z * sizeof(double), y,
+                       cudaMemcpyHostToDevice);
     assert(err == cudaSuccess);
 
-    // dimensions
+    // block dimensions (number of threads per block axis)
     constexpr size_t block_size_x = 16;
     constexpr size_t block_size_y = 16;
     constexpr size_t block_size_z = 4;
@@ -176,11 +195,11 @@ void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
 
     // run kernel
     kernel::update_grad_plus<<<grid_dims, block_dims>>>(
-        S_gpu, beta_eph_gpu, pitch, grad_plus_gpu, y, x, z);
+        S_gpu, beta_eph_gpu, beta_eph_pitch, grad_plus_gpu, y, x, z);
     err = cudaGetLastError();
     assert(err == cudaSuccess);
 
-    // copy from GPU to grad_plus tensor
+    // copy from GPU onto grad_plus tensor
     params_3D.srcPtr = grad_plus_gpu;
     params_3D.dstPtr.ptr = grad_plus.data();
     params_3D.dstPtr.pitch = grad_plus.dimension(2) * sizeof(double);

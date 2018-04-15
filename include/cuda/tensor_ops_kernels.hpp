@@ -1,5 +1,5 @@
-#include <cuda.h>
 #include "defs.hpp"
+#include <cuda.h>
 
 namespace bnmf_algs {
 namespace cuda {
@@ -40,8 +40,9 @@ __global__ void apply_psi(double* begin, size_t num_elems);
  * cudaPitchedPtr using tensor S given as cudaPitchedPtr and beta_eph matrix
  * given as a device pointer and the pitch of the allocation. <B> All the given
  * tensor and matrix pointers are assumed to store their objects in row-major
- * order. </B> See bnmf_algs::cuda::update_grad_plus function documentation for
- * more information regarding row-major storage of multidimensional tensors.
+ * order. </B> See bnmf_algs::cuda::bld_mult::update_grad_plus function
+ * documentation for more information regarding row-major storage of
+ * multidimensional tensors.
  *
  * @param S Pitched pointer pointing to S tensor on the GPU device.
  * @param beta_eph Raw pointer pointing to beta_eph matrix on the GPU device.

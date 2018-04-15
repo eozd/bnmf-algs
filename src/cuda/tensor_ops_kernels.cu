@@ -92,8 +92,11 @@ __global__ void apply_psi(double* begin, size_t num_elems) {
 __global__ void update_grad_plus(const cudaPitchedPtr S, const double* beta_eph,
                                  const size_t pitch, cudaPitchedPtr grad_plus,
                                  size_t width, size_t height, size_t depth) {
+    // index for rows
     const int i = blockIdx.y * blockDim.y + threadIdx.y;
+    // index for columns
     const int j = blockIdx.x * blockDim.x + threadIdx.x;
+    // index for depth
     const int k = blockIdx.z * blockDim.z + threadIdx.z;
 
     if (not(i < height && j < width & k < depth)) {
@@ -101,19 +104,22 @@ __global__ void update_grad_plus(const cudaPitchedPtr S, const double* beta_eph,
     }
 
     // S(i, j, :)
-    size_t S_offset = S.pitch * S.ysize * i + j * S.pitch;
-    const double* S_row = (double*)((char*)S.ptr + S_offset);
+    size_t fiber_pitch = S.pitch;
+    size_t num_cols = S.ysize;
+    size_t roof_pitch = fiber_pitch * num_cols;
+    size_t offset = roof_pitch * i + // go i roofs towards bottom
+                    j * fiber_pitch; // go j fibers to the right
+    const double* S_fiber = (double*)((char*)S.ptr + offset);
 
-    // grad_plus(i, j, :)
-    size_t grad_plus_offset =
-        grad_plus.pitch * grad_plus.ysize * i + j * grad_plus.pitch;
-    double* grad_plus_row = (double*)((char*)grad_plus.ptr + grad_plus_offset);
+    // grad_plus(i, j, :) : S and grad_plus have exact same shapes
+    double* grad_plus_fiber = (double*)((char*)grad_plus.ptr + offset);
 
     // beta_eph(j, :)
-    size_t beta_eph_offset = j * pitch;
-    const double* beta_eph_row = (double*)((char*)beta_eph + beta_eph_offset);
+    offset = j * pitch; // go j rows towards bottom
+    const double* beta_eph_row = (double*)((char*)beta_eph + offset);
 
-    grad_plus_row[k] = psi_appr(beta_eph_row[k]) - psi_appr(S_row[k] + 1);
+    // grad_plus(i, j, k) = psi(beta_eph(j, k)) - psi(S(i, j, k) + 1);
+    grad_plus_fiber[k] = psi_appr(beta_eph_row[k]) - psi_appr(S_fiber[k] + 1);
 }
 
 } // namespace kernel
