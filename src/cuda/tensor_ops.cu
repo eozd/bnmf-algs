@@ -1,4 +1,5 @@
 #include "cuda/tensor_ops.hpp"
+#include "cuda/memory.hpp"
 #include "cuda/tensor_ops_kernels.hpp"
 #include "defs.hpp"
 #include <cassert>
@@ -93,14 +94,14 @@ double* cuda::apply_psi(double* begin, size_t num_elems) {
 
     cudaError_t err = cudaSuccess;
 
-    // allocate memory on GPU
-    double* gpu_data;
-    err = cudaMalloc((void**)(&gpu_data), size);
-    assert(err == cudaSuccess);
+    // host memory wrapper
+    cuda::HostMemory1D<double> host_data(begin, num_elems);
+
+    // allocate device memory
+    cuda::DeviceMemory1D<double> device_data(num_elems);
 
     // copy range to GPU
-    cudaMemcpy(gpu_data, begin, size, cudaMemcpyHostToDevice);
-    assert(err == cudaSuccess);
+    cuda::copy1D(device_data, host_data, cudaMemcpyHostToDevice);
 
     // grid/block dimensions
     size_t threads_per_block = 1024;
@@ -108,18 +109,13 @@ double* cuda::apply_psi(double* begin, size_t num_elems) {
         (num_elems + threads_per_block - 1) / threads_per_block;
 
     // apply kernel
-    kernel::apply_psi<<<blocks_per_grid, threads_per_block>>>(gpu_data,
+    kernel::apply_psi<<<blocks_per_grid, threads_per_block>>>(device_data.data(),
                                                               num_elems);
     err = cudaGetLastError();
     assert(err == cudaSuccess);
 
     // copy from GPU to main memory
-    cudaMemcpy(begin, gpu_data, size, cudaMemcpyDeviceToHost);
-    assert(err == cudaSuccess);
-
-    // free GPU memory
-    cudaFree(gpu_data);
-    assert(err == cudaSuccess);
+    cuda::copy1D(host_data, device_data, cudaMemcpyDeviceToHost);
 
     return begin;
 }
