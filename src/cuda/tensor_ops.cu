@@ -100,7 +100,7 @@ __global__ void update_grad_plus(const cudaPitchedPtr S, const double* beta_eph,
     const int j = blockIdx.x * blockDim.x + threadIdx.x;
     const int k = blockIdx.z * blockDim.z + threadIdx.z;
 
-    if (not (i < height && j < width & k < depth)) {
+    if (not(i < height && j < width & k < depth)) {
         return;
     }
 
@@ -235,8 +235,9 @@ double* cuda::apply_psi(double* begin, size_t num_elems) {
 
 static size_t int_div_ceil(size_t a, size_t b) { return a / b + (a % b != 0); }
 
-void cuda::update_grad_plus(const tensord<3>& S, const matrix_t& beta_eph,
-                            tensord<3>& grad_plus) {
+void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
+                                      const matrix_t& beta_eph,
+                                      tensord<3>& grad_plus) {
     cudaError_t err;
     auto x = static_cast<size_t>(S.dimension(0));
     auto y = static_cast<size_t>(S.dimension(1));

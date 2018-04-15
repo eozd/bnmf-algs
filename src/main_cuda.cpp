@@ -12,9 +12,7 @@
 using namespace std::chrono;
 using namespace bnmf_algs;
 
-bool close(double a, double b, double eps) {
-    return std::abs(a - b) <= eps;
-}
+bool close(double a, double b, double eps) { return std::abs(a - b) <= eps; }
 
 // int main() {
 //    time_point<high_resolution_clock> begin, end;
@@ -147,7 +145,7 @@ int main() {
 
     // Reduction on GPU
     begin = high_resolution_clock::now();
-    cuda::update_grad_plus(S, beta_eph, grad_plus);
+    cuda::bld_mult::update_grad_plus(S, beta_eph, grad_plus);
     end = high_resolution_clock::now();
     std::cout << "Elapsed CUDA: "
               << duration_cast<milliseconds>(end - begin).count() << " ms"
@@ -174,11 +172,8 @@ int main() {
     for (int i = 0; i < x; ++i) {
         for (int j = 0; j < y; ++j) {
             for (int k = 0; k < z; ++k) {
-//                if (close(grad_plus(i, j, k), grad_plus_cpu(i, j, k))) {
-//                    std::cout << i << '\t' << j << '\t' << k << std::endl;
-//                }
-//                std::cout << i << '\t' << j << '\t' << k << '\t' << grad_plus(i, j, k) << '\t' << grad_plus_cpu(i, j, k) << std::endl;
-                assert(close(grad_plus(i, j, k), grad_plus_cpu(i, j, k), 1e-10));
+                assert(
+                    close(grad_plus(i, j, k), grad_plus_cpu(i, j, k), 1e-10));
             }
         }
     }
