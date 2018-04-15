@@ -1,5 +1,5 @@
-#include "cuda/tensor_ops.hpp"
 #include "cuda/memory.hpp"
+#include "cuda/tensor_ops.hpp"
 #include "cuda/tensor_ops_kernels.hpp"
 #include "defs.hpp"
 #include <cassert>
@@ -109,8 +109,8 @@ double* cuda::apply_psi(double* begin, size_t num_elems) {
         (num_elems + threads_per_block - 1) / threads_per_block;
 
     // apply kernel
-    kernel::apply_psi<<<blocks_per_grid, threads_per_block>>>(device_data.data(),
-                                                              num_elems);
+    kernel::apply_psi<<<blocks_per_grid, threads_per_block>>>(
+        device_data.data(), num_elems);
     err = cudaGetLastError();
     assert(err == cudaSuccess);
 
@@ -150,12 +150,8 @@ void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
     err = cudaMalloc3D(&S_gpu, tensor_extent);
     assert(err == cudaSuccess);
 
-    // allocate memory for beta_eph
-    double* beta_eph_gpu;
-    size_t beta_eph_pitch;
-    err = cudaMallocPitch((void**)(&beta_eph_gpu), &beta_eph_pitch,
-                          z * sizeof(double), y);
-    assert(err == cudaSuccess);
+    HostMemory2D<const double> host_beta_eph(beta_eph);
+    DeviceMemory2D<double> device_beta_eph(beta_eph);
 
     // allocate memory for grad_plus
     cudaPitchedPtr grad_plus_gpu;
@@ -176,10 +172,7 @@ void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
     assert(err == cudaSuccess);
 
     // send beta_eph matrix to GPU
-    err = cudaMemcpy2D(beta_eph_gpu, beta_eph_pitch, beta_eph.data(),
-                       z * sizeof(double), z * sizeof(double), y,
-                       cudaMemcpyHostToDevice);
-    assert(err == cudaSuccess);
+    copy2D(device_beta_eph, host_beta_eph, cudaMemcpyHostToDevice);
 
     // block dimensions (number of threads per block axis)
     constexpr size_t block_size_x = 16;
@@ -191,7 +184,8 @@ void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
 
     // run kernel
     kernel::update_grad_plus<<<grid_dims, block_dims>>>(
-        S_gpu, beta_eph_gpu, beta_eph_pitch, grad_plus_gpu, y, x, z);
+        S_gpu, device_beta_eph.data(), device_beta_eph.pitch(), grad_plus_gpu,
+        y, x, z);
     err = cudaGetLastError();
     assert(err == cudaSuccess);
 
@@ -209,8 +203,6 @@ void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
 
     // free memory
     err = cudaFree(S_gpu.ptr);
-    assert(err == cudaSuccess);
-    err = cudaFree(beta_eph_gpu);
     assert(err == cudaSuccess);
     err = cudaFree(grad_plus_gpu.ptr);
     assert(err == cudaSuccess);
