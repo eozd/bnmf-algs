@@ -50,5 +50,7 @@ tensor_sums(const bnmf_algs::tensord<3>& tensor);
 
 double* apply_psi(double* begin, size_t num_elems);
 
+void update_grad_plus(const tensord<3>& S, const matrix_t& beta_eph, tensord<3>& grad_plus);
+
 } // namespace cuda
 } // namespace bnmf_algs
