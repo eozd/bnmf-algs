@@ -30,7 +30,7 @@ BASELINE(bld_mult, 100x100, 1, 1) {
     x = 100;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
@@ -43,7 +43,7 @@ BENCHMARK(bld_mult, 200x100, 1, 1) {
     x = 200;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
@@ -56,7 +56,7 @@ BENCHMARK(bld_mult, 300x100, 1, 1) {
     x = 300;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
@@ -69,7 +69,7 @@ BENCHMARK(bld_mult, 400x100, 1, 1) {
     x = 400;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
@@ -82,7 +82,7 @@ BENCHMARK(bld_mult, 100x200, 1, 1) {
     x = 100;
     y = 200;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
@@ -95,7 +95,7 @@ BENCHMARK(bld_mult, 100x300, 1, 1) {
     x = 100;
     y = 300;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
@@ -108,7 +108,7 @@ BENCHMARK(bld_mult, 100x400, 1, 1) {
     x = 100;
     y = 400;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000));
 }
@@ -123,7 +123,7 @@ BASELINE(bld_mult_psi_appr, 100x100, 1, 1) {
     x = 100;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
 }
@@ -136,7 +136,7 @@ BENCHMARK(bld_mult_psi_appr, 200x100, 1, 1) {
     x = 200;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
 }
@@ -149,7 +149,7 @@ BENCHMARK(bld_mult_psi_appr, 300x100, 1, 1) {
     x = 300;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
 }
@@ -162,7 +162,7 @@ BENCHMARK(bld_mult_psi_appr, 400x100, 1, 1) {
     x = 400;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
 }
@@ -175,7 +175,7 @@ BENCHMARK(bld_mult_psi_appr, 100x200, 1, 1) {
     x = 100;
     y = 200;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
 }
@@ -188,7 +188,7 @@ BENCHMARK(bld_mult_psi_appr, 100x300, 1, 1) {
     x = 100;
     y = 300;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
 }
@@ -201,7 +201,7 @@ BENCHMARK(bld_mult_psi_appr, 100x400, 1, 1) {
     x = 100;
     y = 400;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 1000, true));
 }

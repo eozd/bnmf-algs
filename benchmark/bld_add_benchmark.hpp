@@ -28,7 +28,7 @@ BASELINE(bld_add, 100x100, 1, 1) {
     x = 100;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_add(X, r, params));
 }
@@ -41,7 +41,7 @@ BENCHMARK(bld_add, 200x100, 1, 1) {
     x = 200;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_add(X, r, params));
 }
@@ -54,7 +54,7 @@ BENCHMARK(bld_add, 300x100, 1, 1) {
     x = 300;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_add(X, r, params));
 }
@@ -67,7 +67,7 @@ BENCHMARK(bld_add, 400x100, 1, 1) {
     x = 400;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_add(X, r, params));
 }
@@ -80,7 +80,7 @@ BENCHMARK(bld_add, 100x200, 1, 1) {
     x = 100;
     y = 200;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_add(X, r, params));
 }
@@ -93,7 +93,7 @@ BENCHMARK(bld_add, 100x300, 1, 1) {
     x = 100;
     y = 300;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_add(X, r, params));
 }
@@ -106,7 +106,7 @@ BENCHMARK(bld_add, 100x400, 1, 1) {
     x = 100;
     y = 400;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::bld_add(X, r, params));
 }

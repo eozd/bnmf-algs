@@ -38,7 +38,7 @@ std::array<tensord<2>, 3> cuda::tensor_sums(const tensord<3>& tensor) {
     Eigen::GpuDevice dev(&stream);
 
     // sum axis
-    Eigen::array<size_t, 1> sum_axis;
+    shape<1> sum_axis;
 
     // map GPU tensor to Eigen (no copying)
     Eigen::TensorMap<tensord<3>> in_tensor(in_data, x, y, z);
@@ -136,7 +136,7 @@ double* cuda::apply_psi(double* begin, size_t num_elems) {
 static size_t int_div_ceil(size_t a, size_t b) { return a / b + (a % b != 0); }
 
 void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
-                                      const matrix_t& beta_eph,
+                                      const matrixd& beta_eph,
                                       tensord<3>& grad_plus) {
     // tensor dimensions
     auto x = static_cast<size_t>(S.dimension(0));

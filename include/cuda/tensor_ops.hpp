@@ -113,7 +113,7 @@ namespace bld_mult {
  * @param grad_plus grad_plus tensor that will store the results of grad_plus
  * update.
  */
-void update_grad_plus(const tensord<3>& S, const matrix_t& beta_eph,
+void update_grad_plus(const tensord<3>& S, const matrixd& beta_eph,
                       tensord<3>& grad_plus);
 
 } // namespace bld_mult

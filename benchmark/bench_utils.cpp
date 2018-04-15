@@ -2,8 +2,8 @@
 
 using namespace bnmf_algs;
 
-matrix_t benchmark::make_matrix(long x, long y, double beg, double scale) {
-    matrix_t res = matrix_t::Random(x, y) + matrix_t::Constant(x, y, beg + 1);
+matrixd benchmark::make_matrix(long x, long y, double beg, double scale) {
+    matrixd res = matrixd::Random(x, y) + matrixd::Constant(x, y, beg + 1);
     res = res.array() * (scale / 2);
 
     return res;

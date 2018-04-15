@@ -20,9 +20,9 @@ using namespace bnmf_algs;
  *
  * @return Error message. If there isn't any error, returns "".
  */
-static std::string ensure_compatible_dimensions(const matrix_t& prior_W,
-                                                const matrix_t& prior_H,
-                                                const vector_t& prior_L) {
+static std::string ensure_compatible_dimensions(const matrixd& prior_W,
+                                                const matrixd& prior_H,
+                                                const vectord& prior_L) {
     if (prior_W.cols() != prior_H.rows()) {
         return "Incompatible dimensions: W=(" + std::to_string(prior_W.rows()) +
                ", " + std::to_string(prior_W.cols()) + ") H=(" +
@@ -65,7 +65,7 @@ ensure_compatible_dirichlet_parameters(size_t x, size_t z,
     return "";
 }
 
-std::tuple<matrix_t, matrix_t, vector_t> allocation_model::bnmf_priors(
+std::tuple<matrixd, matrixd, vectord> allocation_model::bnmf_priors(
     const shape<3>& tensor_shape,
     const allocation_model::AllocModelParams& model_params) {
 
@@ -81,14 +81,14 @@ std::tuple<matrix_t, matrix_t, vector_t> allocation_model::bnmf_priors(
 
     auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
     // generate prior_L
-    vector_t prior_L(y);
+    vectord prior_L(y);
     for (size_t i = 0; i < y; ++i) {
         prior_L(i) =
             gsl_ran_gamma(rand_gen.get(), model_params.a, model_params.b);
     }
     // generate prior_W
-    matrix_t prior_W(x, z);
-    vector_t dirichlet_variates(x);
+    matrixd prior_W(x, z);
+    vectord dirichlet_variates(x);
     for (size_t i = 0; i < z; ++i) {
         gsl_ran_dirichlet(rand_gen.get(), x, model_params.alpha.data(),
                           dirichlet_variates.data());
@@ -98,8 +98,8 @@ std::tuple<matrix_t, matrix_t, vector_t> allocation_model::bnmf_priors(
         }
     }
     // generate prior_H
-    matrix_t prior_H(z, y);
-    dirichlet_variates = vector_t(z);
+    matrixd prior_H(z, y);
+    dirichlet_variates = vectord(z);
     for (size_t i = 0; i < y; ++i) {
         gsl_ran_dirichlet(rand_gen.get(), z, model_params.beta.data(),
                           dirichlet_variates.data());
@@ -112,9 +112,9 @@ std::tuple<matrix_t, matrix_t, vector_t> allocation_model::bnmf_priors(
     return std::make_tuple(prior_W, prior_H, prior_L);
 }
 
-tensord<3> allocation_model::sample_S(const matrix_t& prior_W,
-                                      const matrix_t& prior_H,
-                                      const vector_t& prior_L) {
+tensord<3> allocation_model::sample_S(const matrixd& prior_W,
+                                      const matrixd& prior_H,
+                                      const vectord& prior_L) {
     long x = prior_W.rows();
     long y = prior_L.cols();
     long z = prior_H.rows();

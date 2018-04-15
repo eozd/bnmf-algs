@@ -14,8 +14,8 @@ TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
     size_t x = 5, y = 3, z = 2;
     shape<3> tensor_shape{x, y, z};
     AllocModelParams model_params(tensor_shape);
-    matrix_t W, H;
-    vector_t L;
+    matrixd W, H;
+    vectord L;
 
     SECTION("Illegal parameters") {
         REQUIRE_NOTHROW(bnmf_priors(tensor_shape, model_params));
@@ -70,20 +70,20 @@ TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
 
 TEST_CASE("Parameter checks for sample_S using prior matrices", "[sample_S]") {
     size_t x = 10, y = 8, z = 5;
-    matrix_t W = matrix_t::Ones(x, z);
-    matrix_t H = matrix_t::Ones(z, y);
-    vector_t L = vector_t::Ones(y);
+    matrixd W = matrixd::Ones(x, z);
+    matrixd H = matrixd::Ones(z, y);
+    vectord L = vectord::Ones(y);
 
     REQUIRE_NOTHROW(sample_S(W, H, L));
 
-    L = vector_t::Ones(y + 1);
+    L = vectord::Ones(y + 1);
     REQUIRE_THROWS(sample_S(W, H, L));
 
-    H = matrix_t::Ones(z, y + 1);
-    W = matrix_t::Ones(x, z + 2);
+    H = matrixd::Ones(z, y + 1);
+    W = matrixd::Ones(x, z + 2);
     REQUIRE_THROWS(sample_S(W, H, L));
 
-    H = matrix_t::Ones(z + 2, y + 1);
+    H = matrixd::Ones(z + 2, y + 1);
     REQUIRE_NOTHROW(sample_S(W, H, L));
 }
 
@@ -92,8 +92,8 @@ TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters",
     // result matrices
     size_t x = 7, y = 4, z = 8;
     shape<3> tensor_shape{x, y, z};
-    matrix_t W, H;
-    vector_t L;
+    matrixd W, H;
+    vectord L;
 
     std::random_device rd;
     std::mt19937 gen(rd());
@@ -134,9 +134,9 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "[sample_S]") {
     size_t x = 10, y = 8, z = 5;
 
     SECTION("Zero matrices") {
-        matrix_t W = matrix_t::Zero(x, z);
-        matrix_t H = matrix_t::Zero(z, y);
-        vector_t L = vector_t::Ones(y);
+        matrixd W = matrixd::Zero(x, z);
+        matrixd H = matrixd::Zero(z, y);
+        vectord L = vectord::Ones(y);
 
         tensord<3> S = sample_S(W, H, L);
         double sum = 0;
@@ -150,12 +150,12 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "[sample_S]") {
 
     SECTION("Custom matrices") {
         double scale = 5;
-        matrix_t W =
-            (matrix_t::Random(x, z) + matrix_t::Constant(x, z, scale)) * scale;
-        matrix_t H =
-            (matrix_t::Random(z, y) + matrix_t::Constant(z, y, scale)) * scale;
-        vector_t L =
-            (vector_t::Random(y) + vector_t::Constant(y, scale)) * scale;
+        matrixd W =
+            (matrixd::Random(x, z) + matrixd::Constant(x, z, scale)) * scale;
+        matrixd H =
+            (matrixd::Random(z, y) + matrixd::Constant(z, y, scale)) * scale;
+        vectord L =
+            (vectord::Random(y) + vectord::Constant(y, scale)) * scale;
         tensord<3> S = sample_S(W, H, L);
 
         // TODO: How to check if the result comes from Poisson with certain mean

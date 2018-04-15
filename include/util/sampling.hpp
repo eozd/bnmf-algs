@@ -45,7 +45,7 @@ class SampleOnesNoReplaceComputer {
      * @remark Time complexity is \f$O(N)\f$ where \f$N\f$ is the number of
      * nonzero entries in matrix parameter X.
      */
-    explicit SampleOnesNoReplaceComputer(const matrix_t& X);
+    explicit SampleOnesNoReplaceComputer(const matrixd& X);
 
     /**
      * @brief Function call operator that will compute the next sample without
@@ -107,7 +107,7 @@ class SampleOnesReplaceComputer {
      * @remark Time complexity is \f$O(N)\f$ where \f$N\f$ is the number of
      * entries of matrix parameter X.
      */
-    explicit SampleOnesReplaceComputer(const matrix_t& X);
+    explicit SampleOnesReplaceComputer(const matrixd& X);
 
     /**
      * @brief Function call operator that will compute the next sample in-place.
@@ -132,7 +132,7 @@ class SampleOnesReplaceComputer {
 
     // computation variables
   private:
-    vector_t cum_prob;
+    vectord cum_prob;
     long X_cols;
     double X_sum;
     util::gsl_rng_wrapper rnd_gen;
@@ -159,7 +159,7 @@ namespace util {
  * \f$X\f$ contains negative entries.
  */
 util::Generator<std::pair<int, int>, details::SampleOnesNoReplaceComputer>
-sample_ones_noreplace(const matrix_t& X);
+sample_ones_noreplace(const matrixd& X);
 
 /**
  * @brief Return a bnmf_algs::util::Generator that will generate a sequence of
@@ -183,7 +183,7 @@ sample_ones_noreplace(const matrix_t& X);
  * \f$X\f$ contains negative entries.
  */
 util::Generator<std::pair<int, int>, details::SampleOnesReplaceComputer>
-sample_ones_replace(const matrix_t& X, size_t num_samples);
+sample_ones_replace(const matrixd& X, size_t num_samples);
 
 /**
  * @brief Choose a random sample according to the given cumulative probability

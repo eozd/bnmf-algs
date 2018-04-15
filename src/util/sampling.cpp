@@ -3,7 +3,7 @@
 using namespace bnmf_algs;
 
 details::SampleOnesNoReplaceComputer::SampleOnesNoReplaceComputer(
-    const matrix_t& X)
+    const matrixd& X)
     : vals_indices(),
       no_repl_comp([](const val_index& left, const val_index& right) {
           return left.first < right.first;
@@ -43,11 +43,11 @@ operator()(size_t curr_step, std::pair<int, int>& prev_val) {
     prev_val.second = jj;
 }
 
-details::SampleOnesReplaceComputer::SampleOnesReplaceComputer(const matrix_t& X)
+details::SampleOnesReplaceComputer::SampleOnesReplaceComputer(const matrixd& X)
     : cum_prob(), X_cols(X.cols()), X_sum(X.array().sum()),
       rnd_gen(util::make_gsl_rng(gsl_rng_taus)) {
 
-    cum_prob = vector_t(X.rows() * X.cols());
+    cum_prob = vectord(X.rows() * X.cols());
     auto X_arr = X.array();
     cum_prob(0) = X_arr(0);
     for (int i = 1; i < X_arr.size(); ++i) {
@@ -67,7 +67,7 @@ operator()(size_t curr_step, std::pair<int, int>& prev_val) {
     prev_val.second = static_cast<int>(m % X_cols);
 }
 
-static std::string check_sample_ones_params(const matrix_t& X) {
+static std::string check_sample_ones_params(const matrixd& X) {
     if (X.array().size() == 0) {
         return "Matrix X must have at least one element";
     }
@@ -81,7 +81,7 @@ static std::string check_sample_ones_params(const matrix_t& X) {
 }
 
 util::Generator<std::pair<int, int>, details::SampleOnesNoReplaceComputer>
-util::sample_ones_noreplace(const matrix_t& X) {
+util::sample_ones_noreplace(const matrixd& X) {
     {
         auto error_msg = check_sample_ones_params(X);
         if (!error_msg.empty()) {
@@ -103,7 +103,7 @@ util::sample_ones_noreplace(const matrix_t& X) {
 }
 
 util::Generator<std::pair<int, int>, details::SampleOnesReplaceComputer>
-util::sample_ones_replace(const matrix_t& X, size_t num_samples) {
+util::sample_ones_replace(const matrixd& X, size_t num_samples) {
     {
         auto error_msg = check_sample_ones_params(X);
         if (!error_msg.empty()) {

@@ -32,7 +32,7 @@ BASELINE(nmf, IS_100x100, 0, 1) {
     x = 100, y = 100;
     beta = 0;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
 
@@ -44,7 +44,7 @@ BENCHMARK(nmf, KL_100x100, 0, 1) {
     x = 100, y = 100;
     beta = 1;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
 
@@ -56,7 +56,7 @@ BENCHMARK(nmf, EUC_100x100, 0, 1) {
     x = 100, y = 100;
     beta = 2;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
 
@@ -70,7 +70,7 @@ BASELINE(nmf, IS_200x100, 0, 1) {
     x = 200, y = 100;
     beta = 0;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
 
@@ -82,7 +82,7 @@ BENCHMARK(nmf, KL_200x100, 0, 1) {
     x = 200, y = 100;
     beta = 1;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
 
@@ -94,7 +94,7 @@ BENCHMARK(nmf, EUC_200x100, 0, 1) {
     x = 200, y = 100;
     beta = 2;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
 
@@ -108,7 +108,7 @@ BASELINE(nmf, IS_300x100, 0, 1) {
     x = 300, y = 100;
     beta = 0;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
 
@@ -120,7 +120,7 @@ BENCHMARK(nmf, KL_300x100, 0, 1) {
     x = 300, y = 100;
     beta = 1;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
 
@@ -132,7 +132,7 @@ BENCHMARK(nmf, EUC_300x100, 0, 1) {
     x = 300, y = 100;
     beta = 2;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
 
@@ -146,7 +146,7 @@ BASELINE(nmf, IS_400x100, 0, 1) {
     x = 400, y = 100;
     beta = 0;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
 
@@ -158,7 +158,7 @@ BENCHMARK(nmf, KL_400x100, 0, 1) {
     x = 400, y = 100;
     beta = 1;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
 
@@ -170,6 +170,6 @@ BENCHMARK(nmf, EUC_400x100, 0, 1) {
     x = 400, y = 100;
     beta = 2;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }

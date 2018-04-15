@@ -125,8 +125,8 @@ TEST_CASE("Test normalize", "[normalize] [normalized]") {
                         {0.66666667, 0., 0.},
                         {1., 0., 0.}}});
         util::normalize(S, 0);
-        Eigen::Map<vector_t> vec_r(res.data(), res.size());
-        Eigen::Map<vector_t> vec_s(S.data(), S.size());
+        Eigen::Map<vectord> vec_r(res.data(), res.size());
+        Eigen::Map<vectord> vec_s(S.data(), S.size());
         REQUIRE(vec_r.isApprox(vec_s, 1e-8));
     }
 
@@ -154,8 +154,8 @@ TEST_CASE("Test normalize", "[normalize] [normalized]") {
                         {0.07272727, 0., 0.},
                         {0.03636364, 0., 0.}}});
         util::normalize(S, 1);
-        Eigen::Map<vector_t> vec_r(res.data(), res.size());
-        Eigen::Map<vector_t> vec_s(S.data(), S.size());
+        Eigen::Map<vectord> vec_r(res.data(), res.size());
+        Eigen::Map<vectord> vec_s(S.data(), S.size());
         REQUIRE(vec_r.isApprox(vec_s, 1e-8));
     }
 
@@ -183,8 +183,8 @@ TEST_CASE("Test normalize", "[normalize] [normalized]") {
                         {1., 0., 0.},
                         {1., 0., 0.}}});
         util::normalize(S, 2);
-        Eigen::Map<vector_t> vec_r(res.data(), res.size());
-        Eigen::Map<vector_t> vec_s(S.data(), S.size());
+        Eigen::Map<vectord> vec_r(res.data(), res.size());
+        Eigen::Map<vectord> vec_s(S.data(), S.size());
         REQUIRE(vec_r.isApprox(vec_s, 1e-8));
     }
 
@@ -234,8 +234,8 @@ TEST_CASE("Test normalize", "[normalize] [normalized]") {
                         {0.33333333, 0.00127389, 0.25},
                         {0.00276243, 0.25, 0.}}});
         util::normalize(S, 0, util::NormType::L2);
-        Eigen::Map<vector_t> vec_r(res.data(), res.size());
-        Eigen::Map<vector_t> vec_s(S.data(), S.size());
+        Eigen::Map<vectord> vec_r(res.data(), res.size());
+        Eigen::Map<vectord> vec_s(S.data(), S.size());
         REQUIRE(vec_r.isApprox(vec_s, 1e-8));
     }
     SECTION("Test L2 norm results for axis 1") {
@@ -262,8 +262,8 @@ TEST_CASE("Test normalize", "[normalize] [normalized]") {
                         {0.0041899441, 0.0000237823, 0.0454545455},
                         {0.001396648, 0.0000951294, 0.}}});
         util::normalize(S, 1, util::NormType::L2);
-        Eigen::Map<vector_t> vec_r(res.data(), res.size());
-        Eigen::Map<vector_t> vec_s(S.data(), S.size());
+        Eigen::Map<vectord> vec_r(res.data(), res.size());
+        Eigen::Map<vectord> vec_s(S.data(), S.size());
 
         REQUIRE(vec_r.isApprox(vec_s, 1e-8));
     }
@@ -291,8 +291,8 @@ TEST_CASE("Test normalize", "[normalize] [normalized]") {
                         {0.75, 0.25, 1.},
                         {0.25, 1., 0.}}});
         util::normalize(S, 2, util::NormType::Inf);
-        Eigen::Map<vector_t> vec_r(res.data(), res.size());
-        Eigen::Map<vector_t> vec_s(S.data(), S.size());
+        Eigen::Map<vectord> vec_r(res.data(), res.size());
+        Eigen::Map<vectord> vec_s(S.data(), S.size());
 
         REQUIRE(vec_r.isApprox(vec_s, 1e-8));
     }
@@ -302,7 +302,7 @@ TEST_CASE("Test normalize", "[normalize] [normalized]") {
         util::normalize(S, 1, util::NormType::L2);
 
         // require exact equality
-        tensorx<bool, 0> res = (V == S).all();
+        tensor_t<bool, 0> res = (V == S).all();
         REQUIRE(res.coeff());
     }
 }

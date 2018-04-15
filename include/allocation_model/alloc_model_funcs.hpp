@@ -32,7 +32,7 @@ namespace allocation_model {
  * @throws std::invalid_argument if number of alpha parameters is not \f$x\f$,
  * if number of beta parameters is not \f$z\f$.
  */
-std::tuple<matrix_t, matrix_t, vector_t>
+std::tuple<matrixd, matrixd, vectord>
 bnmf_priors(const shape<3>& tensor_shape, const AllocModelParams& model_params);
 
 /**
@@ -54,8 +54,8 @@ bnmf_priors(const shape<3>& tensor_shape, const AllocModelParams& model_params);
  * number of rows of prior_H, if number of columns of prior_H is not equal to
  * number of columns of prior_L
  */
-tensord<3> sample_S(const matrix_t& prior_W, const matrix_t& prior_H,
-                    const vector_t& prior_L);
+tensord<3> sample_S(const matrixd& prior_W, const matrixd& prior_H,
+                    const vectord& prior_L);
 
 /**
  * @brief Compute the log marginal of tensor S with respect to the given

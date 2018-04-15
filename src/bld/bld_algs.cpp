@@ -14,7 +14,7 @@ using namespace bnmf_algs;
  * @return Error message. If there isn't any error, returns "".
  */
 static std::string
-check_bld_params(const matrix_t& X, size_t z,
+check_bld_params(const matrixd& X, size_t z,
                  const allocation_model::AllocModelParams& model_params) {
     if ((X.array() < 0).any()) {
         return "X must be nonnegative";
@@ -30,7 +30,7 @@ check_bld_params(const matrix_t& X, size_t z,
 }
 
 tensord<3>
-bld::seq_greedy_bld(const matrix_t& X, size_t z,
+bld::seq_greedy_bld(const matrixd& X, size_t z,
                     const allocation_model::AllocModelParams& model_params) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
@@ -52,9 +52,9 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
     // variables to update during the iterations
     tensord<3> S(x, y, z);
     S.setZero();
-    matrix_t S_ipk = matrix_t::Zero(x, z); // S_{i+k}
-    vector_t S_ppk = vector_t::Zero(z);    // S_{++k}
-    matrix_t S_pjk = matrix_t::Zero(y, z); // S_{+jk}
+    matrixd S_ipk = matrixd::Zero(x, z); // S_{i+k}
+    vectord S_ppk = vectord::Zero(z);    // S_{++k}
+    matrixd S_pjk = matrixd::Zero(y, z); // S_{+jk}
     double sum_alpha = std::accumulate(model_params.alpha.begin(),
                                        model_params.alpha.end(), 0.0);
 
@@ -92,7 +92,7 @@ bld::seq_greedy_bld(const matrix_t& X, size_t z,
     return S;
 }
 
-std::tuple<matrix_t, matrix_t, vector_t>
+std::tuple<matrixd, matrixd, vectord>
 bld::bld_fact(const tensord<3>& S,
               const allocation_model::AllocModelParams& model_params,
               double eps) {
@@ -113,9 +113,9 @@ bld::bld_fact(const tensord<3>& S,
     tensord<2> S_pjk = S.sum(shape<1>({0}));
     tensord<1> S_pjp = S.sum(shape<2>({0, 2}));
 
-    matrix_t W(x, z);
-    matrix_t H(z, y);
-    vector_t L(y);
+    matrixd W(x, z);
+    matrixd H(z, y);
+    vectord L(y);
 
     for (size_t i = 0; i < x; ++i) {
         for (size_t k = 0; k < z; ++k) {
@@ -132,15 +132,15 @@ bld::bld_fact(const tensord<3>& S,
     }
 
     // normalize
-    vector_t W_colsum = W.colwise().sum() + vector_t::Constant(W.cols(), eps);
-    vector_t H_colsum = H.colwise().sum() + vector_t::Constant(H.cols(), eps);
+    vectord W_colsum = W.colwise().sum() + vectord::Constant(W.cols(), eps);
+    vectord H_colsum = H.colwise().sum() + vectord::Constant(H.cols(), eps);
     W = W.array().rowwise() / W_colsum.array();
     H = H.array().rowwise() / H_colsum.array();
 
     return std::make_tuple(W, H, L);
 }
 
-tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
+tensord<3> bld::bld_mult(const matrixd& X, size_t z,
                          const allocation_model::AllocModelParams& model_params,
                          size_t max_iter, bool use_psi_appr, double eps) {
     {
@@ -154,7 +154,7 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
 
     // initialize tensor S
     tensord<3> S(x, y, z);
-    vector_t dirichlet_params = vector_t::Constant(z, 1);
+    vectord dirichlet_params = vectord::Constant(z, 1);
     #pragma omp parallel
     {
 
@@ -171,7 +171,7 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
 #endif
 
         auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
-        vector_t dirichlet_variates(z);
+        vectord dirichlet_variates(z);
         for (long i = beg; i < end; ++i) {
             for (int j = 0; j < y; ++j) {
                 gsl_ran_dirichlet(rand_gen.get(), z, dirichlet_params.data(),
@@ -184,13 +184,13 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
     }
 
     tensord<3> grad_plus(x, y, z);
-    matrix_t grad_minus(x, z);
-    matrix_t nom_mult(x, y);
-    matrix_t denom_mult(x, y);
+    matrixd grad_minus(x, z);
+    matrixd nom_mult(x, y);
+    matrixd denom_mult(x, y);
 
-    Eigen::Map<const vector_t> alpha(model_params.alpha.data(),
+    Eigen::Map<const vectord> alpha(model_params.alpha.data(),
                                      model_params.alpha.size());
-    Eigen::Map<const vector_t> beta(model_params.beta.data(),
+    Eigen::Map<const vectord> beta(model_params.beta.data(),
                                     model_params.beta.size());
 
     const auto psi_fn = use_psi_appr ? util::psi_appr : gsl_sf_psi;
@@ -200,13 +200,13 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
         tensord<2> S_ipk_tensor = S.sum(shape<1>({1}));
         tensord<2> S_ijp_tensor = S.sum(shape<1>({2}));
 
-        Eigen::Map<matrix_t> S_pjk(S_pjk_tensor.data(), y, z);
-        Eigen::Map<matrix_t> S_ipk(S_ipk_tensor.data(), x, z);
-        Eigen::Map<matrix_t> S_ijp(S_ijp_tensor.data(), x, y);
+        Eigen::Map<matrixd> S_pjk(S_pjk_tensor.data(), y, z);
+        Eigen::Map<matrixd> S_ipk(S_ipk_tensor.data(), x, z);
+        Eigen::Map<matrixd> S_ijp(S_ijp_tensor.data(), x, y);
 
-        matrix_t alpha_eph =
+        matrixd alpha_eph =
             S_ipk.array().colwise() + alpha.transpose().array();
-        matrix_t beta_eph = S_pjk.array().rowwise() + beta.array();
+        matrixd beta_eph = S_pjk.array().rowwise() + beta.array();
 
         // update grad_plus
         #pragma omp parallel for schedule(static)
@@ -219,7 +219,7 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
             }
         }
         // update grad_minus
-        vector_t alpha_eph_sum = alpha_eph.colwise().sum();
+        vectord alpha_eph_sum = alpha_eph.colwise().sum();
         #pragma omp parallel for schedule(static)
         for (int i = 0; i < x; ++i) {
             for (size_t k = 0; k < z; ++k) {
@@ -268,7 +268,7 @@ tensord<3> bld::bld_mult(const matrix_t& X, size_t z,
  */
 static double eta(size_t step) { return 0.1 / std::pow(step + 1, 0.55); }
 
-tensord<3> bld::bld_add(const matrix_t& X, size_t z,
+tensord<3> bld::bld_add(const matrixd& X, size_t z,
                         const allocation_model::AllocModelParams& model_params,
                         size_t max_iter, double eps) {
     {
@@ -298,8 +298,8 @@ tensord<3> bld::bld_add(const matrix_t& X, size_t z,
 
     tensord<2> S_pjk(y, z); // S_{+jk}
     tensord<2> S_ipk(x, z); // S_{i+k}
-    matrix_t alpha_eph(x, z);
-    matrix_t beta_eph(y, z);
+    matrixd alpha_eph(x, z);
+    matrixd beta_eph(y, z);
     tensord<3> grad_S(x, y, z);
     tensord<3> eps_tensor(x, y, z);
     eps_tensor.setConstant(eps);
@@ -320,7 +320,7 @@ tensord<3> bld::bld_add(const matrix_t& X, size_t z,
             }
         }
         // update grad_S
-        vector_t alpha_eph_sum = alpha_eph.colwise().sum();
+        vectord alpha_eph_sum = alpha_eph.colwise().sum();
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
                 for (size_t k = 0; k < z; ++k) {
@@ -357,29 +357,29 @@ tensord<3> bld::bld_add(const matrix_t& X, size_t z,
 }
 
 details::CollapsedGibbsComputer::CollapsedGibbsComputer(
-    const matrix_t& X, size_t z,
+    const matrixd& X, size_t z,
     const allocation_model::AllocModelParams& model_params, size_t max_iter,
     double eps)
     : model_params(model_params),
       one_sampler_repl(util::sample_ones_replace(X, max_iter)),
       one_sampler_no_repl(util::sample_ones_noreplace(X)),
-      U_ipk(matrix_t::Zero(X.rows(), z)), U_ppk(vector_t::Zero(z)),
-      U_pjk(matrix_t::Zero(X.cols(), z)),
+      U_ipk(matrixd::Zero(X.rows(), z)), U_ppk(vectord::Zero(z)),
+      U_pjk(matrixd::Zero(X.cols(), z)),
       sum_alpha(std::accumulate(model_params.alpha.begin(),
                                 model_params.alpha.end(), 0.0)),
       eps(eps), rnd_gen(util::make_gsl_rng(gsl_rng_taus)) {}
 
 void details::CollapsedGibbsComputer::increment_sampling(size_t i, size_t j,
                                                          tensord<3>& S_prev) {
-    vector_t prob(U_ppk.cols());
-    Eigen::Map<vector_t> beta(model_params.beta.data(), 1,
+    vectord prob(U_ppk.cols());
+    Eigen::Map<vectord> beta(model_params.beta.data(), 1,
                               model_params.beta.size());
     std::vector<unsigned int> multinomial_sample(
         static_cast<unsigned long>(U_ppk.cols()));
 
-    vector_t alpha_row = U_ipk.row(i).array() + model_params.alpha[i];
-    vector_t beta_row = (U_pjk.row(j) + beta).array();
-    vector_t sum_alpha_row = U_ppk.array() + sum_alpha;
+    vectord alpha_row = U_ipk.row(i).array() + model_params.alpha[i];
+    vectord beta_row = (U_pjk.row(j) + beta).array();
+    vectord sum_alpha_row = U_ppk.array() + sum_alpha;
     prob = alpha_row.array() * beta_row.array() / (sum_alpha_row.array() + eps);
 
     gsl_ran_multinomial(rnd_gen.get(), static_cast<size_t>(prob.cols()), 1,
@@ -396,8 +396,8 @@ void details::CollapsedGibbsComputer::increment_sampling(size_t i, size_t j,
 
 void details::CollapsedGibbsComputer::decrement_sampling(size_t i, size_t j,
                                                          tensord<3>& S_prev) {
-    vector_t prob(U_ppk.cols());
-    Eigen::Map<vector_t> beta(model_params.beta.data(), 1,
+    vectord prob(U_ppk.cols());
+    Eigen::Map<vectord> beta(model_params.beta.data(), 1,
                               model_params.beta.size());
     std::vector<unsigned int> multinomial_sample(
         static_cast<unsigned long>(U_ppk.cols()));
@@ -436,7 +436,7 @@ void details::CollapsedGibbsComputer::operator()(size_t curr_step,
 }
 
 util::Generator<tensord<3>, details::CollapsedGibbsComputer>
-bld::collapsed_gibbs(const matrix_t& X, size_t z,
+bld::collapsed_gibbs(const matrixd& X, size_t z,
                      const allocation_model::AllocModelParams& model_params,
                      size_t max_iter, double eps) {
     {
@@ -459,7 +459,7 @@ bld::collapsed_gibbs(const matrix_t& X, size_t z,
 }
 
 tensord<3>
-bld::collapsed_icm(const matrix_t& X, size_t z,
+bld::collapsed_icm(const matrixd& X, size_t z,
                    const allocation_model::AllocModelParams& model_params,
                    size_t max_iter, double eps) {
     {
@@ -475,15 +475,15 @@ bld::collapsed_icm(const matrix_t& X, size_t z,
     tensord<3> U(x, y, z);
     U.setZero();
 
-    matrix_t U_ipk = matrix_t::Zero(x, z);
-    vector_t U_ppk = vector_t::Zero(z);
-    matrix_t U_pjk = matrix_t::Zero(y, z);
+    matrixd U_ipk = matrixd::Zero(x, z);
+    vectord U_ppk = vectord::Zero(z);
+    matrixd U_pjk = matrixd::Zero(y, z);
 
     const double sum_alpha = std::accumulate(model_params.alpha.begin(),
                                              model_params.alpha.end(), 0.0);
 
-    vector_t prob(U_ppk.cols());
-    Eigen::Map<const vector_t> beta(model_params.beta.data(), 1,
+    vectord prob(U_ppk.cols());
+    Eigen::Map<const vectord> beta(model_params.beta.data(), 1,
                                     model_params.beta.size());
 
     // initializing increment sampling without multinomial
@@ -491,9 +491,9 @@ bld::collapsed_icm(const matrix_t& X, size_t z,
     for (const auto& pair : util::sample_ones_noreplace(X)) {
         std::tie(i, j) = pair;
 
-        vector_t alpha_row = U_ipk.row(i).array() + model_params.alpha[i];
-        vector_t beta_row = (U_pjk.row(j) + beta).array();
-        vector_t sum_alpha_row = U_ppk.array() + sum_alpha;
+        vectord alpha_row = U_ipk.row(i).array() + model_params.alpha[i];
+        vectord beta_row = (U_pjk.row(j) + beta).array();
+        vectord sum_alpha_row = U_ppk.array() + sum_alpha;
         prob = alpha_row.array() * beta_row.array() /
                (sum_alpha_row.array() + eps);
 
@@ -531,9 +531,9 @@ bld::collapsed_icm(const matrix_t& X, size_t z,
         --U_pjk(j, k);
 
         // increment sampling
-        vector_t alpha_row = U_ipk.row(i).array() + model_params.alpha[i];
-        vector_t beta_row = (U_pjk.row(j) + beta).array();
-        vector_t sum_alpha_row = U_ppk.array() + sum_alpha;
+        vectord alpha_row = U_ipk.row(i).array() + model_params.alpha[i];
+        vectord beta_row = (U_pjk.row(j) + beta).array();
+        vectord sum_alpha_row = U_ppk.array() + sum_alpha;
         prob = alpha_row.array() * beta_row.array() /
                (sum_alpha_row.array() + eps);
 
@@ -552,27 +552,27 @@ bld::collapsed_icm(const matrix_t& X, size_t z,
 
 /* ===================== bld_appr IMPLEMENTATION ============================ */
 
-static void update_X_hat(const matrix_t& nu, const matrix_t& mu,
-                         matrix_t& X_hat) {
+static void update_X_hat(const matrixd& nu, const matrixd& mu,
+                         matrixd& X_hat) {
     X_hat = nu * mu;
 }
 
-static void update_orig_over_appr(const matrix_t& X, const matrix_t& X_hat,
-                                  const matrix_t& eps_mat,
-                                  matrix_t& orig_over_appr) {
+static void update_orig_over_appr(const matrixd& X, const matrixd& X_hat,
+                                  const matrixd& eps_mat,
+                                  matrixd& orig_over_appr) {
     orig_over_appr = X.array() / (X_hat + eps_mat).array();
 }
 
-static void update_orig_over_appr_squared(const matrix_t& X,
-                                          const matrix_t& X_hat,
-                                          const matrix_t& eps_mat,
-                                          matrix_t& orig_over_appr_squared) {
-    matrix_t appr_squared = X_hat.array().pow(2);
+static void update_orig_over_appr_squared(const matrixd& X,
+                                          const matrixd& X_hat,
+                                          const matrixd& eps_mat,
+                                          matrixd& orig_over_appr_squared) {
+    matrixd appr_squared = X_hat.array().pow(2);
     orig_over_appr_squared = X.array() / (appr_squared + eps_mat).array();
 }
 
-static void update_S(const matrix_t& orig_over_appr, const matrix_t& nu,
-                     const matrix_t& mu, tensord<3>& S) {
+static void update_S(const matrixd& orig_over_appr, const matrixd& nu,
+                     const matrixd& mu, tensord<3>& S) {
     auto x = static_cast<size_t>(S.dimension(0));
     auto y = static_cast<size_t>(S.dimension(1));
     auto z = static_cast<size_t>(S.dimension(2));
@@ -586,27 +586,27 @@ static void update_S(const matrix_t& orig_over_appr, const matrix_t& nu,
     }
 }
 
-static void update_alpha_eph(const vector_t& alpha, const tensord<3>& S,
-                             matrix_t& alpha_eph) {
+static void update_alpha_eph(const vectord& alpha, const tensord<3>& S,
+                             matrixd& alpha_eph) {
     auto x = static_cast<size_t>(S.dimension(0));
     auto z = static_cast<size_t>(S.dimension(2));
 
     tensord<2> S_ipk_tensor = S.sum(shape<1>({1}));
-    Eigen::Map<matrix_t> S_ipk(S_ipk_tensor.data(), x, z);
+    Eigen::Map<matrixd> S_ipk(S_ipk_tensor.data(), x, z);
     alpha_eph = S_ipk.array().colwise() + alpha.transpose().array();
 }
 
-static void update_beta_eph(const vector_t& beta, const tensord<3>& S,
-                            matrix_t& beta_eph) {
+static void update_beta_eph(const vectord& beta, const tensord<3>& S,
+                            matrixd& beta_eph) {
     auto y = static_cast<size_t>(S.dimension(1));
     auto z = static_cast<size_t>(S.dimension(2));
 
     tensord<2> S_pjk_tensor = S.sum(shape<1>({0}));
-    Eigen::Map<matrix_t> S_pjk(S_pjk_tensor.data(), y, z);
+    Eigen::Map<matrixd> S_pjk(S_pjk_tensor.data(), y, z);
     beta_eph = S_pjk.array().rowwise() + beta.array();
 }
 
-static void update_grad_plus(const matrix_t& beta_eph, const tensord<3>& S,
+static void update_grad_plus(const matrixd& beta_eph, const tensord<3>& S,
                              tensord<3>& grad_plus) {
     auto x = static_cast<size_t>(grad_plus.dimension(0));
     auto y = static_cast<size_t>(grad_plus.dimension(1));
@@ -622,11 +622,11 @@ static void update_grad_plus(const matrix_t& beta_eph, const tensord<3>& S,
     }
 }
 
-static void update_grad_minus(const matrix_t& alpha_eph, matrix_t& grad_minus) {
+static void update_grad_minus(const matrixd& alpha_eph, matrixd& grad_minus) {
     auto x = static_cast<size_t>(grad_minus.rows());
     auto z = static_cast<size_t>(grad_minus.cols());
 
-    vector_t alpha_eph_sum = alpha_eph.colwise().sum();
+    vectord alpha_eph_sum = alpha_eph.colwise().sum();
     for (size_t i = 0; i < x; ++i) {
         for (size_t k = 0; k < z; ++k) {
             grad_minus(i, k) =
@@ -635,15 +635,15 @@ static void update_grad_minus(const matrix_t& alpha_eph, matrix_t& grad_minus) {
     }
 }
 
-static void update_nu(const matrix_t& orig_over_appr,
-                      const matrix_t& orig_over_appr_squared,
-                      const matrix_t& mu, const tensord<3>& grad_plus,
-                      const matrix_t& grad_minus, double eps, matrix_t& nu) {
+static void update_nu(const matrixd& orig_over_appr,
+                      const matrixd& orig_over_appr_squared,
+                      const matrixd& mu, const tensord<3>& grad_plus,
+                      const matrixd& grad_minus, double eps, matrixd& nu) {
     auto x = static_cast<size_t>(grad_plus.dimension(0));
     auto y = static_cast<size_t>(grad_plus.dimension(1));
     auto z = static_cast<size_t>(grad_plus.dimension(2));
 
-    matrix_t nom = matrix_t::Zero(x, z);
+    matrixd nom = matrixd::Zero(x, z);
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             for (size_t k = 0; k < z; ++k) {
@@ -662,7 +662,7 @@ static void update_nu(const matrix_t& orig_over_appr,
             }
         }
     }
-    matrix_t denom = matrix_t::Zero(x, z);
+    matrixd denom = matrixd::Zero(x, z);
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             for (size_t k = 0; k < z; ++k) {
@@ -685,20 +685,20 @@ static void update_nu(const matrix_t& orig_over_appr,
     nu = nu.array() * nom.array() / (denom.array() + eps);
 
     // normalize
-    vector_t nu_rowsum_plus_eps =
-        nu.rowwise().sum() + vector_t::Constant(nu.rows(), eps).transpose();
+    vectord nu_rowsum_plus_eps =
+        nu.rowwise().sum() + vectord::Constant(nu.rows(), eps).transpose();
     nu = nu.array().colwise() / nu_rowsum_plus_eps.transpose().array();
 }
 
-static void update_mu(const matrix_t& orig_over_appr,
-                      const matrix_t& orig_over_appr_squared,
-                      const matrix_t& nu, const tensord<3>& grad_plus,
-                      const matrix_t& grad_minus, double eps, matrix_t& mu) {
+static void update_mu(const matrixd& orig_over_appr,
+                      const matrixd& orig_over_appr_squared,
+                      const matrixd& nu, const tensord<3>& grad_plus,
+                      const matrixd& grad_minus, double eps, matrixd& mu) {
     auto x = static_cast<size_t>(grad_plus.dimension(0));
     auto y = static_cast<size_t>(grad_plus.dimension(1));
     auto z = static_cast<size_t>(grad_plus.dimension(2));
 
-    matrix_t nom = matrix_t::Zero(z, y);
+    matrixd nom = matrixd::Zero(z, y);
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             for (size_t k = 0; k < z; ++k) {
@@ -717,7 +717,7 @@ static void update_mu(const matrix_t& orig_over_appr,
             }
         }
     }
-    matrix_t denom = matrix_t::Zero(z, y);
+    matrixd denom = matrixd::Zero(z, y);
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             for (size_t k = 0; k < z; ++k) {
@@ -740,13 +740,13 @@ static void update_mu(const matrix_t& orig_over_appr,
     mu = mu.array() * nom.array() / (denom.array() + eps);
 
     // normalize
-    vector_t mu_colsum_plus_eps =
-        mu.colwise().sum() + vector_t::Constant(mu.cols(), eps);
+    vectord mu_colsum_plus_eps =
+        mu.colwise().sum() + vectord::Constant(mu.cols(), eps);
     mu = mu.array().rowwise() / mu_colsum_plus_eps.array();
 }
 
-std::tuple<tensord<3>, matrix_t, matrix_t>
-bld::bld_appr(const matrix_t& X, size_t z,
+std::tuple<tensord<3>, matrixd, matrixd>
+bld::bld_appr(const matrixd& X, size_t z,
               const allocation_model::AllocModelParams& model_params,
               size_t max_iter, double eps) {
     {
@@ -759,19 +759,19 @@ bld::bld_appr(const matrix_t& X, size_t z,
     auto x = static_cast<size_t>(X.rows());
     auto y = static_cast<size_t>(X.cols());
 
-    Eigen::Map<const vector_t> alpha(model_params.alpha.data(), 1,
+    Eigen::Map<const vectord> alpha(model_params.alpha.data(), 1,
                                      model_params.alpha.size());
-    Eigen::Map<const vector_t> beta(model_params.beta.data(), 1,
+    Eigen::Map<const vectord> beta(model_params.beta.data(), 1,
                                     model_params.beta.size());
 
-    matrix_t nu(x, z);
-    matrix_t mu(y, z);
+    matrixd nu(x, z);
+    matrixd mu(y, z);
     // initialize nu and mu using Dirichlet
     {
         auto rnd_gen = util::make_gsl_rng(gsl_rng_taus);
         std::vector<double> dirichlet_params(z, 1);
 
-        // remark: following code depends on the fact that matrix_t is row major
+        // remark: following code depends on the fact that matrixd is row major
         for (size_t i = 0; i < x; ++i) {
             gsl_ran_dirichlet(rnd_gen.get(), z, dirichlet_params.data(),
                               nu.data() + i * z);
@@ -785,10 +785,10 @@ bld::bld_appr(const matrix_t& X, size_t z,
     }
 
     tensord<3> grad_plus(x, y, z);
-    matrix_t grad_minus(x, z);
+    matrixd grad_minus(x, z);
     tensord<3> S(x, y, z);
-    matrix_t eps_mat = matrix_t::Constant(x, y, eps);
-    matrix_t X_hat, orig_over_appr, orig_over_appr_squared, alpha_eph, beta_eph;
+    matrixd eps_mat = matrixd::Constant(x, y, eps);
+    matrixd X_hat, orig_over_appr, orig_over_appr_squared, alpha_eph, beta_eph;
     for (size_t eph = 0; eph < max_iter; ++eph) {
         // update helpers
         update_X_hat(nu, mu, X_hat);

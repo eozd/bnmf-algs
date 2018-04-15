@@ -42,7 +42,7 @@ namespace nmf {
  * @throws std::invalid_argument if \f$X\f$ is not nonnegative, if r is not
  * positive, epsilon is not positive
  */
-std::pair<matrix_t, matrix_t> nmf(const matrix_t& X, size_t r, double beta,
+std::pair<matrixd, matrixd> nmf(const matrixd& X, size_t r, double beta,
                                   size_t max_iter = 1000);
 
 /**
@@ -108,7 +108,7 @@ double beta_divergence(InputIterator1 first_begin, InputIterator1 first_end,
 
 /**
  * @brief Return \f$\beta\f$-divergence between two vectors/matrices/tensors
- * as defined in bnmf_algs::vector_t, bnmf_algs::matrix_t, bnmf_algs::tensord.
+ * as defined in bnmf_algs::vectord, bnmf_algs::matrixd, bnmf_algs::tensord.
  *
  * @tparam Tensor A contiguous data holder type with data() and size() members.
  *

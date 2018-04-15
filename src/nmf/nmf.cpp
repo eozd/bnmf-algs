@@ -15,7 +15,7 @@ using namespace bnmf_algs;
  *
  * @return Error message. If there isn't any error, then returns "".
  */
-static std::string nmf_check_parameters(const matrix_t& X, size_t r) {
+static std::string nmf_check_parameters(const matrixd& X, size_t r) {
     if ((X.array() < 0).any()) {
         return "X matrix has negative entries";
     }
@@ -50,7 +50,7 @@ double nmf::beta_divergence(double x, double y, double beta, double eps) {
     return nom / (beta * (beta - 1));
 }
 
-std::pair<matrix_t, matrix_t> nmf::nmf(const matrix_t& X, size_t r, double beta,
+std::pair<matrixd, matrixd> nmf::nmf(const matrixd& X, size_t r, double beta,
                                        size_t max_iter) {
     const auto x = static_cast<size_t>(X.rows());
     const auto y = static_cast<size_t>(X.cols());
@@ -64,11 +64,11 @@ std::pair<matrix_t, matrix_t> nmf::nmf(const matrix_t& X, size_t r, double beta,
     }
 
     if (X.isZero(0)) {
-        return std::make_pair(matrix_t::Zero(x, z), matrix_t::Zero(z, y));
+        return std::make_pair(matrixd::Zero(x, z), matrixd::Zero(z, y));
     }
 
-    matrix_t W = matrix_t::Random(x, z) + matrix_t::Ones(x, z);
-    matrix_t H = matrix_t::Random(z, y) + matrix_t::Ones(z, y);
+    matrixd W = matrixd::Random(x, z) + matrixd::Ones(x, z);
+    matrixd H = matrixd::Random(z, y) + matrixd::Ones(z, y);
 
     if (max_iter == 0) {
         return std::make_pair(W, H);
@@ -79,7 +79,7 @@ std::pair<matrix_t, matrix_t> nmf::nmf(const matrix_t& X, size_t r, double beta,
     const auto p_int = (int)p;
     const bool is_p_int = std::abs(p_int - p) <= eps;
 
-    matrix_t X_hat, nom_W(x, z), denom_W(x, z), nom_H(z, y), denom_H(z, y);
+    matrixd X_hat, nom_W(x, z), denom_W(x, z), nom_H(z, y), denom_H(z, y);
     while (max_iter-- > 0) {
         // update approximation
         X_hat = W * H;
@@ -92,7 +92,7 @@ std::pair<matrix_t, matrix_t> nmf::nmf(const matrix_t& X, size_t r, double beta,
         } else if (is_p_int && p == 1) {
             // KL NMF
             nom_W = (X.array() / X_hat.array()).matrix() * H.transpose();
-            denom_W = matrix_t::Ones(x, y) * H.transpose();
+            denom_W = matrixd::Ones(x, y) * H.transpose();
         } else if (is_p_int && p == 2) {
             // Itakuro-Saito NMF
             nom_W =
@@ -116,7 +116,7 @@ std::pair<matrix_t, matrix_t> nmf::nmf(const matrix_t& X, size_t r, double beta,
         } else if (is_p_int && p == 1) {
             // KL NMF
             nom_H = W.transpose() * (X.array() / X_hat.array()).matrix();
-            denom_H = W.transpose() * matrix_t::Ones(x, y);
+            denom_H = W.transpose() * matrixd::Ones(x, y);
         } else if (is_p_int && p == 2) {
             // Itakuro-Saito NMF
             nom_H =

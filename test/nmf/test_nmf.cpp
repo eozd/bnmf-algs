@@ -12,8 +12,8 @@ using namespace bnmf_algs;
 TEST_CASE("Euclidean NMF constraint checks", "[nmf]") {
     int m = 10, n = 5, r = 2;
 
-    matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
-    matrix_t W, H;
+    matrixd X = matrixd::Random(m, n) + matrixd::Ones(m, n);
+    matrixd W, H;
     std::tie(W, H) = nmf::nmf(X, r, 2);
 
     SECTION("Check returned matrices' shapes") {
@@ -37,8 +37,8 @@ TEST_CASE("Euclidean NMF constraint checks", "[nmf]") {
 TEST_CASE("Euclidean NMF small matrix convergence check", "[nmf]") {
     int m = 50, n = 10, r = 10;
 
-    matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
-    matrix_t W, H;
+    matrixd X = matrixd::Random(m, n) + matrixd::Ones(m, n);
+    matrixd W, H;
 
     auto before = high_resolution_clock::now();
     std::tie(W, H) = nmf::nmf(X, r, 2, 500);
@@ -51,8 +51,8 @@ TEST_CASE("Euclidean NMF small matrix convergence check", "[nmf]") {
 TEST_CASE("KL NMF small matrix convergence check", "[nmf]") {
     int m = 50, n = 10, r = 10;
 
-    matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
-    matrix_t W, H;
+    matrixd X = matrixd::Random(m, n) + matrixd::Ones(m, n);
+    matrixd W, H;
 
     auto before = high_resolution_clock::now();
     std::tie(W, H) = nmf::nmf(X, r, 1, 500);
@@ -65,8 +65,8 @@ TEST_CASE("KL NMF small matrix convergence check", "[nmf]") {
 TEST_CASE("KL NMF constraint checks", "[nmf]") {
     int m = 10, n = 5, r = 2;
 
-    matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
-    matrix_t W, H;
+    matrixd X = matrixd::Random(m, n) + matrixd::Ones(m, n);
+    matrixd W, H;
     std::tie(W, H) = nmf::nmf(X, r, 1);
 
     SECTION("Check returned matrices' shapes") {
@@ -84,7 +84,7 @@ TEST_CASE("KL NMF constraint checks", "[nmf]") {
 
 TEST_CASE("Euclidean NMF invalid parameters", "[nmf]") {
     int m = 500, n = 400, r = 20;
-    matrix_t X = matrix_t::Zero(m, n);
+    matrixd X = matrixd::Zero(m, n);
 
     SECTION("Negative X") {
         X(0, 2) = -0.002;
@@ -99,8 +99,8 @@ TEST_CASE("Euclidean NMF degenerate cases", "[nmf]") {
 
     SECTION("X == 0") {
 
-        matrix_t X = matrix_t::Zero(m, n);
-        matrix_t W, H;
+        matrixd X = matrixd::Zero(m, n);
+        matrixd W, H;
         std::tie(W, H) = nmf::nmf(X, r, 2, 200);
 
         REQUIRE(W.isZero(0));
@@ -111,8 +111,8 @@ TEST_CASE("Euclidean NMF degenerate cases", "[nmf]") {
 TEST_CASE("IS NMF small matrix convergence check", "[nmf]") {
     int m = 50, n = 10, r = 10;
 
-    matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
-    matrix_t W, H;
+    matrixd X = matrixd::Random(m, n) + matrixd::Ones(m, n);
+    matrixd W, H;
 
     auto before = high_resolution_clock::now();
     std::tie(W, H) = nmf::nmf(X, r, 0, 500);
@@ -125,8 +125,8 @@ TEST_CASE("IS NMF small matrix convergence check", "[nmf]") {
 TEST_CASE("IS NMF constraint checks", "[nmf]") {
     int m = 10, n = 5, r = 2;
 
-    matrix_t X = matrix_t::Random(m, n) + matrix_t::Ones(m, n);
-    matrix_t W, H;
+    matrixd X = matrixd::Random(m, n) + matrixd::Ones(m, n);
+    matrixd W, H;
     std::tie(W, H) = nmf::nmf(X, r, 0);
 
     SECTION("Check returned matrices' shapes") {
@@ -275,7 +275,7 @@ TEST_CASE("Test beta divergence for sequences", "[beta-divergence]") {
 }
 
 TEST_CASE("Test beta divergence for tensor-like objects", "[beta-divergence]") {
-    vector_t x(5), y(5);
+    vectord x(5), y(5);
     double beta;
 
     SECTION("General case") {

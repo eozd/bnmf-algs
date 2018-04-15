@@ -33,7 +33,7 @@ class CollapsedGibbsComputer {
      * 0 errors.
      */
     explicit CollapsedGibbsComputer(
-        const matrix_t& X, size_t z,
+        const matrixd& X, size_t z,
         const allocation_model::AllocModelParams& model_params, size_t max_iter,
         double eps);
 
@@ -94,9 +94,9 @@ class CollapsedGibbsComputer {
         one_sampler_repl;
     util::Generator<std::pair<int, int>, details::SampleOnesNoReplaceComputer>
         one_sampler_no_repl;
-    matrix_t U_ipk;
-    vector_t U_ppk;
-    matrix_t U_pjk;
+    matrixd U_ipk;
+    vectord U_ppk;
+    matrixd U_pjk;
     double sum_alpha;
     double eps;
     util::gsl_rng_wrapper rnd_gen;
@@ -152,7 +152,7 @@ namespace bld {
  * tensor \f$S_{x \times y \times z}\f$.
  */
 tensord<3>
-seq_greedy_bld(const matrix_t& X, size_t z,
+seq_greedy_bld(const matrixd& X, size_t z,
                const allocation_model::AllocModelParams& model_params);
 
 /**
@@ -176,7 +176,7 @@ seq_greedy_bld(const matrix_t& X, size_t z,
  * @return std::tuple of matrices \f$W_{x \times z}, H_{z \times y}\f$ and
  * vector \f$L_y\f$.
  */
-std::tuple<matrix_t, matrix_t, vector_t>
+std::tuple<matrixd, matrixd, vectord>
 bld_fact(const tensord<3>& S,
          const allocation_model::AllocModelParams& model_params,
          double eps = 1e-50);
@@ -238,7 +238,7 @@ bld_fact(const tensord<3>& S,
  * if number of rows of X is not equal to number of alpha parameters, if z is
  * not equal to number of beta parameters.
  */
-tensord<3> bld_mult(const matrix_t& X, size_t z,
+tensord<3> bld_mult(const matrixd& X, size_t z,
                     const allocation_model::AllocModelParams& model_params,
                     size_t max_iter = 1000, bool use_psi_appr = false,
                     double eps = 1e-50);
@@ -298,7 +298,7 @@ tensord<3> bld_mult(const matrix_t& X, size_t z,
  * if number of rows of X is not equal to number of alpha parameters, if z is
  * not equal to number of beta parameters.
  */
-tensord<3> bld_add(const matrix_t& X, size_t z,
+tensord<3> bld_add(const matrixd& X, size_t z,
                    const allocation_model::AllocModelParams& model_params,
                    size_t max_iter = 1000, double eps = 1e-50);
 
@@ -341,7 +341,7 @@ tensord<3> bld_add(const matrix_t& X, size_t z,
  * not equal to number of beta parameters.
  */
 util::Generator<tensord<3>, details::CollapsedGibbsComputer>
-collapsed_gibbs(const matrix_t& X, size_t z,
+collapsed_gibbs(const matrixd& X, size_t z,
                 const allocation_model::AllocModelParams& model_params,
                 size_t max_iter = 1000, double eps = 1e-50);
 
@@ -384,7 +384,7 @@ collapsed_gibbs(const matrix_t& X, size_t z,
  * if number of rows of X is not equal to number of alpha parameters, if z is
  * not equal to number of beta parameters.
  */
-tensord<3> collapsed_icm(const matrix_t& X, size_t z,
+tensord<3> collapsed_icm(const matrixd& X, size_t z,
                          const allocation_model::AllocModelParams& model_params,
                          size_t max_iter = 1000, double eps = 1e-50);
 
@@ -433,8 +433,8 @@ tensord<3> collapsed_icm(const matrix_t& X, size_t z,
  * if number of rows of X is not equal to number of alpha parameters, if z is
  * not equal to number of beta parameters.
  */
-std::tuple<bnmf_algs::tensord<3>, bnmf_algs::matrix_t, bnmf_algs::matrix_t>
-bld_appr(const matrix_t& X, size_t z,
+std::tuple<bnmf_algs::tensord<3>, bnmf_algs::matrixd, bnmf_algs::matrixd>
+bld_appr(const matrixd& X, size_t z,
          const allocation_model::AllocModelParams& model_params,
          size_t max_iter = 1000, double eps = 1e-50);
 } // namespace bld

@@ -28,7 +28,7 @@ BASELINE(collapsed_icm, 100x100, 30, 1) {
     x = 100;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::collapsed_icm(X, r, params));
 }
@@ -41,7 +41,7 @@ BENCHMARK(collapsed_icm, 200x100, 30, 1) {
     x = 200;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::collapsed_icm(X, r, params));
 }
@@ -54,7 +54,7 @@ BENCHMARK(collapsed_icm, 300x100, 30, 1) {
     x = 300;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::collapsed_icm(X, r, params));
 }
@@ -67,7 +67,7 @@ BENCHMARK(collapsed_icm, 400x100, 30, 1) {
     x = 400;
     y = 100;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::collapsed_icm(X, r, params));
 }
@@ -80,7 +80,7 @@ BENCHMARK(collapsed_icm, 100x200, 30, 1) {
     x = 100;
     y = 200;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::collapsed_icm(X, r, params));
 }
@@ -93,7 +93,7 @@ BENCHMARK(collapsed_icm, 100x300, 30, 1) {
     x = 100;
     y = 300;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::collapsed_icm(X, r, params));
 }
@@ -106,7 +106,7 @@ BENCHMARK(collapsed_icm, 100x400, 30, 1) {
     x = 100;
     y = 400;
 
-    matrix_t X = make_matrix(x, y, beg, scale);
+    matrixd X = make_matrix(x, y, beg, scale);
     auto params = make_params(x, y, r);
     celero::DoNotOptimizeAway(bld::collapsed_icm(X, r, params));
 }

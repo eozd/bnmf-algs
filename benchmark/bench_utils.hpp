@@ -8,7 +8,7 @@
  */
 namespace benchmark {
 /**
- * @brief Construct a new bnmf_algs::matrix_t with given size and element
+ * @brief Construct a new bnmf_algs::matrixd with given size and element
  * magnitude.
  *
  * Each element in the constructed matrix belongs to the range
@@ -21,7 +21,7 @@ namespace benchmark {
  *
  * @return Constructed matrix.
  */
-bnmf_algs::matrix_t make_matrix(long x, long y, double beg, double scale);
+bnmf_algs::matrixd make_matrix(long x, long y, double beg, double scale);
 
 /**
  * @brief Construct a new bnmf_algs::allocation_model::AllocModelParams with

@@ -8,33 +8,33 @@ TEST_CASE("Parameter checks on sample ones no replace",
           "[sample_ones_noreplace]") {
 
     SECTION("Empty matrix X throws exception") {
-        matrix_t X;
+        matrixd X;
         REQUIRE_THROWS(util::sample_ones_noreplace(X));
 
-        X = matrix_t::Zero(1, 0);
+        X = matrixd::Zero(1, 0);
         REQUIRE_THROWS(util::sample_ones_noreplace(X));
 
-        X = matrix_t::Zero(0, 1);
+        X = matrixd::Zero(0, 1);
         REQUIRE_THROWS(util::sample_ones_noreplace(X));
 
-        X = matrix_t::Ones(1, 1);
+        X = matrixd::Ones(1, 1);
         REQUIRE_NOTHROW(util::sample_ones_noreplace(X));
     }
 
     SECTION("Matrix X with negative entries throws exception") {
-        matrix_t X = matrix_t::Zero(5, 5);
+        matrixd X = matrixd::Zero(5, 5);
         X(2, 3) = -1e-50;
         REQUIRE_THROWS(util::sample_ones_noreplace(X));
     }
 
     SECTION("Zero matrix throws exception") {
-        matrix_t X = matrix_t::Zero(5, 5);
+        matrixd X = matrixd::Zero(5, 5);
         REQUIRE_THROWS(util::sample_ones_noreplace(X));
     }
 
     SECTION("Number of samples equals to sum(X) when replacement is false") {
         size_t x = 10, y = 15;
-        matrix_t X = matrix_t::Random(x, y) + matrix_t::Constant(x, y, 1);
+        matrixd X = matrixd::Random(x, y) + matrixd::Constant(x, y, 1);
         auto gen = util::sample_ones_noreplace(X);
 
         std::vector<std::pair<int, int>> res;
@@ -50,8 +50,8 @@ TEST_CASE("Algorithm checks on sample_ones no replace",
     SECTION("First k 0-elements are never sampled") {
         size_t x = 10, y = 15;
         size_t num_zero_rows = 2;
-        matrix_t X = matrix_t::Random(x, y) + matrix_t::Constant(x, y, 5);
-        X.block(0, 0, num_zero_rows, y) = matrix_t::Zero(num_zero_rows, y);
+        matrixd X = matrixd::Random(x, y) + matrixd::Constant(x, y, 5);
+        X.block(0, 0, num_zero_rows, y) = matrixd::Zero(num_zero_rows, y);
         auto gen_no_replacement = util::sample_ones_noreplace(X);
 
         bool contains_invalid_sample =
@@ -64,33 +64,33 @@ TEST_CASE("Algorithm checks on sample_ones no replace",
 TEST_CASE("Parameter checks on sample ones replace", "[sample_ones_replace]") {
 
     SECTION("Empty matrix X throws exception") {
-        matrix_t X;
+        matrixd X;
         REQUIRE_THROWS(util::sample_ones_replace(X, 10));
 
-        X = matrix_t::Zero(1, 0);
+        X = matrixd::Zero(1, 0);
         REQUIRE_THROWS(util::sample_ones_replace(X, 10));
 
-        X = matrix_t::Zero(0, 1);
+        X = matrixd::Zero(0, 1);
         REQUIRE_THROWS(util::sample_ones_replace(X, 10));
 
-        X = matrix_t::Ones(1, 1);
+        X = matrixd::Ones(1, 1);
         REQUIRE_NOTHROW(util::sample_ones_replace(X, 10));
     }
 
     SECTION("Matrix X with negative entries throws exception") {
-        matrix_t X = matrix_t::Zero(5, 5);
+        matrixd X = matrixd::Zero(5, 5);
         X(2, 3) = -1e-50;
         REQUIRE_THROWS(util::sample_ones_replace(X, 10));
     }
 
     SECTION("Zero matrix throws exception") {
-        matrix_t X = matrix_t::Zero(5, 5);
+        matrixd X = matrixd::Zero(5, 5);
         REQUIRE_THROWS(util::sample_ones_replace(X, 10));
     }
 
     SECTION("Number of samples equals to n when replacement is true") {
         size_t n = 491, x = 5, y = 3;
-        matrix_t X = matrix_t::Random(x, y) + matrix_t::Constant(x, y, 1);
+        matrixd X = matrixd::Random(x, y) + matrixd::Constant(x, y, 1);
         auto gen = util::sample_ones_replace(X, n);
 
         std::vector<std::pair<int, int>> res;
@@ -112,8 +112,8 @@ TEST_CASE("Algorithm checks on sample_ones replace", "[sample_ones_replace]") {
     SECTION("First k 0-elements are never sampled") {
         size_t x = 10, y = 15;
         size_t num_zero_rows = 2;
-        matrix_t X = matrix_t::Random(x, y) + matrix_t::Constant(x, y, 5);
-        X.block(0, 0, num_zero_rows, y) = matrix_t::Zero(num_zero_rows, y);
+        matrixd X = matrixd::Random(x, y) + matrixd::Constant(x, y, 5);
+        X.block(0, 0, num_zero_rows, y) = matrixd::Zero(num_zero_rows, y);
 
         size_t num_samples = 1000;
         auto gen_replacement = util::sample_ones_replace(X, num_samples);

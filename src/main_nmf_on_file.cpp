@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     }
     auto n_cols = data.size() / n_rows;
 
-    matrix_t X = Eigen::Map<matrix_t>(data.data(), n_rows, n_cols);
+    matrixd X = Eigen::Map<matrixd>(data.data(), n_rows, n_cols);
 
     std::vector<double> alpha_dirichlet(X.rows(), 0.05);
     std::vector<double> beta_dirichlet(n_components, 10);
@@ -67,8 +67,8 @@ int main(int argc, char** argv) {
     std::cout << "Computing the factorization" << std::endl;
     auto alg_begin_time = high_resolution_clock::now();
     tensord<3> S;
-    matrix_t W, H;
-    vector_t L;
+    matrixd W, H;
+    vectord L;
     if (alg == "nmf") {
         std::tie(W, H) = nmf::nmf(X, n_components, beta, max_iter);
     } else if (alg == "seq_greedy_bld") {

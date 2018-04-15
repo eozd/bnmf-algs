@@ -92,7 +92,7 @@ bool close(double a, double b, double eps) { return std::abs(a - b) <= eps; }
 //
 //    size_t x = 1024, y = 400, z = 17;
 //
-//    matrix_t data = matrix_t::Random(x, y*z) + matrix_t::Constant(x, y*z, 1);
+//    matrixd data = matrixd::Random(x, y*z) + matrixd::Constant(x, y*z, 1);
 //
 //    Eigen::TensorMap<tensord<3>> S(data.data(), x, y, z);
 //
@@ -135,11 +135,11 @@ int main() {
 
     size_t x = 1000, y = 1000, z = 25;
 
-    matrix_t data =
-        matrix_t::Random(x, y * z) + matrix_t::Constant(x, y * z, 1);
+    matrixd data =
+        matrixd::Random(x, y * z) + matrixd::Constant(x, y * z, 1);
     Eigen::TensorMap<tensord<3>> S(data.data(), x, y, z);
 
-    matrix_t beta_eph = matrix_t::Random(y, z) + matrix_t::Constant(y, z, 1);
+    matrixd beta_eph = matrixd::Random(y, z) + matrixd::Constant(y, z, 1);
 
     tensord<3> grad_plus(x, y, z);
 
