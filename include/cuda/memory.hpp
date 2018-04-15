@@ -46,8 +46,9 @@ template <typename T> class DeviceMemory1D {
 
 template <typename T> class HostMemory2D {
   public:
-    explicit HostMemory2D(
-        const matrix_t<typename std::remove_const<T>::type>& host_matrix)
+    using nonconst_T = typename std::remove_const<T>::type;
+
+    explicit HostMemory2D(const matrix_t<nonconst_T>& host_matrix)
         : m_data(host_matrix.data()), m_pitch(host_matrix.cols() * sizeof(T)),
           m_height(static_cast<size_t>(host_matrix.rows())){};
 
@@ -92,6 +93,54 @@ template <typename T> class DeviceMemory2D {
     size_t m_height;
 };
 
+template <typename T> class HostMemory3D {
+  public:
+    using nonconst_T = typename std::remove_const<T>::type;
+
+    explicit HostMemory3D(const tensor_t<nonconst_T, 3>& host_tensor)
+        : m_extent(
+              make_cudaExtent(host_tensor.dimension(2) * sizeof(T),
+                              static_cast<size_t>(host_tensor.dimension(1)),
+                              static_cast<size_t>(host_tensor.dimension(0)))),
+          m_ptr() {
+        m_ptr.pitch = host_tensor.dimension(2) * sizeof(T);
+        m_ptr.xsize = static_cast<size_t>(host_tensor.dimension(2));
+        m_ptr.ysize = static_cast<size_t>(host_tensor.dimension(1));
+        m_ptr.ptr = (void*)(host_tensor.data());
+    }
+
+    cudaPitchedPtr pitched_ptr() const { return m_ptr; }
+    cudaExtent extent() const { return m_extent; }
+
+  private:
+    cudaExtent m_extent;
+    cudaPitchedPtr m_ptr;
+};
+
+template <typename T> class DeviceMemory3D {
+  public:
+    explicit DeviceMemory3D(const tensor_t<T, 3>& host_tensor)
+        : m_extent(
+              make_cudaExtent(host_tensor.dimension(2) * sizeof(T),
+                              static_cast<size_t>(host_tensor.dimension(1)),
+                              static_cast<size_t>(host_tensor.dimension(0)))),
+          m_ptr() {
+        cudaError_t err = cudaMalloc3D(&m_ptr, m_extent);
+        assert(err == cudaSuccess);
+    }
+
+    ~DeviceMemory3D() {
+        cudaError_t err = cudaFree(m_ptr.ptr);
+        assert(err == cudaSuccess);
+    }
+
+    cudaPitchedPtr pitched_ptr() const { return m_ptr; }
+    cudaExtent extent() const { return m_extent; }
+
+  private:
+    cudaExtent m_extent;
+    cudaPitchedPtr m_ptr;
+};
 
 template <typename DstMemory1D, typename SrcMemory1D>
 void copy1D(DstMemory1D& destination, const SrcMemory1D& source,
@@ -110,7 +159,18 @@ void copy2D(DstMemory2D& destination, const SrcMemory2D& source,
     assert(err == cudaSuccess);
 }
 
-// template <typename T> void copy3D() {}
+template <typename DstMemory3D, typename SrcMemory3D>
+void copy3D(DstMemory3D& destination, const SrcMemory3D& source,
+            cudaMemcpyKind kind) {
+    // send S tensor to GPU
+    cudaMemcpy3DParms params = {0};
+    params.srcPtr = source.pitched_ptr();
+    params.dstPtr = destination.pitched_ptr();
+    params.extent = source.extent();
+    params.kind = kind;
 
+    cudaError_t err = cudaMemcpy3D(&params);
+    assert(err == cudaSuccess);
+}
 } // namespace cuda
 } // namespace bnmf_algs

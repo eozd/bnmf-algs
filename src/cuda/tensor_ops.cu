@@ -135,43 +135,26 @@ void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
                                       const matrixd& beta_eph,
                                       tensord<3>& grad_plus) {
     // tensor dimensions
-    auto x = static_cast<size_t>(S.dimension(0));
-    auto y = static_cast<size_t>(S.dimension(1));
-    auto z = static_cast<size_t>(S.dimension(2));
+    const auto x = static_cast<size_t>(S.dimension(0));
+    const auto y = static_cast<size_t>(S.dimension(1));
+    const auto z = static_cast<size_t>(S.dimension(2));
 
     cudaError_t err = cudaSuccess;
 
-    // make tensor extent object. Since we store tensors in row-major order,
-    // width of the allocation is the number of bytes of a single fiber.
-    const auto tensor_extent = make_cudaExtent(z * sizeof(double), y, x);
-
-    // allocate memory for S
-    cudaPitchedPtr S_gpu;
-    err = cudaMalloc3D(&S_gpu, tensor_extent);
-    assert(err == cudaSuccess);
-
+    // create host memory wrappers
+    HostMemory3D<const double> host_S(S);
+    HostMemory3D<double> host_grad_plus(grad_plus);
     HostMemory2D<const double> host_beta_eph(beta_eph);
+
+    // allocate device memory
+    DeviceMemory3D<double> device_S(S);
     DeviceMemory2D<double> device_beta_eph(beta_eph);
+    DeviceMemory3D<double> device_grad_plus(grad_plus);
 
-    // allocate memory for grad_plus
-    cudaPitchedPtr grad_plus_gpu;
-    err = cudaMalloc3D(&grad_plus_gpu, tensor_extent);
-    assert(err == cudaSuccess);
+    // copy S to GPU
+    copy3D(device_S, host_S, cudaMemcpyHostToDevice);
 
-    // send S tensor to GPU
-    cudaMemcpy3DParms params_3D = {0};
-    params_3D.srcPtr.ptr = (void*)S.data();
-    params_3D.srcPtr.pitch = S.dimension(2) * sizeof(double); // row major
-    params_3D.srcPtr.xsize = S.dimension(2);
-    params_3D.srcPtr.ysize = S.dimension(1);
-    params_3D.dstPtr = S_gpu;
-    params_3D.extent = tensor_extent;
-    params_3D.kind = cudaMemcpyHostToDevice;
-
-    err = cudaMemcpy3D(&params_3D);
-    assert(err == cudaSuccess);
-
-    // send beta_eph matrix to GPU
+    // copy beta_eph to GPU
     copy2D(device_beta_eph, host_beta_eph, cudaMemcpyHostToDevice);
 
     // block dimensions (number of threads per block axis)
@@ -184,26 +167,11 @@ void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
 
     // run kernel
     kernel::update_grad_plus<<<grid_dims, block_dims>>>(
-        S_gpu, device_beta_eph.data(), device_beta_eph.pitch(), grad_plus_gpu,
-        y, x, z);
+        device_S.pitched_ptr(), device_beta_eph.data(), device_beta_eph.pitch(),
+        device_grad_plus.pitched_ptr(), y, x, z);
     err = cudaGetLastError();
     assert(err == cudaSuccess);
 
-    // copy from GPU onto grad_plus tensor
-    params_3D.srcPtr = grad_plus_gpu;
-    params_3D.dstPtr.ptr = grad_plus.data();
-    params_3D.dstPtr.pitch = grad_plus.dimension(2) * sizeof(double);
-    params_3D.dstPtr.xsize = grad_plus.dimension(2);
-    params_3D.dstPtr.ysize = grad_plus.dimension(1);
-    params_3D.extent = tensor_extent;
-    params_3D.kind = cudaMemcpyDeviceToHost;
-
-    err = cudaMemcpy3D(&params_3D);
-    assert(err == cudaSuccess);
-
-    // free memory
-    err = cudaFree(S_gpu.ptr);
-    assert(err == cudaSuccess);
-    err = cudaFree(grad_plus_gpu.ptr);
-    assert(err == cudaSuccess);
+    // copy result onto grad_plus
+    copy3D(host_grad_plus, device_grad_plus, cudaMemcpyDeviceToHost);
 }
