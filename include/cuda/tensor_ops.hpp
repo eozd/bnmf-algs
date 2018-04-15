@@ -49,8 +49,8 @@ std::array<bnmf_algs::tensord<2>, 3>
 tensor_sums(const bnmf_algs::tensord<3>& tensor);
 
 /**
- * @brief Apply util::psi_appr function to every element in the range [begin,
- * begin + num_elems) in-place using CUDA.
+ * @brief Apply cuda::kernel::psi_appr function to every element in the range
+ * [begin, begin + num_elems) in-place using CUDA.
  *
  * This function makes the following update to every \f$x\f$ in the range
  * [begin, begin + num_elems)
@@ -59,12 +59,7 @@ tensor_sums(const bnmf_algs::tensord<3>& tensor);
  *     x \leftarrow \psi(x)
  * \f]
  *
- * where \f$\psi\f$ is util::psi_appr. Since CUDA kernels cannot call host
- * functions, implementation of util::psi_appr is copied to a device function,
- * i.e. this code doesn't directly call util::psi_appr. Therefore, any change to
- * util::psi_appr will not be reflected in the results of this function unless
- * the new implementation is copied to the corresponding psi device function in
- * tensor_ops.cu file.
+ * where \f$\psi\f$ is cuda::kernel::psi_appr.
  *
  * apply_psi executes by copying the range to the GPU, executing psi application
  * procedure completely in parallel and copying the results in the GPU onto the
@@ -95,6 +90,23 @@ namespace bld_mult {
  * by copying S tensor and beta_eph matrix to GPU and performing the update in
  * parallel using CUDA. Afterwards, the result of the update is copied back onto
  * the given tensor parameter grad_plus.
+ *
+ * <B> All the given tensor and matrix objects are assumed to be in row-major
+ * order </B>. This is the allocation order specified in defs.hpp file. All the
+ * CUDA memory allocations and indexing operations are performed according to
+ * the row-major allocation order.
+ *
+ * Row-major order means that the last index of a matrix/tensor objects changes
+ * the fastest. This is easy to understand with matrices: Matrix is stored
+ * in terms of its rows (0th row, then 1st row, ...). Allocation order of a 3D
+ * tensor follows the same idea: Tensor is stored in terms of its fibers (depth
+ * rows). Therefore, for a a 2x2x3 tensor is stored as follows (only writing the
+ * indices):
+ *
+ * <blockquote>
+ * (0,0,0) (0,0,1) (0,0,2) (0,1,0) (0,1,1) (0,1,2) (1,0,0) (1,0,1) (1,0,2)
+ * (1,1,0) (1,1,1) (1,1,2)
+ * </blockquote>
  *
  * @param S \f$S\f$ tensor, that is the output of bld_mult algorithm.
  * @param beta_eph beta_eph matrix used during bld_mult algorithm.

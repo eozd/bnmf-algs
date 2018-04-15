@@ -65,7 +65,8 @@ set(BENCH_SRC_FILES
     benchmark/bench_utils.cpp)
 
 set(CUDA_KERNEL_FILES
-    src/cuda/tensor_ops.cu)
+    src/cuda/tensor_ops.cu
+    src/cuda/tensor_ops_kernels.cu)
 
 set(CUDA_SRC_FILES
     src/main_cuda.cpp)
