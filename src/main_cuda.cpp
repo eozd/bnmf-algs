@@ -1,22 +1,22 @@
-#include "defs.hpp"
 #include "cuda/tensor_ops.hpp"
+#include "defs.hpp"
+#include <bnmf_algs.hpp>
 #include <cassert>
 #include <chrono>
 #include <cmath>
+#include <gsl/gsl_sf_psi.h>
 #include <iostream>
 #include <limits>
 #include <vector>
-#include <bnmf_algs.hpp>
-#include <gsl/gsl_sf_psi.h>
 
 using namespace std::chrono;
 using namespace bnmf_algs;
 
-bool close(double a, double b) {
-    return std::abs(a - b) <= std::numeric_limits<double>::epsilon();
+bool close(double a, double b, double eps) {
+    return std::abs(a - b) <= eps;
 }
 
-//int main() {
+// int main() {
 //    time_point<high_resolution_clock> begin, end;
 //
 //    begin = high_resolution_clock::now();
@@ -82,6 +82,49 @@ bool close(double a, double b) {
 //    return 0;
 //}
 
+// int main() {
+//    time_point<high_resolution_clock> begin, end;
+//
+//    begin = high_resolution_clock::now();
+//    cuda::init();
+//    end = high_resolution_clock::now();
+//    std::cout << "Elapsed Init: "
+//              << duration_cast<milliseconds>(end - begin).count() << " ms"
+//              << std::endl;
+//
+//    size_t x = 1024, y = 400, z = 17;
+//
+//    matrix_t data = matrix_t::Random(x, y*z) + matrix_t::Constant(x, y*z, 1);
+//
+//    Eigen::TensorMap<tensord<3>> S(data.data(), x, y, z);
+//
+//    // Reduction on GPU
+//    begin = high_resolution_clock::now();
+//    cuda::apply_psi(S.data(), x * y * z);
+//    end = high_resolution_clock::now();
+//    std::cout << "Elapsed CUDA: "
+//              << duration_cast<milliseconds>(end - begin).count() << " ms"
+//              << std::endl;
+//
+//    // Reduction on CPU
+//    begin = high_resolution_clock::now();
+//    #pragma omp parallel for schedule(static)
+//    for (size_t i = 0; i < x; ++i) {
+//        for (size_t j = 0; j < y; ++j) {
+//            for (size_t k = 0; k < z; ++k) {
+//                S(i, j, k) = util::psi_appr(S(i, j, k));
+//            }
+//        }
+//    }
+//    end = high_resolution_clock::now();
+//    std::cout << "Elapsed CPU: "
+//              << duration_cast<milliseconds>(end - begin).count() << " ms"
+//              << std::endl;
+//
+//    std::cout << "Done" << std::endl;
+//    return 0;
+//}
+
 int main() {
     time_point<high_resolution_clock> begin, end;
 
@@ -92,27 +135,33 @@ int main() {
               << duration_cast<milliseconds>(end - begin).count() << " ms"
               << std::endl;
 
-    size_t x = 1000, y = 2000, z = 25;
+    size_t x = 1000, y = 1000, z = 25;
 
-    matrix_t data = matrix_t::Random(x, y*z) + matrix_t::Constant(x, y*z, 1);
-
+    matrix_t data =
+        matrix_t::Random(x, y * z) + matrix_t::Constant(x, y * z, 1);
     Eigen::TensorMap<tensord<3>> S(data.data(), x, y, z);
+
+    matrix_t beta_eph = matrix_t::Random(y, z) + matrix_t::Constant(y, z, 1);
+
+    tensord<3> grad_plus(x, y, z);
 
     // Reduction on GPU
     begin = high_resolution_clock::now();
-    cuda::apply_psi(S.data(), x * y * z);
+    cuda::update_grad_plus(S, beta_eph, grad_plus);
     end = high_resolution_clock::now();
     std::cout << "Elapsed CUDA: "
               << duration_cast<milliseconds>(end - begin).count() << " ms"
               << std::endl;
 
+    tensord<3> grad_plus_cpu(x, y, z);
     // Reduction on CPU
     begin = high_resolution_clock::now();
     #pragma omp parallel for schedule(static)
-    for (size_t i = 0; i < x; ++i) {
-        for (size_t j = 0; j < y; ++j) {
-            for (size_t k = 0; k < z; ++k) {
-                S(i, j, k) = util::psi_appr(S(i, j, k));
+    for (int i = 0; i < x; ++i) {
+        for (int j = 0; j < y; ++j) {
+            for (int k = 0; k < z; ++k) {
+                grad_plus_cpu(i, j, k) = util::psi_appr(beta_eph(j, k)) -
+                                         util::psi_appr(S(i, j, k) + 1);
             }
         }
     }
@@ -120,6 +169,19 @@ int main() {
     std::cout << "Elapsed CPU: "
               << duration_cast<milliseconds>(end - begin).count() << " ms"
               << std::endl;
+
+    // compare results
+    for (int i = 0; i < x; ++i) {
+        for (int j = 0; j < y; ++j) {
+            for (int k = 0; k < z; ++k) {
+//                if (close(grad_plus(i, j, k), grad_plus_cpu(i, j, k))) {
+//                    std::cout << i << '\t' << j << '\t' << k << std::endl;
+//                }
+//                std::cout << i << '\t' << j << '\t' << k << '\t' << grad_plus(i, j, k) << '\t' << grad_plus_cpu(i, j, k) << std::endl;
+                assert(close(grad_plus(i, j, k), grad_plus_cpu(i, j, k), 1e-10));
+            }
+        }
+    }
 
     std::cout << "Done" << std::endl;
     return 0;
