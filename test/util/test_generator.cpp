@@ -1,4 +1,5 @@
 #include "../catch2.hpp"
+#include "../ctor_dtor_counter.hpp"
 #include "defs.hpp"
 #include "util/generator.hpp"
 #include <algorithm>
@@ -9,32 +10,7 @@ using namespace bnmf_algs::util;
 
 void str_computer(size_t index, std::string& prev) { prev += "abc"; }
 
-struct C {
-    static size_t TotalDefaultCtorCount;
-    static size_t TotalCopyCount;
-
-    static void reset_counters() {
-        TotalDefaultCtorCount = 0;
-        TotalCopyCount = 0;
-    }
-
-    int val;
-    C() : val(0) { ++TotalDefaultCtorCount; }
-
-    C(const C& other) {
-        this->val = other.val;
-        ++TotalCopyCount;
-    }
-
-    C& operator=(const C& other) {
-        this->val = other.val;
-        ++TotalCopyCount;
-        return *this;
-    }
-};
-
-size_t C::TotalDefaultCtorCount = 0;
-size_t C::TotalCopyCount = 0;
+using C = Counter<int>;
 
 void c_computer(size_t index, C& prev) { prev.val++; }
 
