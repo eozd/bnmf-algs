@@ -83,9 +83,15 @@ __device__ double psi_appr(double x) {
 }
 
 __global__ void apply_psi(double* begin, size_t num_elems) {
-    size_t i = blockDim.x * blockIdx.y + threadIdx.x;
-    if (i < num_elems) {
-        begin[i] = psi_appr(begin[i]);
+    size_t blockId_grid = blockIdx.x + blockIdx.y * gridDim.x +
+                          blockIdx.z * gridDim.x * gridDim.y;
+    size_t threads_per_block = blockDim.x * blockDim.y * blockDim.z;
+    size_t id = blockId_grid * threads_per_block + threadIdx.x +
+                threadIdx.y * blockDim.x +
+                threadIdx.z * blockDim.x * blockDim.y;
+
+    if (id < num_elems) {
+        begin[id] = psi_appr(begin[id]);
     }
 }
 

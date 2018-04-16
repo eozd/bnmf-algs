@@ -14,6 +14,17 @@ void cuda::init() {
     assert(err == cudaSuccess);
 }
 
+/**
+ * @brief Return ceiling of integer division between given parameters.
+ *
+ * This function returns \f$\ceil{\frac{a}{b}}\f$ for parameters a and b.
+ *
+ * @param a Nominator.
+ * @param b Denominator.
+ * @return Ceiling of \f$\frac{a}{b}\f$ as an integer.
+ */
+static size_t int_div_ceil(size_t a, size_t b) { return a / b + (a % b != 0); }
+
 std::array<tensord<2>, 3> cuda::tensor_sums(const tensord<3>& tensor) {
 
     // input tensor properties
@@ -99,8 +110,7 @@ double* cuda::apply_psi(double* begin, size_t num_elems) {
 
     // grid/block dimensions
     size_t threads_per_block = 1024;
-    size_t blocks_per_grid =
-        (num_elems + threads_per_block - 1) / threads_per_block;
+    size_t blocks_per_grid = int_div_ceil(num_elems, threads_per_block);
 
     // apply kernel
     kernel::apply_psi<<<blocks_per_grid, threads_per_block>>>(
@@ -113,17 +123,6 @@ double* cuda::apply_psi(double* begin, size_t num_elems) {
 
     return begin;
 }
-
-/**
- * @brief Return ceiling of integer division between given parameters.
- *
- * This function returns \f$\ceil{\frac{a}{b}}\f$ for parameters a and b.
- *
- * @param a Nominator.
- * @param b Denominator.
- * @return Ceiling of \f$\frac{a}{b}\f$ as an integer.
- */
-static size_t int_div_ceil(size_t a, size_t b) { return a / b + (a % b != 0); }
 
 void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
                                       const matrixd& beta_eph,
