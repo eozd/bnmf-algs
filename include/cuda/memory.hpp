@@ -1,6 +1,5 @@
 #pragma once
 
-#include "defs.hpp"
 #include <cassert>
 #include <cstddef>
 #include <cuda_runtime.h>

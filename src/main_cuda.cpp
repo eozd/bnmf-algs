@@ -14,7 +14,7 @@ using namespace bnmf_algs;
 
 bool close(double a, double b, double eps) { return std::abs(a - b) <= eps; }
 
-// int main() {
+//int main() {
 //    time_point<high_resolution_clock> begin, end;
 //
 //    begin = high_resolution_clock::now();
@@ -123,7 +123,7 @@ bool close(double a, double b, double eps) { return std::abs(a - b) <= eps; }
 //    return 0;
 //}
 
-int main() {
+ int main() {
     time_point<high_resolution_clock> begin, end;
 
     begin = high_resolution_clock::now();

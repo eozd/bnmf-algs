@@ -71,13 +71,28 @@ set(CUDA_KERNEL_FILES
 set(CUDA_SRC_FILES
     src/main_cuda.cpp)
 
+set(CUDA_TEST_SRC_FILES
+    test/cuda/test_memory.cpp)
+
 add_library(bnmf_algs SHARED ${LIB_SRC_FILES})
 target_link_libraries(bnmf_algs gsl gslcblas)
 
+# Build cuda code
+if (BUILD_CUDA)
+    CUDA_COMPILE(CUDA_OBJ_FILES ${CUDA_KERNEL_FILES})
+    add_executable(cuda_exec ${CUDA_SRC_FILES} ${CUDA_OBJ_FILES})
+    target_link_libraries(cuda_exec bnmf_algs ${CUDA_LIBRARIES})
+endif (BUILD_CUDA)
+
 # Build tests
 if (BUILD_TESTING)
-    add_executable (tests ${TEST_SRC_FILES})
-    target_link_libraries(tests bnmf_algs)
+    if (BUILD_CUDA)
+        add_executable (tests ${TEST_SRC_FILES} ${CUDA_TEST_SRC_FILES} ${CUDA_OBJ_FILES})
+        target_link_libraries(tests bnmf_algs ${CUDA_LIBRARIES})
+    else (BUILD_CUDA)
+        add_executable (tests ${TEST_SRC_FILES})
+        target_link_libraries(tests bnmf_algs)
+    endif (BUILD_CUDA)
 endif (BUILD_TESTING)
 
 # Build benchmarks
@@ -91,10 +106,3 @@ if (BUILD_BENCH)
     target_link_libraries(benchmark /usr/local/lib/libcelero.so Threads::Threads)
     target_link_libraries(benchmark bnmf_algs)
 endif (BUILD_BENCH)
-
-# Build cuda code
-if (BUILD_CUDA)
-    CUDA_COMPILE(CUDA_OBJ_FILES ${CUDA_KERNEL_FILES})
-    add_executable(cuda_exec ${CUDA_SRC_FILES} ${CUDA_OBJ_FILES})
-    target_link_libraries(cuda_exec bnmf_algs ${CUDA_LIBRARIES})
-endif (BUILD_CUDA)
