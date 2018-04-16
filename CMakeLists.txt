@@ -15,7 +15,7 @@ if (BUILD_OPENMP)
 endif (BUILD_OPENMP)
 
 if (CMAKE_BUILD_TYPE MATCHES RELEASE)
-    add_definitions(-DNDEBUG)
+    add_definitions(-DEIGEN_NO_DEBUG)
 endif (CMAKE_BUILD_TYPE MATCHES RELEASE)
 
 include_directories("include")
@@ -68,11 +68,9 @@ set(CUDA_KERNEL_FILES
     src/cuda/tensor_ops.cu
     src/cuda/tensor_ops_kernels.cu)
 
-set(CUDA_SRC_FILES
-    src/main_cuda.cpp)
-
 set(CUDA_TEST_SRC_FILES
-    test/cuda/test_memory.cpp)
+    test/cuda/test_memory.cpp
+    test/cuda/test_tensor_ops.cpp)
 
 add_library(bnmf_algs SHARED ${LIB_SRC_FILES})
 target_link_libraries(bnmf_algs gsl gslcblas)
@@ -80,8 +78,6 @@ target_link_libraries(bnmf_algs gsl gslcblas)
 # Build cuda code
 if (BUILD_CUDA)
     CUDA_COMPILE(CUDA_OBJ_FILES ${CUDA_KERNEL_FILES})
-    add_executable(cuda_exec ${CUDA_SRC_FILES} ${CUDA_OBJ_FILES})
-    target_link_libraries(cuda_exec bnmf_algs ${CUDA_LIBRARIES})
 endif (BUILD_CUDA)
 
 # Build tests
