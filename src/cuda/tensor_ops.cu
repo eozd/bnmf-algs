@@ -136,14 +136,14 @@ void cuda::bld_mult::update_grad_plus(const tensord<3>& S,
     cudaError_t err = cudaSuccess;
 
     // create host memory wrappers
-    HostMemory3D<const double> host_S(S);
-    HostMemory3D<double> host_grad_plus(grad_plus);
-    HostMemory2D<const double> host_beta_eph(beta_eph);
+    HostMemory3D<const double> host_S(S.data(), x, y, z);
+    HostMemory3D<double> host_grad_plus(grad_plus.data(), x, y, z);
+    HostMemory2D<const double> host_beta_eph(beta_eph.data(), y, z);
 
     // allocate device memory
-    DeviceMemory3D<double> device_S(S);
-    DeviceMemory2D<double> device_beta_eph(beta_eph);
-    DeviceMemory3D<double> device_grad_plus(grad_plus);
+    DeviceMemory3D<double> device_S(x, y, z);
+    DeviceMemory2D<double> device_beta_eph(y, z);
+    DeviceMemory3D<double> device_grad_plus(x, y, z);
 
     // copy S to GPU
     copy3D(device_S, host_S, cudaMemcpyHostToDevice);
