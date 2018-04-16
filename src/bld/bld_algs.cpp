@@ -150,6 +150,10 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
         }
     }
 
+#ifdef USE_OPENMP
+    const int num_threads = std::thread::hardware_concurrency();
+#endif
+
     long x = X.rows(), y = X.cols();
 
     // initialize tensor S
@@ -159,7 +163,6 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
     {
 
 #ifdef USE_OPENMP
-        const int num_threads = std::thread::hardware_concurrency();
         int thread_id = omp_get_thread_num();
         bool last_thread = thread_id + 1 == num_threads;
         long num_rows = x / num_threads;
@@ -187,46 +190,81 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
     matrixd grad_minus(x, z);
     matrixd nom_mult(x, y);
     matrixd denom_mult(x, y);
+    matrixd alpha_eph(x, z);
+    vectord alpha_eph_sum(z);
+    matrixd beta_eph(y, z);
+    tensord<2> S_pjk_tensor(y, z);
+    tensord<2> S_ipk_tensor(x, z);
+    tensord<2> S_ijp_tensor(x, y);
 
     Eigen::Map<const vectord> alpha(model_params.alpha.data(),
-                                     model_params.alpha.size());
+                                    model_params.alpha.size());
     Eigen::Map<const vectord> beta(model_params.beta.data(),
-                                    model_params.beta.size());
+                                   model_params.beta.size());
+
+#ifdef USE_OPENMP
+    Eigen::ThreadPool tp(num_threads);
+    Eigen::ThreadPoolDevice thread_dev(&tp, num_threads);
+#endif
 
     const auto psi_fn = use_psi_appr ? util::psi_appr : gsl_sf_psi;
     for (size_t eph = 0; eph < max_iter; ++eph) {
         // update S_pjk, S_ipk, S_ijp
-        tensord<2> S_pjk_tensor = S.sum(shape<1>({0}));
-        tensord<2> S_ipk_tensor = S.sum(shape<1>({1}));
-        tensord<2> S_ijp_tensor = S.sum(shape<1>({2}));
+#ifdef USE_OPENMP
+        S_pjk_tensor.device(thread_dev) = S.sum(shape<1>({0}));
+        S_ipk_tensor.device(thread_dev) = S.sum(shape<1>({1}));
+        S_ijp_tensor.device(thread_dev) = S.sum(shape<1>({2}));
+#else
+        S_pjk_tensor = S.sum(shape<1>({0}));
+        S_ipk_tensor = S.sum(shape<1>({1}));
+        S_ijp_tensor = S.sum(shape<1>({2}));
+#endif
 
         Eigen::Map<matrixd> S_pjk(S_pjk_tensor.data(), y, z);
         Eigen::Map<matrixd> S_ipk(S_ipk_tensor.data(), x, z);
         Eigen::Map<matrixd> S_ijp(S_ijp_tensor.data(), x, y);
 
-        matrixd alpha_eph =
-            S_ipk.array().colwise() + alpha.transpose().array();
-        matrixd beta_eph = S_pjk.array().rowwise() + beta.array();
+        // update alpha_eph, beta_eph
+        #pragma omp parallel for schedule(static)
+        for (size_t k = 0; k < z; ++k) {
+            for (size_t i = 0; i < x; ++i) {
+                alpha_eph(i, k) = S_ipk(i, k) + alpha(i);
+            }
+
+            for (size_t j = 0; j < y; ++j) {
+                beta_eph(j, k) = S_pjk(j, k) + beta(k);
+            }
+        }
 
         // update grad_plus
         #pragma omp parallel for schedule(static)
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
                 for (size_t k = 0; k < z; ++k) {
-                    grad_plus(i, j, k) = psi_fn(beta_eph(j, k)) -
-                                         psi_fn(S(i, j, k) + 1);
+                    grad_plus(i, j, k) =
+                        psi_fn(beta_eph(j, k)) - psi_fn(S(i, j, k) + 1);
                 }
             }
         }
+
+        // update alpha_eph_sum
+        #pragma omp parallel for schedule(static)
+        for (size_t k = 0; k < z; ++k) {
+            alpha_eph_sum(k) = 0;
+            for (size_t i = 0; i < x; ++i) {
+                alpha_eph_sum(k) += alpha_eph(i, k);
+            }
+        }
+
         // update grad_minus
-        vectord alpha_eph_sum = alpha_eph.colwise().sum();
         #pragma omp parallel for schedule(static)
         for (int i = 0; i < x; ++i) {
             for (size_t k = 0; k < z; ++k) {
-                grad_minus(i, k) = psi_fn(alpha_eph_sum(k)) -
-                                   psi_fn(alpha_eph(i, k));
+                grad_minus(i, k) =
+                    psi_fn(alpha_eph_sum(k)) - psi_fn(alpha_eph(i, k));
             }
         }
+
         // update nom_mult, denom_mult
         #pragma omp parallel for schedule(static)
         for (int i = 0; i < x; ++i) {
@@ -373,7 +411,7 @@ void details::CollapsedGibbsComputer::increment_sampling(size_t i, size_t j,
                                                          tensord<3>& S_prev) {
     vectord prob(U_ppk.cols());
     Eigen::Map<vectord> beta(model_params.beta.data(), 1,
-                              model_params.beta.size());
+                             model_params.beta.size());
     std::vector<unsigned int> multinomial_sample(
         static_cast<unsigned long>(U_ppk.cols()));
 
@@ -398,7 +436,7 @@ void details::CollapsedGibbsComputer::decrement_sampling(size_t i, size_t j,
                                                          tensord<3>& S_prev) {
     vectord prob(U_ppk.cols());
     Eigen::Map<vectord> beta(model_params.beta.data(), 1,
-                              model_params.beta.size());
+                             model_params.beta.size());
     std::vector<unsigned int> multinomial_sample(
         static_cast<unsigned long>(U_ppk.cols()));
 
@@ -484,7 +522,7 @@ bld::collapsed_icm(const matrixd& X, size_t z,
 
     vectord prob(U_ppk.cols());
     Eigen::Map<const vectord> beta(model_params.beta.data(), 1,
-                                    model_params.beta.size());
+                                   model_params.beta.size());
 
     // initializing increment sampling without multinomial
     size_t i, j;
@@ -552,8 +590,7 @@ bld::collapsed_icm(const matrixd& X, size_t z,
 
 /* ===================== bld_appr IMPLEMENTATION ============================ */
 
-static void update_X_hat(const matrixd& nu, const matrixd& mu,
-                         matrixd& X_hat) {
+static void update_X_hat(const matrixd& nu, const matrixd& mu, matrixd& X_hat) {
     X_hat = nu * mu;
 }
 
@@ -636,9 +673,9 @@ static void update_grad_minus(const matrixd& alpha_eph, matrixd& grad_minus) {
 }
 
 static void update_nu(const matrixd& orig_over_appr,
-                      const matrixd& orig_over_appr_squared,
-                      const matrixd& mu, const tensord<3>& grad_plus,
-                      const matrixd& grad_minus, double eps, matrixd& nu) {
+                      const matrixd& orig_over_appr_squared, const matrixd& mu,
+                      const tensord<3>& grad_plus, const matrixd& grad_minus,
+                      double eps, matrixd& nu) {
     auto x = static_cast<size_t>(grad_plus.dimension(0));
     auto y = static_cast<size_t>(grad_plus.dimension(1));
     auto z = static_cast<size_t>(grad_plus.dimension(2));
@@ -691,9 +728,9 @@ static void update_nu(const matrixd& orig_over_appr,
 }
 
 static void update_mu(const matrixd& orig_over_appr,
-                      const matrixd& orig_over_appr_squared,
-                      const matrixd& nu, const tensord<3>& grad_plus,
-                      const matrixd& grad_minus, double eps, matrixd& mu) {
+                      const matrixd& orig_over_appr_squared, const matrixd& nu,
+                      const tensord<3>& grad_plus, const matrixd& grad_minus,
+                      double eps, matrixd& mu) {
     auto x = static_cast<size_t>(grad_plus.dimension(0));
     auto y = static_cast<size_t>(grad_plus.dimension(1));
     auto z = static_cast<size_t>(grad_plus.dimension(2));
@@ -760,9 +797,9 @@ bld::bld_appr(const matrixd& X, size_t z,
     auto y = static_cast<size_t>(X.cols());
 
     Eigen::Map<const vectord> alpha(model_params.alpha.data(), 1,
-                                     model_params.alpha.size());
+                                    model_params.alpha.size());
     Eigen::Map<const vectord> beta(model_params.beta.data(), 1,
-                                    model_params.beta.size());
+                                   model_params.beta.size());
 
     matrixd nu(x, z);
     matrixd mu(y, z);
