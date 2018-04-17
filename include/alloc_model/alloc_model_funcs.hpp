@@ -130,10 +130,6 @@ tensor_t<T, 3> sample_S(const matrix_t<T>& prior_W, const matrix_t<T>& prior_H,
     return sample;
 }
 
-/**
- * @brief Namespace containing auxiliary functions used in internal
- * computations.
- */
 namespace details {
 
 /**
