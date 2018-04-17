@@ -14,9 +14,9 @@ if (BUILD_OPENMP)
     add_definitions(-DEIGEN_USE_THREADS)
 endif (BUILD_OPENMP)
 
-if (CMAKE_BUILD_TYPE MATCHES RELEASE)
+if (CMAKE_BUILD_TYPE MATCHES Release)
     add_definitions(-DEIGEN_NO_DEBUG)
-endif (CMAKE_BUILD_TYPE MATCHES RELEASE)
+endif (CMAKE_BUILD_TYPE MATCHES Release)
 
 include_directories("include")
 
@@ -42,10 +42,9 @@ endif (BUILD_CUDA)
 
 set(LIB_SRC_FILES
     src/nmf/nmf.cpp
-    src/allocation_model/alloc_model_funcs.cpp
     src/util/wrappers.cpp
     src/bld/bld_algs.cpp
-    src/allocation_model/alloc_model_params.cpp
+    src/alloc_model/alloc_model_params.cpp
     src/util/util.cpp
     src/util/sampling.cpp)
 
@@ -73,7 +72,11 @@ set(CUDA_TEST_SRC_FILES
     test/cuda/test_tensor_ops.cpp)
 
 add_library(bnmf_algs SHARED ${LIB_SRC_FILES})
-target_link_libraries(bnmf_algs gsl gslcblas)
+if (BUILD_CUDA)
+    target_link_libraries(bnmf_algs gsl gslcblas ${CUDA_LIBRARIES})
+else (BUILD_CUDA)
+    target_link_libraries(bnmf_algs gsl gslcblas)
+endif (BUILD_CUDA)
 
 # Build cuda code
 if (BUILD_CUDA)
@@ -82,6 +85,7 @@ endif (BUILD_CUDA)
 
 # Build tests
 if (BUILD_TESTING)
+    add_definitions(-DBUILD_TESTING)
     if (BUILD_CUDA)
         add_executable (tests ${TEST_SRC_FILES} ${CUDA_TEST_SRC_FILES} ${CUDA_OBJ_FILES})
         target_link_libraries(tests bnmf_algs ${CUDA_LIBRARIES})

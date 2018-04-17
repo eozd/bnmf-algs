@@ -57,11 +57,11 @@ int main(int argc, char** argv) {
     std::vector<double> alpha_dirichlet(X.rows(), 0.05);
     std::vector<double> beta_dirichlet(n_components, 10);
     beta_dirichlet.back() = 60;
-    allocation_model::AllocModelParams params(100, 1, alpha_dirichlet,
+    alloc_model::AllocModelParams params(100, 1, alpha_dirichlet,
                                               beta_dirichlet);
     // std::vector<double> alpha_dirichlet(X.rows(), 1);
     // std::vector<double> beta_dirichlet(n_components, 1);
-    // allocation_model::AllocModelParams params(40, 1, alpha_dirichlet,
+    // alloc_model::AllocModelParams params(40, 1, alpha_dirichlet,
     //                                          beta_dirichlet);
 
     std::cout << "Computing the factorization" << std::endl;

@@ -1,12 +1,12 @@
 #include "../catch2.hpp"
-#include "allocation_model/alloc_model_funcs.hpp"
+#include "alloc_model/alloc_model_funcs.hpp"
 #include "bld/bld_algs.hpp"
 #include "util/util.hpp"
 #include <iostream>
 
 using namespace bnmf_algs;
 using namespace bnmf_algs::util;
-using namespace bnmf_algs::allocation_model;
+using namespace bnmf_algs::alloc_model;
 
 TEST_CASE("Parameter checks on seq_greedy_bld", "[seq_greedy_bld]") {
     size_t x = 10, y = 8, z = 3;
@@ -225,7 +225,7 @@ TEST_CASE("Parameter checks on bld_mult", "[bld_mult]") {
     size_t x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
     matrixd X = matrixd::Constant(x, y, 5);
-    allocation_model::AllocModelParams model_params(tensor_shape);
+    alloc_model::AllocModelParams model_params(tensor_shape);
 
     // max_iter = 5 since we don't want to wait
     REQUIRE_NOTHROW(bld::bld_mult(X, z, model_params, 5));
@@ -304,7 +304,7 @@ TEST_CASE("Parameter checks on bld_add", "[bld_add]") {
     size_t x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
     matrixd X = matrixd::Constant(x, y, 5);
-    allocation_model::AllocModelParams model_params(tensor_shape);
+    alloc_model::AllocModelParams model_params(tensor_shape);
 
     // max_iter = 5 since we don't want to wait
     REQUIRE_NOTHROW(bld::bld_add(X, z, model_params, 5));
@@ -369,7 +369,7 @@ TEST_CASE("Parameter checks on collapsed gibbs", "[collapsed_gibbs]") {
     size_t x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
     matrixd X = matrixd::Constant(x, y, 5);
-    allocation_model::AllocModelParams model_params(tensor_shape);
+    alloc_model::AllocModelParams model_params(tensor_shape);
 
     // max_iter = 5 since we don't want to wait
     REQUIRE_NOTHROW(bld::collapsed_gibbs(X, z, model_params, 5));
@@ -431,7 +431,7 @@ TEST_CASE("Parameter checks on collapsed icm", "[collapsed_icm]") {
     size_t x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
     matrixd X = matrixd::Constant(x, y, 5);
-    allocation_model::AllocModelParams model_params(tensor_shape);
+    alloc_model::AllocModelParams model_params(tensor_shape);
 
     // max_iter = 5 since we don't want to wait
     REQUIRE_NOTHROW(bld::collapsed_icm(X, z, model_params, 5));
@@ -489,7 +489,7 @@ TEST_CASE("Parameter checks on bld approximate", "[bld_appr]") {
     size_t x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
     matrixd X = matrixd::Constant(x, y, 5);
-    allocation_model::AllocModelParams model_params(tensor_shape);
+    alloc_model::AllocModelParams model_params(tensor_shape);
 
     // max_iter = 5 since we don't want to wait
     REQUIRE_NOTHROW(bld::bld_appr(X, z, model_params, 5));

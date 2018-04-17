@@ -1,7 +1,7 @@
 #pragma once
 
-#include "allocation_model/alloc_model_funcs.hpp"
-#include "allocation_model/alloc_model_params.hpp"
+#include "alloc_model/alloc_model_funcs.hpp"
+#include "alloc_model/alloc_model_params.hpp"
 #include "defs.hpp"
 #include "util/generator.hpp"
 #include "util/wrappers.hpp"
@@ -27,14 +27,14 @@ class CollapsedGibbsComputer {
      * @param z Depth of the output tensor \f$S\f$ with size \f$x \times y
      * \times z\f$.
      * @param model_params Allocation model parameters. See
-     * bnmf_algs::allocation_model::AllocModelParams.
+     * bnmf_algs::alloc_model::AllocModelParams.
      * @param max_iter Maximum number of iterations.
      * @param eps Floating point epsilon value to be used to prevent division by
      * 0 errors.
      */
     explicit CollapsedGibbsComputer(
         const matrixd& X, size_t z,
-        const allocation_model::AllocModelParams& model_params, size_t max_iter,
+        const alloc_model::AllocModelParams& model_params, size_t max_iter,
         double eps);
 
     /**
@@ -87,7 +87,7 @@ class CollapsedGibbsComputer {
     void decrement_sampling(size_t i, size_t j, tensord<3>& S_prev);
 
   private:
-    allocation_model::AllocModelParams model_params;
+    alloc_model::AllocModelParams model_params;
     // computation variables
   private:
     util::Generator<std::pair<int, int>, details::SampleOnesReplaceComputer>
@@ -139,7 +139,7 @@ namespace bld {
  * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
  * This is the depth of the output tensor \f$S\f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::allocation_model::AllocModelParams.
+ * bnmf_algs::alloc_model::AllocModelParams.
  *
  * @return Tensor \f$S\f$ of size \f$x \times y \times z\f$ where \f$X =
  * S_{ij+}\f$.
@@ -153,7 +153,7 @@ namespace bld {
  */
 tensord<3>
 seq_greedy_bld(const matrixd& X, size_t z,
-               const allocation_model::AllocModelParams& model_params);
+               const alloc_model::AllocModelParams& model_params);
 
 /**
  * @brief Compute matrices \f$W, H\f$ and vector \f$L\f$ from tensor \f$S\f$
@@ -169,7 +169,7 @@ seq_greedy_bld(const matrixd& X, size_t z,
  *
  * @param S Tensor \f$S\f$ of shape \f$x \times y \times z\f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::allocation_model::AllocModelParams.
+ * bnmf_algs::alloc_model::AllocModelParams.
  * @param eps Floating point epsilon value to be used to prevent division by 0
  * errors.
  *
@@ -178,7 +178,7 @@ seq_greedy_bld(const matrixd& X, size_t z,
  */
 std::tuple<matrixd, matrixd, vectord>
 bld_fact(const tensord<3>& S,
-         const allocation_model::AllocModelParams& model_params,
+         const alloc_model::AllocModelParams& model_params,
          double eps = 1e-50);
 
 /**
@@ -224,7 +224,7 @@ bld_fact(const tensord<3>& S,
  * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
  * This is the depth of the output tensor \f$S\f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::allocation_model::AllocModelParams.
+ * bnmf_algs::alloc_model::AllocModelParams.
  * @param max_iter Maximum number of iterations.
  * @param use_psi_appr If true, use util::psi_appr function to compute the digamma
  * function approximately. If false, compute the digamma function exactly.
@@ -239,7 +239,7 @@ bld_fact(const tensord<3>& S,
  * not equal to number of beta parameters.
  */
 tensord<3> bld_mult(const matrixd& X, size_t z,
-                    const allocation_model::AllocModelParams& model_params,
+                    const alloc_model::AllocModelParams& model_params,
                     size_t max_iter = 1000, bool use_psi_appr = false,
                     double eps = 1e-50);
 
@@ -286,7 +286,7 @@ tensord<3> bld_mult(const matrixd& X, size_t z,
  * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
  * This is the depth of the output tensor \f$S\f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::allocation_model::AllocModelParams.
+ * bnmf_algs::alloc_model::AllocModelParams.
  * @param max_iter Maximum number of iterations.
  * @param eps Floating point epsilon value to be used to prevent division by 0
  * errors.
@@ -299,7 +299,7 @@ tensord<3> bld_mult(const matrixd& X, size_t z,
  * not equal to number of beta parameters.
  */
 tensord<3> bld_add(const matrixd& X, size_t z,
-                   const allocation_model::AllocModelParams& model_params,
+                   const alloc_model::AllocModelParams& model_params,
                    size_t max_iter = 1000, double eps = 1e-50);
 
 /**
@@ -328,7 +328,7 @@ tensord<3> bld_add(const matrixd& X, size_t z,
  * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
  * This is the depth of the output tensor \f$S\f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::allocation_model::AllocModelParams.
+ * bnmf_algs::alloc_model::AllocModelParams.
  * @param max_iter Maximum number of iterations.
  * @param eps Floating point epsilon value to be used to prevent division by 0
  * errors.
@@ -342,7 +342,7 @@ tensord<3> bld_add(const matrixd& X, size_t z,
  */
 util::Generator<tensord<3>, details::CollapsedGibbsComputer>
 collapsed_gibbs(const matrixd& X, size_t z,
-                const allocation_model::AllocModelParams& model_params,
+                const alloc_model::AllocModelParams& model_params,
                 size_t max_iter = 1000, double eps = 1e-50);
 
 /**
@@ -372,7 +372,7 @@ collapsed_gibbs(const matrixd& X, size_t z,
  * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
  * This is the depth of the output tensor \f$S\f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::allocation_model::AllocModelParams.
+ * bnmf_algs::alloc_model::AllocModelParams.
  * @param max_iter Maximum number of iterations.
  * @param eps Floating point epsilon value to be used to prevent division by 0
  * errors.
@@ -385,7 +385,7 @@ collapsed_gibbs(const matrixd& X, size_t z,
  * not equal to number of beta parameters.
  */
 tensord<3> collapsed_icm(const matrixd& X, size_t z,
-                         const allocation_model::AllocModelParams& model_params,
+                         const alloc_model::AllocModelParams& model_params,
                          size_t max_iter = 1000, double eps = 1e-50);
 
 /**
@@ -421,7 +421,7 @@ tensord<3> collapsed_icm(const matrixd& X, size_t z,
  * @param z Number of matrices into which matrix \f$X\f$ will be decomposed.
  * This is the depth of the output tensor \f$S\f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::allocation_model::AllocModelParams.
+ * bnmf_algs::alloc_model::AllocModelParams.
  * @param max_iter Maximum number of iterations.
  * @param eps Floating point epsilon value to be used to prevent division by 0
  * errors.
@@ -435,7 +435,7 @@ tensord<3> collapsed_icm(const matrixd& X, size_t z,
  */
 std::tuple<bnmf_algs::tensord<3>, bnmf_algs::matrixd, bnmf_algs::matrixd>
 bld_appr(const matrixd& X, size_t z,
-         const allocation_model::AllocModelParams& model_params,
+         const alloc_model::AllocModelParams& model_params,
          size_t max_iter = 1000, double eps = 1e-50);
 } // namespace bld
 } // namespace bnmf_algs

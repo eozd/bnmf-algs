@@ -5,6 +5,11 @@
 #include <omp.h>
 #include <thread>
 
+#ifdef USE_CUDA
+#include "cuda/memory.hpp"
+#include "cuda/tensor_ops.hpp"
+#endif
+
 using namespace bnmf_algs;
 
 /**
@@ -15,7 +20,7 @@ using namespace bnmf_algs;
  */
 static std::string
 check_bld_params(const matrixd& X, size_t z,
-                 const allocation_model::AllocModelParams& model_params) {
+                 const alloc_model::AllocModelParams& model_params) {
     if ((X.array() < 0).any()) {
         return "X must be nonnegative";
     }
@@ -31,7 +36,7 @@ check_bld_params(const matrixd& X, size_t z,
 
 tensord<3>
 bld::seq_greedy_bld(const matrixd& X, size_t z,
-                    const allocation_model::AllocModelParams& model_params) {
+                    const alloc_model::AllocModelParams& model_params) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
         if (!error_msg.empty()) {
@@ -94,7 +99,7 @@ bld::seq_greedy_bld(const matrixd& X, size_t z,
 
 std::tuple<matrixd, matrixd, vectord>
 bld::bld_fact(const tensord<3>& S,
-              const allocation_model::AllocModelParams& model_params,
+              const alloc_model::AllocModelParams& model_params,
               double eps) {
     auto x = static_cast<size_t>(S.dimension(0));
     auto y = static_cast<size_t>(S.dimension(1));
@@ -141,7 +146,7 @@ bld::bld_fact(const tensord<3>& S,
 }
 
 tensord<3> bld::bld_mult(const matrixd& X, size_t z,
-                         const allocation_model::AllocModelParams& model_params,
+                         const alloc_model::AllocModelParams& model_params,
                          size_t max_iter, bool use_psi_appr, double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
@@ -154,7 +159,8 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
     const int num_threads = std::thread::hardware_concurrency();
 #endif
 
-    long x = X.rows(), y = X.cols();
+    auto x = static_cast<size_t>(X.rows());
+    auto y = static_cast<size_t>(X.cols());
 
     // initialize tensor S
     tensord<3> S(x, y, z);
@@ -176,7 +182,7 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
         auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
         vectord dirichlet_variates(z);
         for (long i = beg; i < end; ++i) {
-            for (int j = 0; j < y; ++j) {
+            for (size_t j = 0; j < y; ++j) {
                 gsl_ran_dirichlet(rand_gen.get(), z, dirichlet_params.data(),
                                   dirichlet_variates.data());
                 for (size_t k = 0; k < z; ++k) {
@@ -185,6 +191,12 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
             }
         }
     }
+
+#ifdef USE_CUDA
+    cuda::HostMemory2D<const double> X_host(X.data(), x, y);
+    cuda::DeviceMemory2D<double> X_device(x, y);
+    cuda::copy2D(X_device, X_host, cudaMemcpyHostToDevice);
+#endif
 
     tensord<3> grad_plus(x, y, z);
     matrixd grad_minus(x, z);
@@ -210,7 +222,12 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
     const auto psi_fn = use_psi_appr ? util::psi_appr : gsl_sf_psi;
     for (size_t eph = 0; eph < max_iter; ++eph) {
         // update S_pjk, S_ipk, S_ijp
-#ifdef USE_OPENMP
+#ifdef USE_CUDA
+        const auto tensor_sums = cuda::tensor_sums(S);
+        S_pjk_tensor = tensor_sums[0];
+        S_ipk_tensor = tensor_sums[1];
+        S_ijp_tensor = tensor_sums[2];
+#elif USE_OPENMP
         S_pjk_tensor.device(thread_dev) = S.sum(shape<1>({0}));
         S_ipk_tensor.device(thread_dev) = S.sum(shape<1>({1}));
         S_ijp_tensor.device(thread_dev) = S.sum(shape<1>({2}));
@@ -236,6 +253,9 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
             }
         }
 
+#ifdef USE_CUDA
+        cuda::bld_mult::update_grad_plus(S, beta_eph, grad_plus);
+#else
         // update grad_plus
         #pragma omp parallel for schedule(static)
         for (int i = 0; i < x; ++i) {
@@ -246,6 +266,7 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
                 }
             }
         }
+#endif
 
         // update alpha_eph_sum
         #pragma omp parallel for schedule(static)
@@ -258,7 +279,7 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
 
         // update grad_minus
         #pragma omp parallel for schedule(static)
-        for (int i = 0; i < x; ++i) {
+        for (size_t i = 0; i < x; ++i) {
             for (size_t k = 0; k < z; ++k) {
                 grad_minus(i, k) =
                     psi_fn(alpha_eph_sum(k)) - psi_fn(alpha_eph(i, k));
@@ -267,8 +288,8 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
 
         // update nom_mult, denom_mult
         #pragma omp parallel for schedule(static)
-        for (int i = 0; i < x; ++i) {
-            for (int j = 0; j < y; ++j) {
+        for (size_t i = 0; i < x; ++i) {
+            for (size_t j = 0; j < y; ++j) {
                 double xdiv = 1.0 / (X(i, j) + eps);
                 double nom_sum = 0, denom_sum = 0;
                 for (size_t k = 0; k < z; ++k) {
@@ -279,10 +300,11 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
                 denom_mult(i, j) = denom_sum;
             }
         }
+
         // update S
         #pragma omp parallel for schedule(static)
-        for (int i = 0; i < x; ++i) {
-            for (int j = 0; j < y; ++j) {
+        for (size_t i = 0; i < x; ++i) {
+            for (size_t j = 0; j < y; ++j) {
                 double s_ij = S_ijp(i, j);
                 double x_over_s = X(i, j) / (s_ij + eps);
                 for (size_t k = 0; k < z; ++k) {
@@ -307,7 +329,7 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
 static double eta(size_t step) { return 0.1 / std::pow(step + 1, 0.55); }
 
 tensord<3> bld::bld_add(const matrixd& X, size_t z,
-                        const allocation_model::AllocModelParams& model_params,
+                        const alloc_model::AllocModelParams& model_params,
                         size_t max_iter, double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
@@ -396,7 +418,7 @@ tensord<3> bld::bld_add(const matrixd& X, size_t z,
 
 details::CollapsedGibbsComputer::CollapsedGibbsComputer(
     const matrixd& X, size_t z,
-    const allocation_model::AllocModelParams& model_params, size_t max_iter,
+    const alloc_model::AllocModelParams& model_params, size_t max_iter,
     double eps)
     : model_params(model_params),
       one_sampler_repl(util::sample_ones_replace(X, max_iter)),
@@ -475,7 +497,7 @@ void details::CollapsedGibbsComputer::operator()(size_t curr_step,
 
 util::Generator<tensord<3>, details::CollapsedGibbsComputer>
 bld::collapsed_gibbs(const matrixd& X, size_t z,
-                     const allocation_model::AllocModelParams& model_params,
+                     const alloc_model::AllocModelParams& model_params,
                      size_t max_iter, double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
@@ -498,7 +520,7 @@ bld::collapsed_gibbs(const matrixd& X, size_t z,
 
 tensord<3>
 bld::collapsed_icm(const matrixd& X, size_t z,
-                   const allocation_model::AllocModelParams& model_params,
+                   const alloc_model::AllocModelParams& model_params,
                    size_t max_iter, double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
@@ -588,7 +610,8 @@ bld::collapsed_icm(const matrixd& X, size_t z,
     return U;
 }
 
-/* ===================== bld_appr IMPLEMENTATION ============================ */
+/* ===================== bld_appr IMPLEMENTATION
+ * ============================ */
 
 static void update_X_hat(const matrixd& nu, const matrixd& mu, matrixd& X_hat) {
     X_hat = nu * mu;
@@ -784,7 +807,7 @@ static void update_mu(const matrixd& orig_over_appr,
 
 std::tuple<tensord<3>, matrixd, matrixd>
 bld::bld_appr(const matrixd& X, size_t z,
-              const allocation_model::AllocModelParams& model_params,
+              const alloc_model::AllocModelParams& model_params,
               size_t max_iter, double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
@@ -808,7 +831,8 @@ bld::bld_appr(const matrixd& X, size_t z,
         auto rnd_gen = util::make_gsl_rng(gsl_rng_taus);
         std::vector<double> dirichlet_params(z, 1);
 
-        // remark: following code depends on the fact that matrixd is row major
+        // remark: following code depends on the fact that matrixd is row
+        // major
         for (size_t i = 0; i < x; ++i) {
             gsl_ran_dirichlet(rnd_gen.get(), z, dirichlet_params.data(),
                               nu.data() + i * z);

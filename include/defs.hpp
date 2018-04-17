@@ -3,6 +3,21 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
 
+/**
+ * Convert assertions to exceptions if we are testing. This way
+ * we can check if incorrect arguments are passed to functions by checking if
+ * exceptions are thrown.
+ */
+#ifdef BUILD_TESTING
+#include <stdexcept>
+#define BNMF_ASSERT(condition, msg)                                            \
+    if (not(condition))                                                        \
+    throw std::invalid_argument(msg)
+#else
+#include <cassert>
+#define BNMF_ASSERT(condition, msg) (assert(condition), msg)
+#endif
+
 namespace bnmf_algs {
 /**
  * @brief Vector type used in the computations.

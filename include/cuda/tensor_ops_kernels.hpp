@@ -57,9 +57,17 @@ __global__ void apply_psi(double* begin, size_t num_elems);
  * @param depth Depth (2nd dimension) of S and grad_plus tensors in terms of
  * elements.
  */
-__global__ void update_grad_plus(const cudaPitchedPtr S, const double* beta_eph,
-                                 const size_t pitch, cudaPitchedPtr grad_plus,
+__global__ void update_grad_plus(cudaPitchedPtr S, const double* beta_eph,
+                                 size_t pitch, cudaPitchedPtr grad_plus,
                                  size_t width, size_t height, size_t depth);
+
+__global__ void update_nom_denom(cudaPitchedPtr S, cudaPitchedPtr grad_plus,
+                                 const double* X, size_t X_pitch,
+                                 const double* grad_minus,
+                                 size_t grad_minus_pitch, double* nom,
+                                 size_t nom_pitch, double* denom,
+                                 size_t denom_pitch, size_t width,
+                                 size_t height, size_t depth);
 } // namespace kernel
 } // namespace cuda
 } // namespace bnmf_algs

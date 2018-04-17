@@ -1,8 +1,8 @@
 #pragma once
 
 #include "defs.hpp"
-#include "allocation_model/alloc_model_params.hpp"
-#include "allocation_model/alloc_model_funcs.hpp"
+#include "alloc_model/alloc_model_params.hpp"
+#include "alloc_model/alloc_model_funcs.hpp"
 #include "bld/bld_algs.hpp"
 #include "nmf/nmf.hpp"
 #include "util/util.hpp"

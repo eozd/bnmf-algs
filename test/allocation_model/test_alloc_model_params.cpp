@@ -1,10 +1,10 @@
 #include "../catch2.hpp"
-#include "allocation_model/alloc_model_funcs.hpp"
+#include "alloc_model/alloc_model_funcs.hpp"
 #include "util/util.hpp"
 
 using namespace bnmf_algs;
 using namespace bnmf_algs::util;
-using namespace bnmf_algs::allocation_model;
+using namespace bnmf_algs::alloc_model;
 
 TEST_CASE("Test AllocModelParams construction", "[AllocModelParams]") {
     shape<3> tensor_shape{5, 2, 8};

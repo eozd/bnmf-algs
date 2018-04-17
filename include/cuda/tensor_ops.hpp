@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cuda/memory.hpp"
 #include "defs.hpp"
 #include <array>
 
@@ -115,7 +116,6 @@ namespace bld_mult {
  */
 void update_grad_plus(const tensord<3>& S, const matrixd& beta_eph,
                       tensord<3>& grad_plus);
-
 } // namespace bld_mult
 } // namespace cuda
 } // namespace bnmf_algs

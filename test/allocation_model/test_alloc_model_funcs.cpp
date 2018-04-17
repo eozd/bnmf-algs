@@ -1,14 +1,14 @@
 #include <random>
 
 #include "../catch2.hpp"
-#include "allocation_model/alloc_model_funcs.hpp"
+#include "alloc_model/alloc_model_funcs.hpp"
 #include "util/util.hpp"
 #include <bitset>
 #include <iostream>
 
 using namespace bnmf_algs;
 using namespace bnmf_algs::util;
-using namespace bnmf_algs::allocation_model;
+using namespace bnmf_algs::alloc_model;
 
 TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
     size_t x = 5, y = 3, z = 2;
@@ -18,25 +18,25 @@ TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
     vectord L;
 
     SECTION("Illegal parameters") {
-        REQUIRE_NOTHROW(bnmf_priors(tensor_shape, model_params));
+        REQUIRE_NOTHROW(bnmf_priors<double>(tensor_shape, model_params));
 
         tensor_shape[0]++;
-        REQUIRE_THROWS(bnmf_priors(tensor_shape, model_params));
+        REQUIRE_THROWS(bnmf_priors<double>(tensor_shape, model_params));
 
         model_params.alpha.resize(tensor_shape[0]);
-        REQUIRE_NOTHROW(bnmf_priors(tensor_shape, model_params));
+        REQUIRE_NOTHROW(bnmf_priors<double>(tensor_shape, model_params));
 
         model_params.beta.resize(z + 2);
-        REQUIRE_THROWS(bnmf_priors(tensor_shape, model_params));
+        REQUIRE_THROWS(bnmf_priors<double>(tensor_shape, model_params));
 
         tensor_shape[2] += 2;
         tensor_shape[1] = 0;
-        REQUIRE_NOTHROW(bnmf_priors(tensor_shape, model_params));
+        REQUIRE_NOTHROW(bnmf_priors<double>(tensor_shape, model_params));
 
         tensor_shape[0] = 2;
         tensor_shape[1] = 1;
         tensor_shape[2] = 0;
-        REQUIRE_THROWS(bnmf_priors(tensor_shape, model_params));
+        REQUIRE_THROWS(bnmf_priors<double>(tensor_shape, model_params));
     }
 
     SECTION("Shapes containing 0s") {
@@ -48,7 +48,7 @@ TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
             model_params.alpha.resize(tensor_shape[0]);
             model_params.beta.resize(tensor_shape[2]);
 
-            std::tie(W, H, L) = bnmf_priors(tensor_shape, model_params);
+            std::tie(W, H, L) = bnmf_priors<double>(tensor_shape, model_params);
             REQUIRE(W.rows() == tensor_shape[0]);
             REQUIRE(W.cols() == tensor_shape[2]);
             REQUIRE(H.rows() == tensor_shape[2]);
@@ -58,7 +58,7 @@ TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
     }
 
     SECTION("Returned matrices have correct shapes") {
-        std::tie(W, H, L) = bnmf_priors(tensor_shape, model_params);
+        std::tie(W, H, L) = bnmf_priors<double>(tensor_shape, model_params);
 
         REQUIRE(W.rows() == tensor_shape[0]);
         REQUIRE(W.cols() == tensor_shape[2]);
@@ -111,7 +111,7 @@ TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters",
     }
     AllocModelParams model_params(a, b, alpha, beta);
 
-    std::tie(W, H, L) = bnmf_priors(tensor_shape, model_params);
+    std::tie(W, H, L) = bnmf_priors<double>(tensor_shape, model_params);
 
     SECTION("All entries of W, H, L are nonnegative") {
         REQUIRE((W.array() >= 0).all());
@@ -154,8 +154,7 @@ TEST_CASE("Algorithm checks for sample_S using prior matrices", "[sample_S]") {
             (matrixd::Random(x, z) + matrixd::Constant(x, z, scale)) * scale;
         matrixd H =
             (matrixd::Random(z, y) + matrixd::Constant(z, y, scale)) * scale;
-        vectord L =
-            (vectord::Random(y) + vectord::Constant(y, scale)) * scale;
+        vectord L = (vectord::Random(y) + vectord::Constant(y, scale)) * scale;
         tensord<3> S = sample_S(W, H, L);
 
         // TODO: How to check if the result comes from Poisson with certain mean
@@ -225,7 +224,8 @@ TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
     }
     AllocModelParams model_params(a, b, alpha, beta);
 
-    tensord<3> S = call(sample_S, bnmf_priors(tensor_shape, model_params));
+    tensord<3> S =
+        call(sample_S<double>, bnmf_priors<double>(tensor_shape, model_params));
 
     SECTION("Changing original parameters results in lower likelihoods") {
         double original_log_marginal = log_marginal_S(S, model_params);
@@ -251,4 +251,3 @@ TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
         REQUIRE(original_log_marginal > altered_log_marginal);
     }
 }
-

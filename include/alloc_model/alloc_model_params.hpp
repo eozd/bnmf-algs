@@ -4,7 +4,7 @@
 #include <vector>
 
 namespace bnmf_algs {
-namespace allocation_model {
+namespace alloc_model {
 
 /**
  * @brief Structure to hold the parameters for the Allocation Model \cite
@@ -77,5 +77,5 @@ struct AllocModelParams {
     AllocModelParams() = default;
 };
 
-} // namespace allocation_model
+} // namespace alloc_model
 } // namespace bnmf_algs
