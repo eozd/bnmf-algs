@@ -20,7 +20,7 @@ using namespace bnmf_algs;
  */
 static std::string
 check_bld_params(const matrixd& X, size_t z,
-                 const alloc_model::AllocModelParams& model_params) {
+                 const alloc_model::Params<double>& model_params) {
     if ((X.array() < 0).any()) {
         return "X must be nonnegative";
     }
@@ -36,7 +36,7 @@ check_bld_params(const matrixd& X, size_t z,
 
 tensord<3>
 bld::seq_greedy_bld(const matrixd& X, size_t z,
-                    const alloc_model::AllocModelParams& model_params) {
+                    const alloc_model::Params<double>& model_params) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
         if (!error_msg.empty()) {
@@ -99,7 +99,7 @@ bld::seq_greedy_bld(const matrixd& X, size_t z,
 
 std::tuple<matrixd, matrixd, vectord>
 bld::bld_fact(const tensord<3>& S,
-              const alloc_model::AllocModelParams& model_params,
+              const alloc_model::Params<double>& model_params,
               double eps) {
     auto x = static_cast<size_t>(S.dimension(0));
     auto y = static_cast<size_t>(S.dimension(1));
@@ -146,7 +146,7 @@ bld::bld_fact(const tensord<3>& S,
 }
 
 tensord<3> bld::bld_mult(const matrixd& X, size_t z,
-                         const alloc_model::AllocModelParams& model_params,
+                         const alloc_model::Params<double>& model_params,
                          size_t max_iter, bool use_psi_appr, double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
@@ -329,7 +329,7 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
 static double eta(size_t step) { return 0.1 / std::pow(step + 1, 0.55); }
 
 tensord<3> bld::bld_add(const matrixd& X, size_t z,
-                        const alloc_model::AllocModelParams& model_params,
+                        const alloc_model::Params<double>& model_params,
                         size_t max_iter, double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
@@ -418,7 +418,7 @@ tensord<3> bld::bld_add(const matrixd& X, size_t z,
 
 details::CollapsedGibbsComputer::CollapsedGibbsComputer(
     const matrixd& X, size_t z,
-    const alloc_model::AllocModelParams& model_params, size_t max_iter,
+    const alloc_model::Params<double>& model_params, size_t max_iter,
     double eps)
     : model_params(model_params),
       one_sampler_repl(util::sample_ones_replace(X, max_iter)),
@@ -497,7 +497,7 @@ void details::CollapsedGibbsComputer::operator()(size_t curr_step,
 
 util::Generator<tensord<3>, details::CollapsedGibbsComputer>
 bld::collapsed_gibbs(const matrixd& X, size_t z,
-                     const alloc_model::AllocModelParams& model_params,
+                     const alloc_model::Params<double>& model_params,
                      size_t max_iter, double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
@@ -520,7 +520,7 @@ bld::collapsed_gibbs(const matrixd& X, size_t z,
 
 tensord<3>
 bld::collapsed_icm(const matrixd& X, size_t z,
-                   const alloc_model::AllocModelParams& model_params,
+                   const alloc_model::Params<double>& model_params,
                    size_t max_iter, double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
@@ -807,7 +807,7 @@ static void update_mu(const matrixd& orig_over_appr,
 
 std::tuple<tensord<3>, matrixd, matrixd>
 bld::bld_appr(const matrixd& X, size_t z,
-              const alloc_model::AllocModelParams& model_params,
+              const alloc_model::Params<double>& model_params,
               size_t max_iter, double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);

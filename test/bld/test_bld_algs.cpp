@@ -13,7 +13,7 @@ TEST_CASE("Parameter checks on seq_greedy_bld", "[seq_greedy_bld]") {
     matrixd X = matrixd::Random(x, y) + matrixd::Constant(x, y, 5);
     std::vector<double> alpha(x, 1);
     std::vector<double> beta(z, 1);
-    AllocModelParams model_params(1, 1, alpha, beta);
+    Params<double> model_params(1, 1, alpha, beta);
 
     REQUIRE_NOTHROW(bld::seq_greedy_bld(X, z, model_params));
 
@@ -38,7 +38,7 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
     shape<3> tensor_shape{x, y, z};
     SECTION("Zero matrix result is Zero") {
         matrixd X = matrixd::Zero(x, y);
-        AllocModelParams model_params(tensor_shape);
+        Params<double> model_params(tensor_shape);
 
         tensord<3> S = bld::seq_greedy_bld(X, z, model_params);
 
@@ -57,7 +57,7 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
             0., 5., 2., 8., 2., 3., 4., 1., 7., 13., 4., 1., 2., 4., 5., 3., 5.,
             1., 4., 1., 2., 4., 2., 0., 0., 1., 0., 0., 1., 0., 1., 2., 0., 1.;
 
-        AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
+        Params<double> model_params(40, 1, std::vector<double>(x, 1.0),
                                       std::vector<double>(z, 1.0));
 
         // todo: how to test if the results are correct?
@@ -82,7 +82,7 @@ TEST_CASE("Parameter checks on bld_fact", "[bld_fact]") {
     shape<3> tensor_shape{x, y, z};
     tensord<3> S(x, y, z);
     S.setRandom();
-    AllocModelParams model_params(tensor_shape);
+    Params<double> model_params(tensor_shape);
 
     REQUIRE_NOTHROW(bld::bld_fact(S, model_params));
 
@@ -100,7 +100,7 @@ TEST_CASE("Parameter checks on bld_fact", "[bld_fact]") {
 TEST_CASE("Algorithm checks on bld_fact", "[bld_fact]") {
     size_t x = 8, y = 10, z = 3;
     shape<3> tensor_shape{x, y, z};
-    AllocModelParams model_params(tensor_shape);
+    Params<double> model_params(tensor_shape);
     model_params.a = 40;
     model_params.b = 1;
     tensord<3> S(x, y, z);
@@ -225,7 +225,7 @@ TEST_CASE("Parameter checks on bld_mult", "[bld_mult]") {
     size_t x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
     matrixd X = matrixd::Constant(x, y, 5);
-    alloc_model::AllocModelParams model_params(tensor_shape);
+    alloc_model::Params<double> model_params(tensor_shape);
 
     // max_iter = 5 since we don't want to wait
     REQUIRE_NOTHROW(bld::bld_mult(X, z, model_params, 5));
@@ -249,7 +249,7 @@ TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
     shape<3> tensor_shape{x, y, z};
     SECTION("Zero matrix result is Zero") {
         matrixd X = matrixd::Zero(x, y);
-        AllocModelParams model_params(tensor_shape);
+        Params<double> model_params(tensor_shape);
 
         tensord<3> S = bld::bld_mult(X, z, model_params);
 
@@ -268,7 +268,7 @@ TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
             1., 0., 1., 3., 4., 1., 0., 4., 0., 2., 0., 1., 5., 4., 4., 2., 2.,
             3., 4., 0., 2., 0., 5., 4., 3., 3., 1., 2., 6., 5., 7., 4., 2.;
 
-        AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
+        Params<double> model_params(40, 1, std::vector<double>(x, 1.0),
                                       std::vector<double>(z, 1.0));
 
         // Test with exact digamma
@@ -304,7 +304,7 @@ TEST_CASE("Parameter checks on bld_add", "[bld_add]") {
     size_t x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
     matrixd X = matrixd::Constant(x, y, 5);
-    alloc_model::AllocModelParams model_params(tensor_shape);
+    alloc_model::Params<double> model_params(tensor_shape);
 
     // max_iter = 5 since we don't want to wait
     REQUIRE_NOTHROW(bld::bld_add(X, z, model_params, 5));
@@ -328,7 +328,7 @@ TEST_CASE("Algorithm checks on bld_add", "[bld_add]") {
     shape<3> tensor_shape{x, y, z};
     SECTION("Zero matrix result is Zero") {
         matrixd X = matrixd::Zero(x, y);
-        AllocModelParams model_params(tensor_shape);
+        Params<double> model_params(tensor_shape);
 
         tensord<3> S = bld::bld_add(X, z, model_params);
 
@@ -347,7 +347,7 @@ TEST_CASE("Algorithm checks on bld_add", "[bld_add]") {
             2., 2., 1., 2., 2., 1., 0., 1., 2., 7., 1., 6., 10., 15., 6., 3.,
             2., 9., 4., 12., 4., 3., 2., 0., 4., 2., 2., 1., 3., 2., 2.;
 
-        AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
+        Params<double> model_params(40, 1, std::vector<double>(x, 1.0),
                                       std::vector<double>(z, 1.0));
 
         // todo: how to test if the results are correct?
@@ -369,7 +369,7 @@ TEST_CASE("Parameter checks on collapsed gibbs", "[collapsed_gibbs]") {
     size_t x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
     matrixd X = matrixd::Constant(x, y, 5);
-    alloc_model::AllocModelParams model_params(tensor_shape);
+    alloc_model::Params<double> model_params(tensor_shape);
 
     // max_iter = 5 since we don't want to wait
     REQUIRE_NOTHROW(bld::collapsed_gibbs(X, z, model_params, 5));
@@ -406,7 +406,7 @@ TEST_CASE("Algorithm checks on collapsed gibbs", "[collapsed_gibbs]") {
             18., 2., 10., 10., 5., 7., 8., 9., 9., 9., 24., 7., 4., 0., 1., 1.,
             5., 4., 2., 2., 9., 2., 4., 1., 3., 2., 7., 5., 4., 7., 10., 0.;
 
-        AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
+        Params<double> model_params(40, 1, std::vector<double>(x, 1.0),
                                       std::vector<double>(z, 1.0));
 
         auto gen = bld::collapsed_gibbs(X, z, model_params);
@@ -431,7 +431,7 @@ TEST_CASE("Parameter checks on collapsed icm", "[collapsed_icm]") {
     size_t x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
     matrixd X = matrixd::Constant(x, y, 5);
-    alloc_model::AllocModelParams model_params(tensor_shape);
+    alloc_model::Params<double> model_params(tensor_shape);
 
     // max_iter = 5 since we don't want to wait
     REQUIRE_NOTHROW(bld::collapsed_icm(X, z, model_params, 5));
@@ -468,7 +468,7 @@ TEST_CASE("Algorithm checks on collapsed icm", "[collapsed_icm]") {
             18., 2., 10., 10., 5., 7., 8., 9., 9., 9., 24., 7., 4., 0., 1., 1.,
             5., 4., 2., 2., 9., 2., 4., 1., 3., 2., 7., 5., 4., 7., 10., 0.;
 
-        AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
+        Params<double> model_params(40, 1, std::vector<double>(x, 1.0),
                                       std::vector<double>(z, 1.0));
 
         tensord<3> S = bld::collapsed_icm(X, z, model_params);
@@ -489,7 +489,7 @@ TEST_CASE("Parameter checks on bld approximate", "[bld_appr]") {
     size_t x = 10, y = 5, z = 2;
     shape<3> tensor_shape{x, y, z};
     matrixd X = matrixd::Constant(x, y, 5);
-    alloc_model::AllocModelParams model_params(tensor_shape);
+    alloc_model::Params<double> model_params(tensor_shape);
 
     // max_iter = 5 since we don't want to wait
     REQUIRE_NOTHROW(bld::bld_appr(X, z, model_params, 5));
@@ -513,7 +513,7 @@ TEST_CASE("Algorithm checks on bld approximate", "[bld_appr]") {
     shape<3> tensor_shape{x, y, z};
     SECTION("Zero matrix result is Zero") {
         matrixd X = matrixd::Zero(x, y);
-        AllocModelParams model_params(tensor_shape);
+        Params<double> model_params(tensor_shape);
 
         tensord<3> S;
         matrixd nu, mu;
@@ -534,7 +534,7 @@ TEST_CASE("Algorithm checks on bld approximate", "[bld_appr]") {
             0., 9., 2., 1., 2., 7., 5., 3., 8., 3., 9., 8., 4., 5., 11., 9., 4.,
             6., 5., 12., 2., 6., 3., 3., 3., 6., 5., 3., 6., 4.;
 
-        AllocModelParams model_params(40, 1, std::vector<double>(x, 1.0),
+        Params<double> model_params(40, 1, std::vector<double>(x, 1.0),
                                       std::vector<double>(z, 1.0));
 
         tensord<3> S;

@@ -18,29 +18,32 @@ namespace alloc_model {
  * \f]
  *
  * and \f$S_{ijk} \sim \mathcal{PO}(W_{ik}H_{kj}L_j)\f$.
+ *
+ * @tparam Scalar Type of the parameters. Common choices are double and float,
+ * but integer-like types can also be used.
  */
-struct AllocModelParams {
+template <typename Scalar> struct Params {
     /**
      * @brief Shape parameter of Gamma distribution.
      */
-    double a;
+    Scalar a;
     /**
      * @brief Rate parameter of Gamma distribution.
      */
-    double b;
+    Scalar b;
     /**
      * @brief Parameter vector of Dirichlet prior for matrix \f$W_{x \times
      * y}\f$ of size \f$x\f$.
      */
-    std::vector<double> alpha;
+    std::vector<Scalar> alpha;
     /**
      * @brief Parameter vector of Dirichlet prior for matrix \f$H_{z \times
      * y}\f$ of size \f$z\f$.
      */
-    std::vector<double> beta;
+    std::vector<Scalar> beta;
 
     /**
-     * @brief Construct AllocModelParams manually with the given distribution
+     * @brief Construct Params manually with the given distribution
      * parameters.
      *
      * @param a Shape parameter of Gamma distribution.
@@ -50,11 +53,12 @@ struct AllocModelParams {
      * @param beta Parameter vector of Dirichlet prior for matrix \f$H_{z \times
      * y}\f$ of size \f$z\f$.
      */
-    AllocModelParams(double a, double b, const std::vector<double>& alpha,
-                     const std::vector<double>& beta);
+    Params(Scalar a, Scalar b, const std::vector<Scalar>& alpha,
+           const std::vector<Scalar>& beta)
+        : a(a), b(b), alpha(alpha), beta(beta) {}
 
     /**
-     * @brief Construct AllocModelParams with the default distribution
+     * @brief Construct Params with the default distribution
      * parameters according to the given tensor shape.
      *
      * Default distribution parameters are
@@ -72,9 +76,12 @@ struct AllocModelParams {
      *
      * @param tensor_shape Shape of tensor \f$S_{x \times y \times z}\f$.
      */
-    explicit AllocModelParams(const shape<3>& tensor_shape);
+    explicit Params(const shape<3>& tensor_shape)
+        : a(static_cast<Scalar>(1)), b(static_cast<Scalar>(10)),
+          alpha(tensor_shape[0], static_cast<Scalar>(1)),
+          beta(tensor_shape[2], static_cast<Scalar>(1)) {}
 
-    AllocModelParams() = default;
+    Params() = default;
 };
 
 } // namespace alloc_model

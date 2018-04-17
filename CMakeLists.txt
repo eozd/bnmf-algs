@@ -44,7 +44,6 @@ set(LIB_SRC_FILES
     src/nmf/nmf.cpp
     src/util/wrappers.cpp
     src/bld/bld_algs.cpp
-    src/alloc_model/alloc_model_params.cpp
     src/util/util.cpp
     src/util/sampling.cpp)
 

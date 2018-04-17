@@ -26,9 +26,10 @@ namespace alloc_model {
  * \f$L_j \sim \mathcal{G}(a, b) \qquad W_{:k} \sim \mathcal{D}(\alpha)
  * \qquad H_{:j} \sim \mathcal{D}(\beta)\f$.
  *
+ * @tparam Value type of the matrix/vector objects.
  * @param tensor_shape Shape of the sample tensor \f$x \times y \times z\f$.
  * @param model_params Allocation Model parameters. See
- * bnmf_algs::alloc_model::AllocModelParams.
+ * bnmf_algs::alloc_model::Params<double>.
  *
  * @return std::tuple of \f$<W_{x \times z}, H_{z \times y}, L_y>\f$.
  *
@@ -38,7 +39,7 @@ namespace alloc_model {
 template <typename T>
 std::tuple<matrix_t<T>, matrix_t<T>, vector_t<T>>
 bnmf_priors(const shape<3>& tensor_shape,
-            const AllocModelParams& model_params) {
+            const Params<double>& model_params) {
     size_t x = tensor_shape[0], y = tensor_shape[1], z = tensor_shape[2];
 
     BNMF_ASSERT(model_params.alpha.size() == x,
@@ -90,6 +91,7 @@ bnmf_priors(const shape<3>& tensor_shape,
  *
  * \f$S_{ijk} \sim \mathcal{PO}(W_{ik}H_{kj}L_{j})\f$.
  *
+ * @tparam T Value type of the matrix/vector/tensor objects.
  * @param prior_W Prior matrix for \f$W\f$ of shape \f$x \times z\f$.
  * @param prior_H Prior matrix for \f$H\f$ of shape \f$z \times y\f$.
  * @param prior_L Prior vector for \f$L\f$ of size \f$y\f$.
@@ -97,7 +99,7 @@ bnmf_priors(const shape<3>& tensor_shape,
  * @return A sample tensor of size \f$x \times y \times z\f$ from
  * generative Bayesian NMF model.
  *
- * @throws std::invalid_argument if number of columns of prior_W is not equal to
+ * @throws assertion error if number of columns of prior_W is not equal to
  * number of rows of prior_H, if number of columns of prior_H is not equal to
  * number of columns of prior_L
  */
@@ -128,10 +130,16 @@ tensor_t<T, 3> sample_S(const matrix_t<T>& prior_W, const matrix_t<T>& prior_H,
     return sample;
 }
 
+/**
+ * @brief Namespace containing auxiliary functions used in internal
+ * computations.
+ */
 namespace details {
+
 /**
  * @brief Compute the first term of the sum when calculating log marginal of S.
  *
+ * @tparam T Value type of the tensor S.
  * @param S Tensor S.
  * @param alpha Parameter vector of Dirichlet prior for matrix \f$W\f$ of size
  * \f$x\f$.
@@ -187,6 +195,7 @@ double compute_first_term(const tensor_t<T, 3>& S,
 /**
  * @brief Compute the second term of the sum when calculating log marginal of S.
  *
+ * @tparam T Value type of tensor S.
  * @param S Tensor S.
  * @param beta Parameter vector of Dirichlet prior for matrix \f$H\f$ of size
  * \f$z\f$.
@@ -240,6 +249,7 @@ double compute_second_term(const tensor_t<T, 3>& S,
 /**
  * @brief Compute the third term of the sum when calculating log marginal of S.
  *
+ * @tparam T Valuet type of tensor S.
  * @param S Tensor S.
  * @param a Shape parameter of Gamma distribution.
  * @param b Rate parameter of Gamma distribution.
@@ -275,6 +285,7 @@ double compute_third_term(const tensor_t<T, 3>& S, double a, double b) {
 /**
  * @brief Compute the fourth term of the sum when calculating log marginal of S.
  *
+ * @tparam T Value type of tensor S.
  * @param S Tensor S.
  *
  * @return Value of the fourth term
@@ -305,18 +316,19 @@ template <typename T> double compute_fourth_term(const tensor_t<T, 3>& S) {
  *
  * \f$\log{p(S)} = \log{p(W, H, L, S)} - \log{p(W, H, L | S)}\f$.
  *
+ * @tparam Value type of tensor S.
  * @param S Tensor \f$S\f$ of size \f$x \times y \times z \f$.
  * @param model_params Allocation model parameters. See
- * bnmf_algs::alloc_model::AllocModelParams.
+ * bnmf_algs::alloc_model::Params<double>.
  *
  * @return log marginal \f$\log{p(S)}\f$.
  *
- * @throws std::invalid_argument if number of alpha parameters is not equal to
+ * @throws assertion error if number of alpha parameters is not equal to
  * S.dimension(0), if number of beta parameters is not equal to S.dimension(2).
  */
 template <typename T>
 double log_marginal_S(const tensor_t<T, 3>& S,
-                      const AllocModelParams& model_params) {
+                      const Params<double>& model_params) {
     BNMF_ASSERT(model_params.alpha.size() ==
                     static_cast<size_t>(S.dimension(0)),
                 "Number of alpha parameters must be equal to S.dimension(0)");

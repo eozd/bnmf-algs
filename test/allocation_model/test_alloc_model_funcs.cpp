@@ -13,7 +13,7 @@ using namespace bnmf_algs::alloc_model;
 TEST_CASE("Parameter checks for bnmf_priors", "[bnmf_priors]") {
     size_t x = 5, y = 3, z = 2;
     shape<3> tensor_shape{x, y, z};
-    AllocModelParams model_params(tensor_shape);
+    Params<double> model_params(tensor_shape);
     matrixd W, H;
     vectord L;
 
@@ -109,7 +109,7 @@ TEST_CASE("Algorithm checks for bnmf_priors using distribution parameters",
     for (size_t i = 0; i < z; ++i) {
         beta[i] = dis(gen);
     }
-    AllocModelParams model_params(a, b, alpha, beta);
+    Params<double> model_params(a, b, alpha, beta);
 
     std::tie(W, H, L) = bnmf_priors<double>(tensor_shape, model_params);
 
@@ -193,7 +193,7 @@ TEST_CASE("Parameter checks on log marginal of S", "[log_marginal_S]") {
     shape<3> tensor_shape{x, y, z};
     tensord<3> S(x, y, z);
     S.setConstant(1);
-    AllocModelParams model_params(tensor_shape);
+    Params<double> model_params(tensor_shape);
 
     REQUIRE_NOTHROW(log_marginal_S(S, model_params));
 
@@ -222,7 +222,7 @@ TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
     for (size_t i = 0; i < z; ++i) {
         beta[i] = 1;
     }
-    AllocModelParams model_params(a, b, alpha, beta);
+    Params<double> model_params(a, b, alpha, beta);
 
     tensord<3> S =
         call(sample_S<double>, bnmf_priors<double>(tensor_shape, model_params));

@@ -6,13 +6,13 @@ using namespace bnmf_algs;
 using namespace bnmf_algs::util;
 using namespace bnmf_algs::alloc_model;
 
-TEST_CASE("Test AllocModelParams construction", "[AllocModelParams]") {
+TEST_CASE("Test Params<double> construction", "[Params<double>]") {
     shape<3> tensor_shape{5, 2, 8};
     SECTION("Manual constructor") {
         double a = 5, b = 7;
         std::vector<double> alpha(tensor_shape[0], 5242);
         std::vector<double> beta(tensor_shape[2], 24);
-        AllocModelParams model_params(a, b, alpha, beta);
+        Params<double> model_params(a, b, alpha, beta);
 
         REQUIRE(model_params.a == a);
         REQUIRE(model_params.b == b);
@@ -21,7 +21,7 @@ TEST_CASE("Test AllocModelParams construction", "[AllocModelParams]") {
     }
 
     SECTION("Default constructor") {
-        AllocModelParams model_params(tensor_shape);
+        Params<double> model_params(tensor_shape);
 
         double a_default = 1.0;
         double b_default = 10.0;
