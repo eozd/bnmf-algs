@@ -43,7 +43,7 @@ endif (BUILD_CUDA)
 set(LIB_SRC_FILES
     src/util/wrappers.cpp
     src/bld/bld_algs.cpp
-    src/util/util.cpp)
+    )
 
 set(TEST_SRC_FILES
     test/nmf/test_nmf.cpp

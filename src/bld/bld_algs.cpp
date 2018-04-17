@@ -219,7 +219,7 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
     Eigen::ThreadPoolDevice thread_dev(&tp, num_threads);
 #endif
 
-    const auto psi_fn = use_psi_appr ? util::psi_appr : gsl_sf_psi;
+    const auto psi_fn = use_psi_appr ? util::psi_appr<double> : gsl_sf_psi;
     for (size_t eph = 0; eph < max_iter; ++eph) {
         // update S_pjk, S_ipk, S_ijp
 #ifdef USE_CUDA

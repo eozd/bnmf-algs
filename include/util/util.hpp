@@ -81,6 +81,7 @@ template <typename Function, typename Tuple> auto call(Function f, Tuple t) {
  * tensor \f$S\f$ and \f$S_{+++} = \sum_{ijk}S_{ijk}\f$ is the sum of elements
  * of \f$S\f$.
  *
+ * @tparam T Type of the entries of the tensor parameter.
  * @param S 3D tensor \f$S\f$.
  *
  * @return Sparseness of \f$S\f$.
@@ -88,7 +89,32 @@ template <typename Function, typename Tuple> auto call(Function f, Tuple t) {
  * @remark If all elements of \f$S\f$ are 0, then the function returns
  * std::numeric_limits<double>::max().
  */
-double sparseness(const tensord<3>& S);
+template <typename T> double sparseness(const tensor_t<T, 3>& S) {
+    // TODO: implement a method to unpack std::array
+    auto x = static_cast<size_t>(S.dimension(0));
+    auto y = static_cast<size_t>(S.dimension(1));
+    auto z = static_cast<size_t>(S.dimension(2));
+
+    T sum = 0, squared_sum = 0;
+    #pragma omp parallel for schedule(static) reduction(+:sum,squared_sum)
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t j = 0; j < y; ++j) {
+            for (size_t k = 0; k < z; ++k) {
+                sum += S(i, j, k);
+                squared_sum += S(i, j, k) * S(i, j, k);
+            }
+        }
+    }
+
+    if (squared_sum < std::numeric_limits<double>::epsilon()) {
+        return std::numeric_limits<double>::max();
+    }
+
+    double frob_norm = std::sqrt(squared_sum);
+    double axis_mult = std::sqrt(x * y * z);
+
+    return (axis_mult - sum / frob_norm) / (axis_mult - 1);
+}
 
 /**
  * @brief Type of the norm to be used by bnmf_algs::util::normalize and
@@ -179,9 +205,8 @@ tensord<N> normalized(const tensord<N>& input, size_t axis,
  *
  * \f[
  *     \psi(x) \approx \ln(x) - \frac{1}{2x} - \frac{1}{12x^2} +
- * \frac{1}{120x^4} - \frac{1}{252x^6} + \frac{1}{240x^8} - \frac{5}{660x^{10}} +
- * \frac{691}{32760x^{12}} - \frac{1}{12x^{14}}
- * \f]
+ * \frac{1}{120x^4} - \frac{1}{252x^6} + \frac{1}{240x^8} - \frac{5}{660x^{10}}
+ * + \frac{691}{32760x^{12}} - \frac{1}{12x^{14}} \f]
  *
  * This approximation is more accurate for larger values of \f$x\f$. When
  * computing \f$\psi(x)\f$ for \f$x < 6\f$, the below recurrence relation is
@@ -192,12 +217,87 @@ tensord<N> normalized(const tensord<N>& input, size_t axis,
  *     \psi(x + 1) = \frac{1}{x} + \psi(x)
  * \f]
  *
+ * @tparam Real A real scalar value such as double and float.
  * @param x Parameter to \f$\psi(x)\f$.
  * @return \f$\psi(x)\f$.
  *
  * @see Appendix C.1 of @cite beal2003variational for a discussion of this
  * method.
  */
-double psi_appr(double x) noexcept;
+template <typename Real> Real psi_appr(Real x) noexcept {
+    Real extra = 0;
+
+    // write each case separately to minimize number of divisions as much as
+    // possible
+    if (x < 1) {
+        const Real a = x + 1;
+        const Real b = x + 2;
+        const Real c = x + 3;
+        const Real d = x + 4;
+        const Real e = x + 5;
+        const Real ab = a * b;
+        const Real cd = c * d;
+        const Real ex = e * x;
+
+        extra = ((a + b) * cd * ex + ab * d * ex + ab * c * ex + ab * cd * x +
+                 ab * cd * e) /
+                (ab * cd * ex);
+        x += 6;
+    } else if (x < 2) {
+        const Real a = x + 1;
+        const Real b = x + 2;
+        const Real c = x + 3;
+        const Real d = x + 4;
+        const Real ab = a * b;
+        const Real cd = c * d;
+        const Real dx = d * x;
+
+        extra =
+            ((a + b) * c * dx + ab * dx + ab * c * x + ab * cd) / (ab * cd * x);
+        x += 5;
+    } else if (x < 3) {
+        const Real a = x + 1;
+        const Real b = x + 2;
+        const Real c = x + 3;
+        const Real ab = a * b;
+        const Real cx = c * x;
+
+        extra = ((a + b) * cx + (c + x) * ab) / (ab * cx);
+        x += 4;
+    } else if (x < 4) {
+        const Real a = x + 1;
+        const Real b = x + 2;
+        const Real ab = a * b;
+
+        extra = ((a + b) * x + ab) / (ab * x);
+        x += 3;
+    } else if (x < 5) {
+        const Real a = x + 1;
+
+        extra = (a + x) / (a * x);
+        x += 2;
+    } else if (x < 6) {
+        extra = 1 / x;
+        x += 1;
+    }
+
+    Real x2 = x * x;
+    Real x4 = x2 * x2;
+    Real x6 = x4 * x2;
+    Real x8 = x6 * x2;
+    Real x10 = x8 * x2;
+    Real x12 = x10 * x2;
+    Real x13 = x12 * x;
+    Real x14 = x13 * x;
+
+    // write the result of the formula simplified using symbolic calculation
+    // to minimize the number of divisions
+    Real res =
+        std::log(x) + (-360360 * x13 - 60060 * x12 + 6006 * x10 - 2860 * x8 +
+                       3003 * x6 - 5460 * x4 + 15202 * x2 - 60060) /
+                          (720720 * x14);
+
+    return res - extra;
+}
 } // namespace util
 } // namespace bnmf_algs
