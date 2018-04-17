@@ -1,20 +1,22 @@
 #include "../catch2.hpp"
-#include <iostream>
 #include "cuda/tensor_ops.hpp"
+#include "cuda/util.hpp"
 #include "defs.hpp"
 #include "util/util.hpp"
+#include <iostream>
 
 using namespace bnmf_algs;
 
 TEST_CASE("Test update_grad_plus", "[tensor_ops]") {
     SECTION("Same results on GPU and CPU") {
-        cuda::init();
+        cuda::init(0);
 
         size_t x = 131, y = 456, z = 89;
 
         matrixd data =
             matrixd::Random(x, y * z) + matrixd::Constant(x, y * z, 1);
-        Eigen::TensorMap<tensord<3>> S(data.data(), x, y, z);
+        tensord<3> S(x, y, z);
+        std::copy(data.data(), data.data() + x * y * z, S.data());
 
         matrixd beta_eph = matrixd::Random(y, z) + matrixd::Constant(y, z, 1);
 
@@ -43,7 +45,7 @@ TEST_CASE("Test update_grad_plus", "[tensor_ops]") {
 
 TEST_CASE("Test apply_psi", "[tensor_ops]") {
     SECTION("Same results on GPU and CPU") {
-        cuda::init();
+        cuda::init(0);
 
         size_t x = 131, y = 456, z = 89;
 
@@ -75,7 +77,7 @@ TEST_CASE("Test apply_psi", "[tensor_ops]") {
 
 TEST_CASE("Test tensor_sums", "[tensor_ops]") {
     SECTION("Same results on GPU and CPU") {
-        cuda::init();
+        cuda::init(0);
 
         size_t x = 131, y = 456, z = 89;
 

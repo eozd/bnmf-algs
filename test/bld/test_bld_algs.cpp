@@ -58,7 +58,7 @@ TEST_CASE("Algorithm checks on seq_greedy_bld", "[seq_greedy_bld]") {
             1., 4., 1., 2., 4., 2., 0., 0., 1., 0., 0., 1., 0., 1., 2., 0., 1.;
 
         Params<double> model_params(40, 1, std::vector<double>(x, 1.0),
-                                      std::vector<double>(z, 1.0));
+                                    std::vector<double>(z, 1.0));
 
         // todo: how to test if the results are correct?
         tensord<3> S = bld::seq_greedy_bld(X, z, model_params);
@@ -269,7 +269,7 @@ TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
             3., 4., 0., 2., 0., 5., 4., 3., 3., 1., 2., 6., 5., 7., 4., 2.;
 
         Params<double> model_params(40, 1, std::vector<double>(x, 1.0),
-                                      std::vector<double>(z, 1.0));
+                                    std::vector<double>(z, 1.0));
 
         // Test with exact digamma
         // =======================
@@ -293,8 +293,8 @@ TEST_CASE("Algorithm checks on bld_mult", "[bld_mult]") {
 
         // Test if S_{::+} = X
         sum_S = S.sum(shape<1>({2}));
-        sum_S_mat = Eigen::Map<matrixd>(
-                sum_S.data(), sum_S.dimension(0), sum_S.dimension(1));
+        sum_S_mat = Eigen::Map<matrixd>(sum_S.data(), sum_S.dimension(0),
+                                        sum_S.dimension(1));
         REQUIRE(X.isApprox(sum_S_mat, 1e-4));
         // todo: check if S is an integer tensor
     }
@@ -348,7 +348,7 @@ TEST_CASE("Algorithm checks on bld_add", "[bld_add]") {
             2., 9., 4., 12., 4., 3., 2., 0., 4., 2., 2., 1., 3., 2., 2.;
 
         Params<double> model_params(40, 1, std::vector<double>(x, 1.0),
-                                      std::vector<double>(z, 1.0));
+                                    std::vector<double>(z, 1.0));
 
         // todo: how to test if the results are correct?
         tensord<3> S = bld::bld_add(X, z, model_params);
@@ -407,7 +407,7 @@ TEST_CASE("Algorithm checks on collapsed gibbs", "[collapsed_gibbs]") {
             5., 4., 2., 2., 9., 2., 4., 1., 3., 2., 7., 5., 4., 7., 10., 0.;
 
         Params<double> model_params(40, 1, std::vector<double>(x, 1.0),
-                                      std::vector<double>(z, 1.0));
+                                    std::vector<double>(z, 1.0));
 
         auto gen = bld::collapsed_gibbs(X, z, model_params);
         for (const auto& sample : gen)
@@ -469,7 +469,7 @@ TEST_CASE("Algorithm checks on collapsed icm", "[collapsed_icm]") {
             5., 4., 2., 2., 9., 2., 4., 1., 3., 2., 7., 5., 4., 7., 10., 0.;
 
         Params<double> model_params(40, 1, std::vector<double>(x, 1.0),
-                                      std::vector<double>(z, 1.0));
+                                    std::vector<double>(z, 1.0));
 
         tensord<3> S = bld::collapsed_icm(X, z, model_params);
 
@@ -535,7 +535,7 @@ TEST_CASE("Algorithm checks on bld approximate", "[bld_appr]") {
             6., 5., 12., 2., 6., 3., 3., 3., 6., 5., 3., 6., 4.;
 
         Params<double> model_params(40, 1, std::vector<double>(x, 1.0),
-                                      std::vector<double>(z, 1.0));
+                                    std::vector<double>(z, 1.0));
 
         tensord<3> S;
         matrixd nu, mu;

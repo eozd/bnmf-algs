@@ -1,5 +1,6 @@
 #include "defs.hpp"
 #include <cuda.h>
+#include <device_launch_parameters.h>
 
 namespace bnmf_algs {
 namespace cuda {
@@ -13,7 +14,7 @@ namespace kernel {
  * @param x Value to apply psi_appr function.
  * @return psi_appr of x.
  */
-__device__ double psi_appr(double x);
+template <typename Real> __device__ Real psi_appr(Real x);
 
 /**
  * @brief Device kernel to apply psi_appr function to all the values in the
@@ -30,7 +31,8 @@ __device__ double psi_appr(double x);
  * in a GPU device.
  * @param num_elems Number of elements in the GPU device to apply psi_appr func.
  */
-__global__ void apply_psi(double* begin, size_t num_elems);
+template <typename Real>
+__global__ void apply_psi(Real* begin, size_t num_elems);
 
 /**
  * @brief Perform grad_plus update employed in bld_mult algorithm using
@@ -57,17 +59,11 @@ __global__ void apply_psi(double* begin, size_t num_elems);
  * @param depth Depth (2nd dimension) of S and grad_plus tensors in terms of
  * elements.
  */
-__global__ void update_grad_plus(cudaPitchedPtr S, const double* beta_eph,
+template <typename Real>
+__global__ void update_grad_plus(cudaPitchedPtr S, const Real* beta_eph,
                                  size_t pitch, cudaPitchedPtr grad_plus,
                                  size_t width, size_t height, size_t depth);
 
-__global__ void update_nom_denom(cudaPitchedPtr S, cudaPitchedPtr grad_plus,
-                                 const double* X, size_t X_pitch,
-                                 const double* grad_minus,
-                                 size_t grad_minus_pitch, double* nom,
-                                 size_t nom_pitch, double* denom,
-                                 size_t denom_pitch, size_t width,
-                                 size_t height, size_t depth);
 } // namespace kernel
 } // namespace cuda
 } // namespace bnmf_algs

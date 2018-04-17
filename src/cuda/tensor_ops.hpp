@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cuda/memory.hpp"
+#include "cuda/tensor_ops_kernels.hpp"
 #include "defs.hpp"
 #include <array>
 
@@ -10,14 +10,6 @@ namespace bnmf_algs {
  * using CUDA routines.
  */
 namespace cuda {
-
-/**
- * @brief Initialize CUDA runtime.
- *
- * This function initializes CUDA runtime so that future CUDA library calls
- * don't incur the cost of initializing the library.
- */
-void init();
 
 /**
  * @brief Sum the given 3D input tensor along each of its axes and return all
@@ -42,12 +34,13 @@ void init();
  * Therefore, the total consumed space on GPU is \f$xyz + \max\{xy, xz,
  * yz\}\f$ number of elements.
  *
+ * @tparam T Type of the entries of the input tensor.
  * @param tensor Input tensor to sum along each of its axes.
  * @return An array of sum tensors \f$(M_{y \times z}, M_{x \times z}, M_{x
  * \times y})\f$.
  */
-std::array<bnmf_algs::tensord<2>, 3>
-tensor_sums(const bnmf_algs::tensord<3>& tensor);
+template <typename T>
+std::array<tensor_t<T, 2>, 3> tensor_sums(const tensor_t<T, 3>& tensor);
 
 /**
  * @brief Apply cuda::kernel::psi_appr function to every element in the range
@@ -73,7 +66,7 @@ tensor_sums(const bnmf_algs::tensord<3>& tensor);
  * @return Pointer to the beginning of the altered range. This pointer is
  * equal to the given pointer parameter begin.
  */
-double* apply_psi(double* begin, size_t num_elems);
+template <typename Real> Real* apply_psi(Real* begin, size_t num_elems);
 
 /**
  * @brief Namespace containing update functions that are employed in
@@ -114,8 +107,9 @@ namespace bld_mult {
  * @param grad_plus grad_plus tensor that will store the results of grad_plus
  * update.
  */
-void update_grad_plus(const tensord<3>& S, const matrixd& beta_eph,
-                      tensord<3>& grad_plus);
+template <typename T>
+void update_grad_plus(const tensor_t<T, 3>& S, const matrix_t<T>& beta_eph,
+                      tensor_t<T, 3>& grad_plus);
 } // namespace bld_mult
 } // namespace cuda
 } // namespace bnmf_algs
