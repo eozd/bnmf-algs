@@ -41,7 +41,6 @@ if (BUILD_CUDA)
 endif (BUILD_CUDA)
 
 set(LIB_SRC_FILES
-    src/nmf/nmf.cpp
     src/util/wrappers.cpp
     src/bld/bld_algs.cpp
     src/util/util.cpp

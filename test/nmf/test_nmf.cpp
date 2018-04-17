@@ -206,15 +206,15 @@ TEST_CASE("Test beta divergence for sequences", "[beta-divergence]") {
         y = {5, 4, 3, 2, 1};
 
         beta = 0;
-        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+        REQUIRE(nmf::beta_divergence_seq(x.begin(), x.end(), y.begin(), beta) ==
                 Approx(3.6999999999999993));
 
         beta = 1;
-        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+        REQUIRE(nmf::beta_divergence_seq(x.begin(), x.end(), y.begin(), beta) ==
                 Approx(7.824046010856292));
 
         beta = 2;
-        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+        REQUIRE(nmf::beta_divergence_seq(x.begin(), x.end(), y.begin(), beta) ==
                 Approx(20));
     }
 
@@ -223,15 +223,15 @@ TEST_CASE("Test beta divergence for sequences", "[beta-divergence]") {
         y = {5, 4, 3, 2, 1};
 
         beta = 0;
-        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+        REQUIRE(nmf::beta_divergence_seq(x.begin(), x.end(), y.begin(), beta) ==
                 Approx(2.7));
 
         beta = 1;
-        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+        REQUIRE(nmf::beta_divergence_seq(x.begin(), x.end(), y.begin(), beta) ==
                 Approx(10.824046010856292));
 
         beta = 2;
-        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+        REQUIRE(nmf::beta_divergence_seq(x.begin(), x.end(), y.begin(), beta) ==
                 Approx(24.5));
     }
 
@@ -243,16 +243,16 @@ TEST_CASE("Test beta divergence for sequences", "[beta-divergence]") {
 
         beta = 0;
         REQUIRE(Approx(33554417.06446767) ==
-                nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta,
+                nmf::beta_divergence_seq(x.begin(), x.end(), y.begin(), beta,
                                      eps_32bit));
 
         beta = 1;
-        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta,
+        REQUIRE(nmf::beta_divergence_seq(x.begin(), x.end(), y.begin(), beta,
                                      eps_32bit) ==
                 Approx(72.36617534461104));
 
         beta = 2;
-        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+        REQUIRE(nmf::beta_divergence_seq(x.begin(), x.end(), y.begin(), beta) ==
                 Approx(26));
     }
 
@@ -261,15 +261,15 @@ TEST_CASE("Test beta divergence for sequences", "[beta-divergence]") {
         y = {5, 4, 0, 2, 1};
 
         beta = 0;
-        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+        REQUIRE(nmf::beta_divergence_seq(x.begin(), x.end(), y.begin(), beta) ==
                 Approx(2.7));
 
         beta = 1;
-        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+        REQUIRE(nmf::beta_divergence_seq(x.begin(), x.end(), y.begin(), beta) ==
                 Approx(7.824046010856292));
 
         beta = 2;
-        REQUIRE(nmf::beta_divergence(x.begin(), x.end(), y.begin(), beta) ==
+        REQUIRE(nmf::beta_divergence_seq(x.begin(), x.end(), y.begin(), beta) ==
                 Approx(20));
     }
 }
