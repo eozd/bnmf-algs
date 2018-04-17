@@ -126,7 +126,7 @@ TEST_CASE("Algorithm checks on sample_ones replace", "[sample_ones_replace]") {
 }
 
 TEST_CASE("Test util::choice", "[choice]") {
-    auto rnd_gen = util::make_gsl_rng(gsl_rng_taus);
+    util::gsl_rng_wrapper rnd_gen(gsl_rng_alloc(gsl_rng_taus), gsl_rng_free);
 
     SECTION("Empty range") {
         std::vector<double> cum_prob;

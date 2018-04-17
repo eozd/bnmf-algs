@@ -5,8 +5,7 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_sf_gamma.h>
 #include <tuple>
-#include <util/generator.hpp>
-#include <util/wrappers.hpp>
+#include "util/generator.hpp"
 #include <vector>
 
 namespace bnmf_algs {
@@ -38,8 +37,7 @@ namespace alloc_model {
  */
 template <typename T>
 std::tuple<matrix_t<T>, matrix_t<T>, vector_t<T>>
-bnmf_priors(const shape<3>& tensor_shape,
-            const Params<double>& model_params) {
+bnmf_priors(const shape<3>& tensor_shape, const Params<double>& model_params) {
     size_t x = tensor_shape[0], y = tensor_shape[1], z = tensor_shape[2];
 
     BNMF_ASSERT(model_params.alpha.size() == x,
@@ -47,7 +45,7 @@ bnmf_priors(const shape<3>& tensor_shape,
     BNMF_ASSERT(model_params.beta.size() == z,
                 "Number of dirichlet parameters beta must be equal to z");
 
-    auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
+    util::gsl_rng_wrapper rand_gen(gsl_rng_alloc(gsl_rng_taus), gsl_rng_free);
 
     // generate prior_L
     vector_t<T> prior_L(y);
@@ -116,7 +114,7 @@ tensor_t<T, 3> sample_S(const matrix_t<T>& prior_W, const matrix_t<T>& prior_H,
                 "Number of columns of H is different than size of L");
 
     // TODO: Is it OK to construct this rng object every time?
-    auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
+    util::gsl_rng_wrapper rand_gen(gsl_rng_alloc(gsl_rng_taus), gsl_rng_free);
     tensor_t<T, 3> sample(x, y, z);
     double mu;
     for (size_t i = 0; i < x; ++i) {

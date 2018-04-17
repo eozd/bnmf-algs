@@ -2,7 +2,6 @@
 
 #include "defs.hpp"
 #include "util/generator.hpp"
-#include "util/wrappers.hpp"
 
 namespace bnmf_algs {
 
@@ -196,7 +195,8 @@ template <typename Scalar> class SampleOnesReplaceComputer {
      */
     explicit SampleOnesReplaceComputer(const matrix_t<Scalar>& X)
         : cum_prob(), X_cols(X.cols()), X_sum(X.array().sum()),
-          rnd_gen(util::make_gsl_rng(gsl_rng_taus)) {
+          rnd_gen(util::gsl_rng_wrapper(gsl_rng_alloc(gsl_rng_taus),
+                                        gsl_rng_free)) {
 
         cum_prob = vector_t<Scalar>(X.rows() * X.cols());
         auto X_arr = X.array();

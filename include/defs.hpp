@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Eigen/Dense>
+#include <gsl/gsl_randist.h>
 #include <unsupported/Eigen/CXX11/Tensor>
 
 /**
@@ -63,4 +64,13 @@ template <size_t N> using tensord = tensor_t<double, N>;
  * @remark Number of dimensions must be known at compile-time.
  */
 template <size_t N> using shape = Eigen::array<size_t, N>;
+
+namespace util {
+
+/**
+ * @brief RAII wrapper around gsl_rng types.
+ */
+using gsl_rng_wrapper = std::unique_ptr<gsl_rng, decltype(&gsl_rng_free)>;
+
+} // namespace util
 } // namespace bnmf_algs

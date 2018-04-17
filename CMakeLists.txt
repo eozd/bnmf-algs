@@ -41,14 +41,11 @@ if (BUILD_CUDA)
 endif (BUILD_CUDA)
 
 set(LIB_SRC_FILES
-    src/util/wrappers.cpp
-    src/bld/bld_algs.cpp
-    )
+    src/bld/bld_algs.cpp)
 
 set(TEST_SRC_FILES
     test/nmf/test_nmf.cpp
     test/include_catch.cpp
-    test/util/test_wrappers.cpp
     test/allocation_model/test_alloc_model_funcs.cpp
     test/util/test_util.cpp
     test/bld/test_bld_algs.cpp

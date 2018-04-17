@@ -99,8 +99,7 @@ bld::seq_greedy_bld(const matrixd& X, size_t z,
 
 std::tuple<matrixd, matrixd, vectord>
 bld::bld_fact(const tensord<3>& S,
-              const alloc_model::Params<double>& model_params,
-              double eps) {
+              const alloc_model::Params<double>& model_params, double eps) {
     auto x = static_cast<size_t>(S.dimension(0));
     auto y = static_cast<size_t>(S.dimension(1));
     auto z = static_cast<size_t>(S.dimension(2));
@@ -179,7 +178,8 @@ tensord<3> bld::bld_mult(const matrixd& X, size_t z,
         long end = x;
 #endif
 
-        auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
+        util::gsl_rng_wrapper rand_gen(gsl_rng_alloc(gsl_rng_taus),
+                                       gsl_rng_free);
         vectord dirichlet_variates(z);
         for (long i = beg; i < end; ++i) {
             for (size_t j = 0; j < y; ++j) {
@@ -342,7 +342,8 @@ tensord<3> bld::bld_add(const matrixd& X, size_t z,
     tensord<3> S(x, y, z);
     // initialize tensor S
     {
-        auto rand_gen = util::make_gsl_rng(gsl_rng_taus);
+        util::gsl_rng_wrapper rand_gen(gsl_rng_alloc(gsl_rng_taus),
+                                       gsl_rng_free);
         std::vector<double> dirichlet_params(z, 1);
         std::vector<double> dirichlet_variates(z);
         for (int i = 0; i < x; ++i) {
@@ -417,9 +418,8 @@ tensord<3> bld::bld_add(const matrixd& X, size_t z,
 }
 
 details::CollapsedGibbsComputer::CollapsedGibbsComputer(
-    const matrixd& X, size_t z,
-    const alloc_model::Params<double>& model_params, size_t max_iter,
-    double eps)
+    const matrixd& X, size_t z, const alloc_model::Params<double>& model_params,
+    size_t max_iter, double eps)
     : model_params(model_params),
       one_sampler_repl(util::sample_ones_replace(X, max_iter)),
       one_sampler_no_repl(util::sample_ones_noreplace(X)),
@@ -427,7 +427,8 @@ details::CollapsedGibbsComputer::CollapsedGibbsComputer(
       U_pjk(matrixd::Zero(X.cols(), z)),
       sum_alpha(std::accumulate(model_params.alpha.begin(),
                                 model_params.alpha.end(), 0.0)),
-      eps(eps), rnd_gen(util::make_gsl_rng(gsl_rng_taus)) {}
+      eps(eps), rnd_gen(util::gsl_rng_wrapper(gsl_rng_alloc(gsl_rng_taus),
+                                              gsl_rng_free)) {}
 
 void details::CollapsedGibbsComputer::increment_sampling(size_t i, size_t j,
                                                          tensord<3>& S_prev) {
@@ -518,10 +519,9 @@ bld::collapsed_gibbs(const matrixd& X, size_t z,
     return gen;
 }
 
-tensord<3>
-bld::collapsed_icm(const matrixd& X, size_t z,
-                   const alloc_model::Params<double>& model_params,
-                   size_t max_iter, double eps) {
+tensord<3> bld::collapsed_icm(const matrixd& X, size_t z,
+                              const alloc_model::Params<double>& model_params,
+                              size_t max_iter, double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
         if (!error_msg.empty()) {
@@ -569,7 +569,7 @@ bld::collapsed_icm(const matrixd& X, size_t z,
 
     std::vector<unsigned int> multinomial_sample(
         static_cast<unsigned long>(U_ppk.cols()));
-    auto rnd_gen = util::make_gsl_rng(gsl_rng_taus);
+    util::gsl_rng_wrapper rnd_gen(gsl_rng_alloc(gsl_rng_taus), gsl_rng_free);
 
     for (const auto& pair : util::sample_ones_replace(X, max_iter)) {
         std::tie(i, j) = pair;
@@ -807,8 +807,8 @@ static void update_mu(const matrixd& orig_over_appr,
 
 std::tuple<tensord<3>, matrixd, matrixd>
 bld::bld_appr(const matrixd& X, size_t z,
-              const alloc_model::Params<double>& model_params,
-              size_t max_iter, double eps) {
+              const alloc_model::Params<double>& model_params, size_t max_iter,
+              double eps) {
     {
         auto error_msg = check_bld_params(X, z, model_params);
         if (!error_msg.empty()) {
@@ -828,7 +828,7 @@ bld::bld_appr(const matrixd& X, size_t z,
     matrixd mu(y, z);
     // initialize nu and mu using Dirichlet
     {
-        auto rnd_gen = util::make_gsl_rng(gsl_rng_taus);
+        util::gsl_rng_wrapper rnd_gen(gsl_rng_alloc(gsl_rng_taus), gsl_rng_free);
         std::vector<double> dirichlet_params(z, 1);
 
         // remark: following code depends on the fact that matrixd is row
