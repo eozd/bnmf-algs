@@ -29,39 +29,6 @@ TEST_CASE("Euclidean NMF constraint checks", "[nmf]") {
     }
 }
 
-/**
- * @todo Need to check if errors are monotonically decreasing. For this, we may
- * need to refactor all NMF related functions, add some more information related
- * functionality and create a class or something similar.
- */
-TEST_CASE("Euclidean NMF small matrix convergence check", "[nmf]") {
-    int m = 50, n = 10, r = 10;
-
-    matrixd X = matrixd::Random(m, n) + matrixd::Ones(m, n);
-    matrixd W, H;
-
-    auto before = high_resolution_clock::now();
-    std::tie(W, H) = nmf::nmf(X, r, 2, 500);
-    auto after = high_resolution_clock::now();
-
-    milliseconds elapsed = duration_cast<milliseconds>(after - before);
-    REQUIRE(elapsed.count() <= 1000);
-}
-
-TEST_CASE("KL NMF small matrix convergence check", "[nmf]") {
-    int m = 50, n = 10, r = 10;
-
-    matrixd X = matrixd::Random(m, n) + matrixd::Ones(m, n);
-    matrixd W, H;
-
-    auto before = high_resolution_clock::now();
-    std::tie(W, H) = nmf::nmf(X, r, 1, 500);
-    auto after = high_resolution_clock::now();
-
-    milliseconds elapsed = duration_cast<milliseconds>(after - before);
-    REQUIRE(elapsed.count() <= 1000);
-}
-
 TEST_CASE("KL NMF constraint checks", "[nmf]") {
     int m = 10, n = 5, r = 2;
 
@@ -106,20 +73,6 @@ TEST_CASE("Euclidean NMF degenerate cases", "[nmf]") {
         REQUIRE(W.isZero(0));
         REQUIRE(H.isZero(0));
     }
-}
-
-TEST_CASE("IS NMF small matrix convergence check", "[nmf]") {
-    int m = 50, n = 10, r = 10;
-
-    matrixd X = matrixd::Random(m, n) + matrixd::Ones(m, n);
-    matrixd W, H;
-
-    auto before = high_resolution_clock::now();
-    std::tie(W, H) = nmf::nmf(X, r, 0, 500);
-    auto after = high_resolution_clock::now();
-
-    milliseconds elapsed = duration_cast<milliseconds>(after - before);
-    REQUIRE(elapsed.count() <= 1000);
 }
 
 TEST_CASE("IS NMF constraint checks", "[nmf]") {
