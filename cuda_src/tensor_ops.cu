@@ -58,30 +58,15 @@ template <typename Real> void cuda::apply_psi(DeviceMemory1D<Real>& range) {
     BNMF_ASSERT(err == cudaSuccess, "Error running kernel in cuda::apply_psi");
 }
 
-template <typename T>
-void cuda::bld_mult::update_grad_plus(const tensor_t<T, 3>& S,
-                                      const matrix_t<T>& beta_eph,
-                                      tensor_t<T, 3>& grad_plus) {
+template <typename Real>
+void cuda::bld_mult::update_grad_plus(
+    const cuda::DeviceMemory3D<Real>& S,
+    const cuda::DeviceMemory2D<Real>& beta_eph,
+    cuda::DeviceMemory3D<Real>& grad_plus) {
     // tensor dimensions
-    const auto x = static_cast<size_t>(S.dimension(0));
-    const auto y = static_cast<size_t>(S.dimension(1));
-    const auto z = static_cast<size_t>(S.dimension(2));
-
-    // create host memory wrappers
-    HostMemory3D<const T> host_S(S.data(), x, y, z);
-    HostMemory3D<T> host_grad_plus(grad_plus.data(), x, y, z);
-    HostMemory2D<const T> host_beta_eph(beta_eph.data(), y, z);
-
-    // allocate device memory
-    DeviceMemory3D<T> device_S(x, y, z);
-    DeviceMemory2D<T> device_beta_eph(y, z);
-    DeviceMemory3D<T> device_grad_plus(x, y, z);
-
-    // copy S to GPU
-    copy3D(device_S, host_S, cudaMemcpyHostToDevice);
-
-    // copy beta_eph to GPU
-    copy2D(device_beta_eph, host_beta_eph, cudaMemcpyHostToDevice);
+    const auto x = S.dims()[0];
+    const auto y = S.dims()[1];
+    const auto z = S.dims()[2];
 
     // block dimensions (number of threads per block axis)
     constexpr size_t block_size_x = 16;
@@ -94,14 +79,11 @@ void cuda::bld_mult::update_grad_plus(const tensor_t<T, 3>& S,
 
     // run kernel
     kernel::update_grad_plus<<<grid_dims, block_dims>>>(
-        device_S.pitched_ptr(), device_beta_eph.data(), device_beta_eph.pitch(),
-        device_grad_plus.pitched_ptr(), y, x, z);
+        S.pitched_ptr(), beta_eph.data(), beta_eph.pitch(),
+        grad_plus.pitched_ptr(), y, x, z);
     auto err = cudaGetLastError();
     BNMF_ASSERT(err == cudaSuccess,
                 "Error running kernel in cuda::bld_mult::update_grad_plus");
-
-    // copy result onto grad_plus
-    copy3D(host_grad_plus, device_grad_plus, cudaMemcpyDeviceToHost);
 }
 
 /************************ TEMPLATE INSTANTIATIONS *****************************/
@@ -124,8 +106,12 @@ cuda::tensor_sums<size_t>(const cuda::DeviceMemory1D<size_t>&, const shape<3>&,
 template void cuda::apply_psi<double>(cuda::DeviceMemory1D<double>&);
 template void cuda::apply_psi<float>(cuda::DeviceMemory1D<float>&);
 
-template void cuda::bld_mult::update_grad_plus<double>(
-    const tensor_t<double, 3>&, const matrix_t<double>&, tensor_t<double, 3>&);
-template void cuda::bld_mult::update_grad_plus<float>(const tensor_t<float, 3>&,
-                                                      const matrix_t<float>&,
-                                                      tensor_t<float, 3>&);
+template void
+cuda::bld_mult::update_grad_plus<double>(const cuda::DeviceMemory3D<double>&,
+                                         const cuda::DeviceMemory2D<double>&,
+                                         cuda::DeviceMemory3D<double>&);
+
+template void
+cuda::bld_mult::update_grad_plus<float>(const cuda::DeviceMemory3D<float>&,
+                                        const cuda::DeviceMemory2D<float>&,
+                                        cuda::DeviceMemory3D<float>&);

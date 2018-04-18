@@ -206,8 +206,8 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
         }
 
 #ifdef USE_CUDA
-        cuda::bld_mult::update_grad_plus(S, beta_eph, grad_plus);
-#else
+        //cuda::bld_mult::update_grad_plus(S, beta_eph, grad_plus);
+//#else
         // update grad_plus
         #pragma omp parallel for schedule(static)
         for (size_t i = 0; i < x; ++i) {

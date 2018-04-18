@@ -14,17 +14,37 @@ TEST_CASE("Test update_grad_plus", "[tensor_ops]") {
 
         size_t x = 131, y = 456, z = 89;
 
-        matrixd data =
-            matrixd::Random(x, y * z) + matrixd::Constant(x, y * z, 1);
         tensord<3> S(x, y, z);
-        std::copy(data.data(), data.data() + x * y * z, S.data());
-
+        {
+            matrixd data =
+                matrixd::Random(x, y * z) + matrixd::Constant(x, y * z, 1);
+            std::copy(data.data(), data.data() + x * y * z, S.data());
+        }
         matrixd beta_eph = matrixd::Random(y, z) + matrixd::Constant(y, z, 1);
-
         tensord<3> actual(x, y, z);
 
-        // Reduction on GPU
-        cuda::bld_mult::update_grad_plus(S, beta_eph, actual);
+        {
+            cuda::HostMemory3D<double> S_host(S.data(), x, y, z);
+            cuda::HostMemory2D<double> beta_eph_host(beta_eph.data(), y, z);
+            cuda::HostMemory3D<double> actual_host(actual.data(), x, y, z);
+
+            cuda::DeviceMemory3D<double> S_device(x, y, z);
+            cuda::DeviceMemory2D<double> beta_eph_device(y, z);
+            cuda::DeviceMemory3D<double> actual_device(x, y, z);
+
+            cuda::copy3D(S_device, S_host, cudaMemcpyHostToDevice);
+            cuda::copy2D(beta_eph_device, beta_eph_host,
+                         cudaMemcpyHostToDevice);
+            cuda::copy3D(actual_device, actual_host, cudaMemcpyHostToDevice);
+
+            cuda::bld_mult::update_grad_plus(S_device, beta_eph_device,
+                                             actual_device);
+
+            cuda::copy3D(S_host, S_device, cudaMemcpyDeviceToHost);
+            cuda::copy2D(beta_eph_host, beta_eph_device,
+                         cudaMemcpyDeviceToHost);
+            cuda::copy3D(actual_host, actual_device, cudaMemcpyDeviceToHost);
+        }
 
         tensord<3> expected(x, y, z);
         // Reduction on CPU

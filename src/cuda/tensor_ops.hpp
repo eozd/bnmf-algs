@@ -112,9 +112,9 @@ namespace bld_mult {
  * update.
  */
 template <typename Real>
-void update_grad_plus(const tensor_t<Real, 3>& S,
-                      const matrix_t<Real>& beta_eph,
-                      tensor_t<Real, 3>& grad_plus);
+void update_grad_plus(const DeviceMemory3D<Real>& S,
+                      const DeviceMemory2D<Real>& beta_eph,
+                      DeviceMemory3D<Real>& grad_plus);
 } // namespace bld_mult
 } // namespace cuda
 } // namespace bnmf_algs
