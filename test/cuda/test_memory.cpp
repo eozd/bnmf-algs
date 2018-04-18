@@ -93,70 +93,6 @@ TEST_CASE("Test DeviceMemory1D", "[cuda_memory]") {
     }
 }
 
-TEST_CASE("Test copy1D", "[cuda_memory]") {
-    constexpr size_t N = 50;
-
-    SECTION("From host to host") {
-        std::vector<int> src(N);
-        std::vector<int> dst(N);
-
-        cuda::HostMemory1D<int> src_mem(src.data(), N);
-        cuda::HostMemory1D<int> dst_mem(dst.data(), N);
-
-        // fill source array
-        std::iota(src.begin(), src.end(), 0);
-
-        // copy from host to host
-        cuda::copy1D(dst_mem, src_mem);
-
-        REQUIRE(std::equal(src.begin(), src.end(), dst.begin()));
-    }
-
-    SECTION("Between host and device") {
-        std::vector<int> src(N);
-        std::vector<int> src_copy(N);
-
-        // fill source array
-        std::iota(src.begin(), src.end(), 0);
-
-        cuda::HostMemory1D<int> src_mem(src.data(), N);
-        cuda::HostMemory1D<int> src_copy_mem(src_copy.data(), N);
-        cuda::DeviceMemory1D<int> gpu_mem(N);
-
-        // copy from host to device
-        cuda::copy1D(gpu_mem, src_mem);
-
-        // copy from device to back to host
-        cuda::copy1D(src_copy_mem, gpu_mem);
-
-        REQUIRE(std::equal(src.begin(), src.end(), src_copy.begin()));
-    }
-
-    SECTION("From device to device") {
-        std::vector<int> src(N);
-        std::vector<int> src_copy(N);
-
-        // fill source array
-        std::iota(src.begin(), src.end(), 0);
-
-        cuda::HostMemory1D<int> src_mem(src.data(), N);
-        cuda::HostMemory1D<int> src_copy_mem(src_copy.data(), N);
-        cuda::DeviceMemory1D<int> first_dst_mem(N);
-        cuda::DeviceMemory1D<int> second_dst_mem(N);
-
-        // copy from host to first device array
-        cuda::copy1D(first_dst_mem, src_mem);
-
-        // copy from device to device
-        cuda::copy1D(second_dst_mem, first_dst_mem);
-
-        // copy from device to back to host
-        cuda::copy1D(src_copy_mem, second_dst_mem);
-
-        REQUIRE(std::equal(src.begin(), src.end(), src_copy.begin()));
-    }
-}
-
 TEST_CASE("Test HostMemory2D", "[cuda_memory]") {
     constexpr size_t N = 50;
 
@@ -230,61 +166,6 @@ TEST_CASE("Test DeviceMemory2D", "[cuda_memory]") {
 
         // copy back from new DeviceMemory2D
         cuda::copy2D(src_copy_mem, new_gpu_mem);
-
-        REQUIRE(src.isApprox(src_copy));
-    }
-}
-
-TEST_CASE("Test copy2D", "[cuda_memory]") {
-    constexpr size_t N = 50;
-
-    SECTION("From host to host") {
-        const matrixd src = matrixd::Random(N, N);
-        matrixd dst(N, N);
-
-        cuda::HostMemory2D<const double> src_mem(src.data(), N, N);
-        cuda::HostMemory2D<double> dst_mem(dst.data(), N, N);
-
-        // copy from host to host
-        cuda::copy2D(dst_mem, src_mem);
-
-        REQUIRE(src.isApprox(dst));
-    }
-
-    SECTION("Between host and device") {
-        const matrixd src = matrixd::Random(N, N);
-        matrixd src_copy(N, N);
-
-        cuda::HostMemory2D<const double> src_mem(src.data(), N, N);
-        cuda::HostMemory2D<double> src_copy_mem(src_copy.data(), N, N);
-        cuda::DeviceMemory2D<double> gpu_mem(N, N);
-
-        // copy from host to device
-        cuda::copy2D(gpu_mem, src_mem);
-
-        // copy from device to back to host
-        cuda::copy2D(src_copy_mem, gpu_mem);
-
-        REQUIRE(src.isApprox(src_copy));
-    }
-
-    SECTION("From device to device") {
-        const matrixd src = matrixd::Random(N, N);
-        matrixd src_copy(N, N);
-
-        cuda::HostMemory2D<const double> src_mem(src.data(), N, N);
-        cuda::HostMemory2D<double> src_copy_mem(src_copy.data(), N, N);
-        cuda::DeviceMemory2D<double> first_dst_mem(N, N);
-        cuda::DeviceMemory2D<double> second_dst_mem(N, N);
-
-        // copy from host to first device array
-        cuda::copy2D(first_dst_mem, src_mem);
-
-        // copy from device to device
-        cuda::copy2D(second_dst_mem, first_dst_mem);
-
-        // copy from device to back to host
-        cuda::copy2D(src_copy_mem, second_dst_mem);
 
         REQUIRE(src.isApprox(src_copy));
     }
@@ -373,6 +254,302 @@ TEST_CASE("Test DeviceMemory3D", "[cuda_memory]") {
 
         REQUIRE(
             std::equal(src.data(), src.data() + N * N * N, src_copy.data()));
+    }
+}
+
+TEST_CASE("Test infer_copy_kind 1D", "[cuda_memory]") {
+    using namespace cuda;
+    SECTION("From host to host") {
+        constexpr auto a =
+            infer_copy_kind<HostMemory1D<double>, HostMemory1D<int>,
+                            HostMemory1D, DeviceMemory1D>();
+
+        REQUIRE(a == cudaMemcpyHostToHost);
+
+        constexpr auto b =
+            infer_copy_kind<HostMemory1D<float>, HostMemory1D<double>,
+                            HostMemory1D, DeviceMemory1D>();
+
+        REQUIRE(b == cudaMemcpyHostToHost);
+    }
+
+    SECTION("From host to device") {
+        constexpr auto a =
+            infer_copy_kind<DeviceMemory1D<double>, HostMemory1D<int>,
+                            HostMemory1D, DeviceMemory1D>();
+
+        REQUIRE(a == cudaMemcpyHostToDevice);
+
+        constexpr auto b =
+            infer_copy_kind<DeviceMemory1D<float>, HostMemory1D<double>,
+                            HostMemory1D, DeviceMemory1D>();
+
+        REQUIRE(b == cudaMemcpyHostToDevice);
+    }
+
+    SECTION("From device to host") {
+        constexpr auto a =
+            infer_copy_kind<HostMemory1D<double>, DeviceMemory1D<int>,
+                            HostMemory1D, DeviceMemory1D>();
+
+        REQUIRE(a == cudaMemcpyDeviceToHost);
+
+        constexpr auto b =
+            infer_copy_kind<HostMemory1D<float>, DeviceMemory1D<double>,
+                            HostMemory1D, DeviceMemory1D>();
+
+        REQUIRE(b == cudaMemcpyDeviceToHost);
+    }
+
+    SECTION("From device to device") {
+        constexpr auto a =
+            infer_copy_kind<DeviceMemory1D<double>, DeviceMemory1D<int>,
+                            HostMemory1D, DeviceMemory1D>();
+
+        REQUIRE(a == cudaMemcpyDeviceToDevice);
+
+        constexpr auto b =
+            infer_copy_kind<DeviceMemory1D<float>, DeviceMemory1D<double>,
+                            HostMemory1D, DeviceMemory1D>();
+
+        REQUIRE(b == cudaMemcpyDeviceToDevice);
+    }
+}
+
+TEST_CASE("Test infer_copy_kind 2D", "[cuda_memory]") {
+    using namespace cuda;
+    SECTION("From host to host") {
+        constexpr auto a =
+            infer_copy_kind<HostMemory2D<double>, HostMemory2D<int>,
+                            HostMemory2D, DeviceMemory2D>();
+
+        REQUIRE(a == cudaMemcpyHostToHost);
+
+        constexpr auto b =
+            infer_copy_kind<HostMemory2D<float>, HostMemory2D<double>,
+                            HostMemory2D, DeviceMemory2D>();
+
+        REQUIRE(b == cudaMemcpyHostToHost);
+    }
+
+    SECTION("From host to device") {
+        constexpr auto a =
+            infer_copy_kind<DeviceMemory2D<double>, HostMemory2D<int>,
+                            HostMemory2D, DeviceMemory2D>();
+
+        REQUIRE(a == cudaMemcpyHostToDevice);
+
+        constexpr auto b =
+            infer_copy_kind<DeviceMemory2D<float>, HostMemory2D<double>,
+                            HostMemory2D, DeviceMemory2D>();
+
+        REQUIRE(b == cudaMemcpyHostToDevice);
+    }
+
+    SECTION("From device to host") {
+        constexpr auto a =
+            infer_copy_kind<HostMemory2D<double>, DeviceMemory2D<int>,
+                            HostMemory2D, DeviceMemory2D>();
+
+        REQUIRE(a == cudaMemcpyDeviceToHost);
+
+        constexpr auto b =
+            infer_copy_kind<HostMemory2D<float>, DeviceMemory2D<double>,
+                            HostMemory2D, DeviceMemory2D>();
+
+        REQUIRE(b == cudaMemcpyDeviceToHost);
+    }
+
+    SECTION("From device to device") {
+        constexpr auto a =
+            infer_copy_kind<DeviceMemory2D<double>, DeviceMemory2D<int>,
+                            HostMemory2D, DeviceMemory2D>();
+
+        REQUIRE(a == cudaMemcpyDeviceToDevice);
+
+        constexpr auto b =
+            infer_copy_kind<DeviceMemory2D<float>, DeviceMemory2D<double>,
+                            HostMemory2D, DeviceMemory2D>();
+
+        REQUIRE(b == cudaMemcpyDeviceToDevice);
+    }
+}
+
+TEST_CASE("Test infer_copy_kind 3D", "[cuda_memory]") {
+    using namespace cuda;
+    SECTION("From host to host") {
+        constexpr auto a =
+            infer_copy_kind<HostMemory3D<double>, HostMemory3D<int>,
+                            HostMemory3D, DeviceMemory3D>();
+
+        REQUIRE(a == cudaMemcpyHostToHost);
+
+        constexpr auto b =
+            infer_copy_kind<HostMemory3D<float>, HostMemory3D<double>,
+                            HostMemory3D, DeviceMemory3D>();
+
+        REQUIRE(b == cudaMemcpyHostToHost);
+    }
+
+    SECTION("From host to device") {
+        constexpr auto a =
+            infer_copy_kind<DeviceMemory3D<double>, HostMemory3D<int>,
+                            HostMemory3D, DeviceMemory3D>();
+
+        REQUIRE(a == cudaMemcpyHostToDevice);
+
+        constexpr auto b =
+            infer_copy_kind<DeviceMemory3D<float>, HostMemory3D<double>,
+                            HostMemory3D, DeviceMemory3D>();
+
+        REQUIRE(b == cudaMemcpyHostToDevice);
+    }
+
+    SECTION("From device to host") {
+        constexpr auto a =
+            infer_copy_kind<HostMemory3D<double>, DeviceMemory3D<int>,
+                            HostMemory3D, DeviceMemory3D>();
+
+        REQUIRE(a == cudaMemcpyDeviceToHost);
+
+        constexpr auto b =
+            infer_copy_kind<HostMemory3D<float>, DeviceMemory3D<double>,
+                            HostMemory3D, DeviceMemory3D>();
+
+        REQUIRE(b == cudaMemcpyDeviceToHost);
+    }
+
+    SECTION("From device to device") {
+        constexpr auto a =
+            infer_copy_kind<DeviceMemory3D<double>, DeviceMemory3D<int>,
+                            HostMemory3D, DeviceMemory3D>();
+
+        REQUIRE(a == cudaMemcpyDeviceToDevice);
+
+        constexpr auto b =
+            infer_copy_kind<DeviceMemory3D<float>, DeviceMemory3D<double>,
+                            HostMemory3D, DeviceMemory3D>();
+
+        REQUIRE(b == cudaMemcpyDeviceToDevice);
+    }
+}
+
+TEST_CASE("Test copy1D", "[cuda_memory]") {
+    constexpr size_t N = 50;
+
+    SECTION("From host to host") {
+        std::vector<int> src(N);
+        std::vector<int> dst(N);
+
+        cuda::HostMemory1D<int> src_mem(src.data(), N);
+        cuda::HostMemory1D<int> dst_mem(dst.data(), N);
+
+        // fill source array
+        std::iota(src.begin(), src.end(), 0);
+
+        // copy from host to host
+        cuda::copy1D(dst_mem, src_mem);
+
+        REQUIRE(std::equal(src.begin(), src.end(), dst.begin()));
+    }
+
+    SECTION("Between host and device") {
+        std::vector<int> src(N);
+        std::vector<int> src_copy(N);
+
+        // fill source array
+        std::iota(src.begin(), src.end(), 0);
+
+        cuda::HostMemory1D<int> src_mem(src.data(), N);
+        cuda::HostMemory1D<int> src_copy_mem(src_copy.data(), N);
+        cuda::DeviceMemory1D<int> gpu_mem(N);
+
+        // copy from host to device
+        cuda::copy1D(gpu_mem, src_mem);
+
+        // copy from device to back to host
+        cuda::copy1D(src_copy_mem, gpu_mem);
+
+        REQUIRE(std::equal(src.begin(), src.end(), src_copy.begin()));
+    }
+
+    SECTION("From device to device") {
+        std::vector<int> src(N);
+        std::vector<int> src_copy(N);
+
+        // fill source array
+        std::iota(src.begin(), src.end(), 0);
+
+        cuda::HostMemory1D<int> src_mem(src.data(), N);
+        cuda::HostMemory1D<int> src_copy_mem(src_copy.data(), N);
+        cuda::DeviceMemory1D<int> first_dst_mem(N);
+        cuda::DeviceMemory1D<int> second_dst_mem(N);
+
+        // copy from host to first device array
+        cuda::copy1D(first_dst_mem, src_mem);
+
+        // copy from device to device
+        cuda::copy1D(second_dst_mem, first_dst_mem);
+
+        // copy from device to back to host
+        cuda::copy1D(src_copy_mem, second_dst_mem);
+
+        REQUIRE(std::equal(src.begin(), src.end(), src_copy.begin()));
+    }
+}
+
+TEST_CASE("Test copy2D", "[cuda_memory]") {
+    constexpr size_t N = 50;
+
+    SECTION("From host to host") {
+        const matrixd src = matrixd::Random(N, N);
+        matrixd dst(N, N);
+
+        cuda::HostMemory2D<const double> src_mem(src.data(), N, N);
+        cuda::HostMemory2D<double> dst_mem(dst.data(), N, N);
+
+        // copy from host to host
+        cuda::copy2D(dst_mem, src_mem);
+
+        REQUIRE(src.isApprox(dst));
+    }
+
+    SECTION("Between host and device") {
+        const matrixd src = matrixd::Random(N, N);
+        matrixd src_copy(N, N);
+
+        cuda::HostMemory2D<const double> src_mem(src.data(), N, N);
+        cuda::HostMemory2D<double> src_copy_mem(src_copy.data(), N, N);
+        cuda::DeviceMemory2D<double> gpu_mem(N, N);
+
+        // copy from host to device
+        cuda::copy2D(gpu_mem, src_mem);
+
+        // copy from device to back to host
+        cuda::copy2D(src_copy_mem, gpu_mem);
+
+        REQUIRE(src.isApprox(src_copy));
+    }
+
+    SECTION("From device to device") {
+        const matrixd src = matrixd::Random(N, N);
+        matrixd src_copy(N, N);
+
+        cuda::HostMemory2D<const double> src_mem(src.data(), N, N);
+        cuda::HostMemory2D<double> src_copy_mem(src_copy.data(), N, N);
+        cuda::DeviceMemory2D<double> first_dst_mem(N, N);
+        cuda::DeviceMemory2D<double> second_dst_mem(N, N);
+
+        // copy from host to first device array
+        cuda::copy2D(first_dst_mem, src_mem);
+
+        // copy from device to device
+        cuda::copy2D(second_dst_mem, first_dst_mem);
+
+        // copy from device to back to host
+        cuda::copy2D(src_copy_mem, second_dst_mem);
+
+        REQUIRE(src.isApprox(src_copy));
     }
 }
 
