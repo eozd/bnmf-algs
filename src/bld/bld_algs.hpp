@@ -744,8 +744,8 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
 #else
         // update grad_plus
         #pragma omp parallel for schedule(static)
-        for (int i = 0; i < x; ++i) {
-            for (int j = 0; j < y; ++j) {
+        for (size_t i = 0; i < x; ++i) {
+            for (size_t j = 0; j < y; ++j) {
                 for (size_t k = 0; k < z; ++k) {
                     grad_plus(i, j, k) =
                         psi_fn(beta_eph(j, k)) - psi_fn(S(i, j, k) + 1);

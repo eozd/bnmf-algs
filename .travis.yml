@@ -13,6 +13,8 @@ matrix:
               packages:
                 - g++-5
                 - libeigen3-dev
+                # OpenMP
+                - libgomp1
                 # GSL
                 - libgsl2
                 - libgsl-dev
@@ -31,6 +33,8 @@ matrix:
               packages:
                 - g++-6
                 - libeigen3-dev
+                # OpenMP
+                - libgomp1
                 # GSL
                 - libgsl2
                 - libgsl-dev
@@ -49,6 +53,8 @@ matrix:
               packages:
                 - g++-7
                 - libeigen3-dev
+                # OpenMP
+                - libgomp1
                 # GSL
                 - libgsl2
                 - libgsl-dev

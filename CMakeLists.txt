@@ -5,7 +5,7 @@ set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
 
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -Wall -pedantic -g -O0 -fprofile-arcs -ftest-coverage")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS} -Wall -pedantic -g -fprofile-arcs -ftest-coverage")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -Wall -pedantic -O3")
 
 if (BUILD_OPENMP)
@@ -69,11 +69,12 @@ if (BUILD_TESTING)
     add_definitions(-DBUILD_TESTING)
     if (BUILD_CUDA)
         add_executable(tests ${TEST_SRC_FILES} ${CUDA_TEST_SRC_FILES} ${CUDA_OBJ_FILES})
-        target_link_libraries(tests ${CUDA_LIBRARIES} gsl gslcblas)
+        target_link_libraries(tests ${CUDA_LIBRARIES})
     else (BUILD_CUDA)
         add_executable (tests ${TEST_SRC_FILES})
         target_link_libraries(tests)
     endif (BUILD_CUDA)
+    target_link_libraries(tests gsl gslcblas)
 endif (BUILD_TESTING)
 
 # Build benchmarks
