@@ -32,18 +32,16 @@ TEST_CASE("Test update_grad_plus", "[tensor_ops]") {
             cuda::DeviceMemory2D<double> beta_eph_device(y, z);
             cuda::DeviceMemory3D<double> actual_device(x, y, z);
 
-            cuda::copy3D(S_device, S_host, cudaMemcpyHostToDevice);
-            cuda::copy2D(beta_eph_device, beta_eph_host,
-                         cudaMemcpyHostToDevice);
-            cuda::copy3D(actual_device, actual_host, cudaMemcpyHostToDevice);
+            cuda::copy3D(S_device, S_host);
+            cuda::copy2D(beta_eph_device, beta_eph_host);
+            cuda::copy3D(actual_device, actual_host);
 
             cuda::bld_mult::update_grad_plus(S_device, beta_eph_device,
                                              actual_device);
 
-            cuda::copy3D(S_host, S_device, cudaMemcpyDeviceToHost);
-            cuda::copy2D(beta_eph_host, beta_eph_device,
-                         cudaMemcpyDeviceToHost);
-            cuda::copy3D(actual_host, actual_device, cudaMemcpyDeviceToHost);
+            cuda::copy3D(S_host, S_device);
+            cuda::copy2D(beta_eph_host, beta_eph_device);
+            cuda::copy3D(actual_host, actual_device);
         }
 
         tensord<3> expected(x, y, z);
@@ -80,9 +78,9 @@ TEST_CASE("Test apply_psi", "[tensor_ops]") {
         Eigen::TensorMap<tensord<3>> actual(data_copy.data(), x, y, z);
         cuda::HostMemory1D<double> actual_host(actual.data(), x * y * z);
         cuda::DeviceMemory1D<double> actual_device(x * y * z);
-        cuda::copy1D(actual_device, actual_host, cudaMemcpyHostToDevice);
+        cuda::copy1D(actual_device, actual_host);
         cuda::apply_psi(actual_device);
-        cuda::copy1D(actual_host, actual_device, cudaMemcpyDeviceToHost);
+        cuda::copy1D(actual_host, actual_device);
 
         // Reduction on CPU
         tensord<3> expected(x, y, z);
@@ -130,7 +128,7 @@ TEST_CASE("Test tensor_sums", "[tensor_ops]") {
                 cuda::DeviceMemory1D<double>(x * y)};
 
             // copy S to GPU
-            cuda::copy1D(S_device, S_host, cudaMemcpyHostToDevice);
+            cuda::copy1D(S_device, S_host);
 
             // calculate sums
             shape<3> dims = {x, y, z};
@@ -138,8 +136,7 @@ TEST_CASE("Test tensor_sums", "[tensor_ops]") {
 
             // copy from GPU to main memory
             for (size_t i = 0; i < 3; ++i) {
-                cuda::copy1D(result_arr[i], device_result_arr[i],
-                             cudaMemcpyDeviceToHost);
+                cuda::copy1D(result_arr[i], device_result_arr[i]);
             }
         }
 

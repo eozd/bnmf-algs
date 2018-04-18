@@ -128,7 +128,7 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
 #ifdef USE_CUDA
     cuda::HostMemory2D<const T> X_host(X.data(), x, y);
     cuda::DeviceMemory2D<T> X_device(x, y);
-    cuda::copy2D(X_device, X_host, cudaMemcpyHostToDevice);
+    cuda::copy2D(X_device, X_host);
 #endif
 
     tensor_t<T, 3> grad_plus(x, y, z);
@@ -155,7 +155,7 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
         cuda::DeviceMemory1D<T>(x * y)};
 
     for (size_t i = 0; i < 3; ++i) {
-        cuda::copy1D(device_sums[i], host_sums[i], cudaMemcpyHostToDevice);
+        cuda::copy1D(device_sums[i], host_sums[i]);
     }
 #endif
 
@@ -173,11 +173,11 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
     for (size_t eph = 0; eph < max_iter; ++eph) {
         // update S_pjk, S_ipk, S_ijp
 #ifdef USE_CUDA
-        cuda::copy1D(S_device, S_host, cudaMemcpyHostToDevice);
+        cuda::copy1D(S_device, S_host);
         cuda::tensor_sums(S_device, dims, device_sums);
 
         for (size_t i = 0; i < 3; ++i) {
-            cuda::copy1D(host_sums[i], device_sums[i], cudaMemcpyDeviceToHost);
+            cuda::copy1D(host_sums[i], device_sums[i]);
         }
 #elif USE_OPENMP
         S_pjk_tensor.device(thread_dev) = S.sum(shape<1>({0}));

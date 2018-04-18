@@ -50,7 +50,7 @@ TEST_CASE("Test DeviceMemory1D", "[cuda_memory]") {
 
         // copy source to GPU
         cuda::DeviceMemory1D<int> old_gpu_mem(N);
-        cuda::copy1D(old_gpu_mem, src_mem, cudaMemcpyHostToDevice);
+        cuda::copy1D(old_gpu_mem, src_mem);
 
         // move GPU memory to a new object (memory is not moved)
         auto new_gpu_mem = std::move(old_gpu_mem);
@@ -59,7 +59,7 @@ TEST_CASE("Test DeviceMemory1D", "[cuda_memory]") {
         REQUIRE(old_gpu_mem.data() == nullptr);
 
         // copy back from new DeviceMemory1D
-        cuda::copy1D(src_copy_mem, new_gpu_mem, cudaMemcpyDeviceToHost);
+        cuda::copy1D(src_copy_mem, new_gpu_mem);
 
         REQUIRE(std::equal(src.begin(), src.end(), src_copy.begin()));
     }
@@ -75,7 +75,7 @@ TEST_CASE("Test DeviceMemory1D", "[cuda_memory]") {
 
         // copy source to GPU
         cuda::DeviceMemory1D<int> old_gpu_mem(N);
-        cuda::copy1D(old_gpu_mem, src_mem, cudaMemcpyHostToDevice);
+        cuda::copy1D(old_gpu_mem, src_mem);
 
         // allocate new GPU memory
         cuda::DeviceMemory1D<int> new_gpu_mem(N);
@@ -87,7 +87,7 @@ TEST_CASE("Test DeviceMemory1D", "[cuda_memory]") {
         REQUIRE(old_gpu_mem.data() == nullptr);
 
         // copy back from new DeviceMemory1D
-        cuda::copy1D(src_copy_mem, new_gpu_mem, cudaMemcpyDeviceToHost);
+        cuda::copy1D(src_copy_mem, new_gpu_mem);
 
         REQUIRE(std::equal(src.begin(), src.end(), src_copy.begin()));
     }
@@ -107,7 +107,7 @@ TEST_CASE("Test copy1D", "[cuda_memory]") {
         std::iota(src.begin(), src.end(), 0);
 
         // copy from host to host
-        cuda::copy1D(dst_mem, src_mem, cudaMemcpyHostToHost);
+        cuda::copy1D(dst_mem, src_mem);
 
         REQUIRE(std::equal(src.begin(), src.end(), dst.begin()));
     }
@@ -124,10 +124,10 @@ TEST_CASE("Test copy1D", "[cuda_memory]") {
         cuda::DeviceMemory1D<int> gpu_mem(N);
 
         // copy from host to device
-        cuda::copy1D(gpu_mem, src_mem, cudaMemcpyHostToDevice);
+        cuda::copy1D(gpu_mem, src_mem);
 
         // copy from device to back to host
-        cuda::copy1D(src_copy_mem, gpu_mem, cudaMemcpyDeviceToHost);
+        cuda::copy1D(src_copy_mem, gpu_mem);
 
         REQUIRE(std::equal(src.begin(), src.end(), src_copy.begin()));
     }
@@ -145,13 +145,13 @@ TEST_CASE("Test copy1D", "[cuda_memory]") {
         cuda::DeviceMemory1D<int> second_dst_mem(N);
 
         // copy from host to first device array
-        cuda::copy1D(first_dst_mem, src_mem, cudaMemcpyHostToDevice);
+        cuda::copy1D(first_dst_mem, src_mem);
 
         // copy from device to device
-        cuda::copy1D(second_dst_mem, first_dst_mem, cudaMemcpyDeviceToDevice);
+        cuda::copy1D(second_dst_mem, first_dst_mem);
 
         // copy from device to back to host
-        cuda::copy1D(src_copy_mem, second_dst_mem, cudaMemcpyDeviceToHost);
+        cuda::copy1D(src_copy_mem, second_dst_mem);
 
         REQUIRE(std::equal(src.begin(), src.end(), src_copy.begin()));
     }
@@ -195,7 +195,7 @@ TEST_CASE("Test DeviceMemory2D", "[cuda_memory]") {
 
         // copy source to GPU
         cuda::DeviceMemory2D<double> old_gpu_mem(N, N);
-        cuda::copy2D(old_gpu_mem, src_mem, cudaMemcpyHostToDevice);
+        cuda::copy2D(old_gpu_mem, src_mem);
 
         // move GPU memory to a new object (memory is not moved)
         auto new_gpu_mem = std::move(old_gpu_mem);
@@ -204,7 +204,7 @@ TEST_CASE("Test DeviceMemory2D", "[cuda_memory]") {
         REQUIRE(old_gpu_mem.data() == nullptr);
 
         // copy back from new DeviceMemory2D
-        cuda::copy2D(src_copy_mem, new_gpu_mem, cudaMemcpyDeviceToHost);
+        cuda::copy2D(src_copy_mem, new_gpu_mem);
 
         REQUIRE(src.isApprox(src_copy));
     }
@@ -217,7 +217,7 @@ TEST_CASE("Test DeviceMemory2D", "[cuda_memory]") {
 
         // copy source to GPU
         cuda::DeviceMemory2D<double> old_gpu_mem(N, N);
-        cuda::copy2D(old_gpu_mem, src_mem, cudaMemcpyHostToDevice);
+        cuda::copy2D(old_gpu_mem, src_mem);
 
         // allocate new GPU memory
         cuda::DeviceMemory2D<double> new_gpu_mem(N, N);
@@ -229,7 +229,7 @@ TEST_CASE("Test DeviceMemory2D", "[cuda_memory]") {
         REQUIRE(old_gpu_mem.data() == nullptr);
 
         // copy back from new DeviceMemory2D
-        cuda::copy2D(src_copy_mem, new_gpu_mem, cudaMemcpyDeviceToHost);
+        cuda::copy2D(src_copy_mem, new_gpu_mem);
 
         REQUIRE(src.isApprox(src_copy));
     }
@@ -246,7 +246,7 @@ TEST_CASE("Test copy2D", "[cuda_memory]") {
         cuda::HostMemory2D<double> dst_mem(dst.data(), N, N);
 
         // copy from host to host
-        cuda::copy2D(dst_mem, src_mem, cudaMemcpyHostToHost);
+        cuda::copy2D(dst_mem, src_mem);
 
         REQUIRE(src.isApprox(dst));
     }
@@ -260,10 +260,10 @@ TEST_CASE("Test copy2D", "[cuda_memory]") {
         cuda::DeviceMemory2D<double> gpu_mem(N, N);
 
         // copy from host to device
-        cuda::copy2D(gpu_mem, src_mem, cudaMemcpyHostToDevice);
+        cuda::copy2D(gpu_mem, src_mem);
 
         // copy from device to back to host
-        cuda::copy2D(src_copy_mem, gpu_mem, cudaMemcpyDeviceToHost);
+        cuda::copy2D(src_copy_mem, gpu_mem);
 
         REQUIRE(src.isApprox(src_copy));
     }
@@ -278,13 +278,13 @@ TEST_CASE("Test copy2D", "[cuda_memory]") {
         cuda::DeviceMemory2D<double> second_dst_mem(N, N);
 
         // copy from host to first device array
-        cuda::copy2D(first_dst_mem, src_mem, cudaMemcpyHostToDevice);
+        cuda::copy2D(first_dst_mem, src_mem);
 
         // copy from device to device
-        cuda::copy2D(second_dst_mem, first_dst_mem, cudaMemcpyDeviceToDevice);
+        cuda::copy2D(second_dst_mem, first_dst_mem);
 
         // copy from device to back to host
-        cuda::copy2D(src_copy_mem, second_dst_mem, cudaMemcpyDeviceToHost);
+        cuda::copy2D(src_copy_mem, second_dst_mem);
 
         REQUIRE(src.isApprox(src_copy));
     }
@@ -331,7 +331,7 @@ TEST_CASE("Test DeviceMemory3D", "[cuda_memory]") {
 
         // copy source to GPU
         cuda::DeviceMemory3D<int> old_gpu_mem(N, N, N);
-        cuda::copy3D(old_gpu_mem, src_mem, cudaMemcpyHostToDevice);
+        cuda::copy3D(old_gpu_mem, src_mem);
 
         // move GPU memory to a new object (memory is not moved)
         auto new_gpu_mem = std::move(old_gpu_mem);
@@ -340,7 +340,7 @@ TEST_CASE("Test DeviceMemory3D", "[cuda_memory]") {
         REQUIRE(old_gpu_mem.pitched_ptr().ptr == nullptr);
 
         // copy back from new DeviceMemory3D
-        cuda::copy3D(src_copy_mem, new_gpu_mem, cudaMemcpyDeviceToHost);
+        cuda::copy3D(src_copy_mem, new_gpu_mem);
 
         REQUIRE(
             std::equal(src.data(), src.data() + N * N * N, src_copy.data()));
@@ -357,7 +357,7 @@ TEST_CASE("Test DeviceMemory3D", "[cuda_memory]") {
 
         // copy source to GPU
         cuda::DeviceMemory3D<int> old_gpu_mem(N, N, N);
-        cuda::copy3D(old_gpu_mem, src_mem, cudaMemcpyHostToDevice);
+        cuda::copy3D(old_gpu_mem, src_mem);
 
         // allocate a new GPU memory
         cuda::DeviceMemory3D<int> new_gpu_mem(N, N, N);
@@ -369,7 +369,7 @@ TEST_CASE("Test DeviceMemory3D", "[cuda_memory]") {
         REQUIRE(old_gpu_mem.pitched_ptr().ptr == nullptr);
 
         // copy back from new DeviceMemory3D
-        cuda::copy3D(src_copy_mem, new_gpu_mem, cudaMemcpyDeviceToHost);
+        cuda::copy3D(src_copy_mem, new_gpu_mem);
 
         REQUIRE(
             std::equal(src.data(), src.data() + N * N * N, src_copy.data()));
@@ -390,7 +390,7 @@ TEST_CASE("Test copy3D", "[cuda_memory]") {
         std::iota(src.data(), src.data() + N * N * N, 0);
 
         // copy from host to host
-        cuda::copy3D(dst_mem, src_mem, cudaMemcpyHostToHost);
+        cuda::copy3D(dst_mem, src_mem);
 
         REQUIRE(std::equal(src.data(), src.data() + N * N * N, dst.data()));
     }
@@ -407,10 +407,10 @@ TEST_CASE("Test copy3D", "[cuda_memory]") {
         cuda::DeviceMemory3D<int> gpu_mem(N, N, N);
 
         // copy from host to device
-        cuda::copy3D(gpu_mem, src_mem, cudaMemcpyHostToDevice);
+        cuda::copy3D(gpu_mem, src_mem);
 
         // copy from device to back to host
-        cuda::copy3D(src_copy_mem, gpu_mem, cudaMemcpyDeviceToHost);
+        cuda::copy3D(src_copy_mem, gpu_mem);
 
         REQUIRE(
             std::equal(src.data(), src.data() + N * N * N, src_copy.data()));
@@ -429,13 +429,13 @@ TEST_CASE("Test copy3D", "[cuda_memory]") {
         cuda::DeviceMemory3D<int> second_dst_mem(N, N, N);
 
         // copy from host to first device array
-        cuda::copy3D(first_dst_mem, src_mem, cudaMemcpyHostToDevice);
+        cuda::copy3D(first_dst_mem, src_mem);
 
         // copy from device to device
-        cuda::copy3D(second_dst_mem, first_dst_mem, cudaMemcpyDeviceToDevice);
+        cuda::copy3D(second_dst_mem, first_dst_mem);
 
         // copy from device to back to host
-        cuda::copy3D(src_copy_mem, second_dst_mem, cudaMemcpyDeviceToHost);
+        cuda::copy3D(src_copy_mem, second_dst_mem);
 
         REQUIRE(
             std::equal(src.data(), src.data() + N * N * N, src_copy.data()));
