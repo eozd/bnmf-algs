@@ -1,3 +1,4 @@
+#include "defs.hpp"
 #include <cstddef>
 
 namespace bnmf_algs {
@@ -53,7 +54,8 @@ template <typename T> class HostMemory2D {
      * @param cols Number of columns of the matrix.
      */
     explicit HostMemory2D(T* data, size_t rows, size_t cols)
-        : m_data(data), m_pitch(cols * sizeof(T)), m_height(rows){};
+        : m_data(data), m_pitch(cols * sizeof(T)),
+          m_dims(shape<2>{rows, cols}){};
 
     /**
      * @brief Get the beginning address of the 2D memory wrapped by this
@@ -96,7 +98,7 @@ template <typename T> class HostMemory2D {
      * @return Width (number of bytes of a single row, excluding padding bytes,
      * of the matrix).
      */
-    size_t width() const { return m_pitch; }
+    size_t width() const { return m_dims[1] * sizeof(T); }
 
     /**
      * @brief Get the height of the 2D matrix <b>in terms of number of
@@ -107,7 +109,14 @@ template <typename T> class HostMemory2D {
      *
      * @return Height (number of elements in a single column of the matrix).
      */
-    size_t height() const { return m_height; }
+    size_t height() const { return m_dims[0]; }
+
+    /**
+     * @brief Get the dimensions of this memory region in terms of elements.
+     *
+     * @return A bnmf_algs::shape<2> object of the form {rows, cols}.
+     */
+    shape<2> dims() const { return m_dims; }
 
   private:
     /**
@@ -122,10 +131,9 @@ template <typename T> class HostMemory2D {
     size_t m_pitch;
 
     /**
-     * @brief Height of the 2D matrix memory (number of elements in a single
-     * column).
+     * @brief Dimensions of this memory region as {rows, cols}.
      */
-    size_t m_height;
+    shape<2> m_dims;
 };
 } // namespace cuda
 } // namespace bnmf_algs

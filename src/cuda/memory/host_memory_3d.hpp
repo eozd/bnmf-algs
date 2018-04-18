@@ -1,3 +1,4 @@
+#include "defs.hpp"
 #include <cstddef>
 #include <cuda_runtime.h>
 
@@ -60,7 +61,8 @@ template <typename T> class HostMemory3D {
      */
     explicit HostMemory3D(T* data, size_t first_dim, size_t second_dim,
                           size_t third_dim)
-        : m_extent(
+        : m_dims(shape<3>{first_dim, second_dim, third_dim}),
+          m_extent(
               make_cudaExtent(third_dim * sizeof(T), second_dim, first_dim)),
           m_ptr() {
         m_ptr.pitch = third_dim * sizeof(T);
@@ -93,7 +95,21 @@ template <typename T> class HostMemory3D {
      */
     cudaExtent extent() const { return m_extent; }
 
+    /**
+     * @brief Get the dimensions of this memory region in terms of elements.
+     *
+     * @return A bnmf_algs::shape object of the form {first_dim, second_dim,
+     * third_dim}.
+     */
+    shape<3> dims() const { return m_dims; }
+
   private:
+    /**
+     * @brief Dimension of this memory region as {first_dim, second_dim,
+     * third_dim}.
+     */
+    shape<3> m_dims;
+
     /**
      * @brief Extents of the allocation (width, height, depth).
      */

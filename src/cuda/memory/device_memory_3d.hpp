@@ -52,7 +52,8 @@ template <typename T> class DeviceMemory3D {
      */
     explicit DeviceMemory3D(size_t first_dim, size_t second_dim,
                             size_t third_dim)
-        : m_extent(
+        : m_dims(shape<3>{first_dim, second_dim, third_dim}),
+          m_extent(
               make_cudaExtent(third_dim * sizeof(T), second_dim, first_dim)),
           m_ptr() {
         auto err = cudaMalloc3D(&m_ptr, m_extent);
@@ -87,7 +88,7 @@ template <typename T> class DeviceMemory3D {
      * @param other Other DeviceMemory3D object to move from.
      */
     DeviceMemory3D(DeviceMemory3D&& other)
-        : m_extent(other.m_extent), m_ptr(other.m_ptr) {
+        : m_dims(other.m_dims), m_extent(other.m_extent), m_ptr(other.m_ptr) {
         other.reset_members();
     }
 
@@ -105,6 +106,7 @@ template <typename T> class DeviceMemory3D {
     DeviceMemory3D& operator=(DeviceMemory3D&& other) {
         this->free_cuda_mem();
 
+        this->m_dims = other.m_dims;
         this->m_extent = other.m_extent;
         this->m_ptr = other.m_ptr;
 
@@ -147,6 +149,14 @@ template <typename T> class DeviceMemory3D {
      */
     cudaExtent extent() const { return m_extent; }
 
+    /**
+     * @brief Get the dimensions of this memory region in terms of elements.
+     *
+     * @return A bnmf_algs::shape object of the form {first_dim, second_dim,
+     * third_dim}.
+     */
+    shape<3> dims() const { return m_dims; }
+
   private:
     /**
      * @brief Free GPU memory.
@@ -162,11 +172,18 @@ template <typename T> class DeviceMemory3D {
      * @brief Reset members.
      */
     void reset_members() {
+        this->m_dims = {0, 0, 0};
         this->m_extent = {0, 0, 0};
         this->m_ptr = {nullptr, 0, 0, 0};
     }
 
   private:
+    /**
+     * @brief Dimension of this memory region as {first_dim, second_dim,
+     * third_dim}.
+     */
+    shape<3> m_dims;
+
     /**
      * @brief Extents of the allocation (width, height, depth).
      */

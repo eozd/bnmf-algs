@@ -46,8 +46,7 @@ template <typename T> class DeviceMemory2D {
      * @param cols Number of columns of the row-major GPU matrix to allocate.
      */
     explicit DeviceMemory2D(size_t rows, size_t cols)
-        : m_data(nullptr), m_pitch(), m_width(cols * sizeof(T)),
-          m_height(rows) {
+        : m_data(nullptr), m_pitch(), m_dims(shape<2>{rows, cols}) {
         auto err = cudaMallocPitch((void**)(&m_data), &m_pitch,
                                    cols * sizeof(T), rows);
         BNMF_ASSERT(
@@ -81,8 +80,7 @@ template <typename T> class DeviceMemory2D {
      * @param other Other DeviceMemory2D object to move from.
      */
     DeviceMemory2D(DeviceMemory2D&& other)
-        : m_data(other.m_data), m_pitch(other.m_pitch), m_width(other.m_width),
-          m_height(other.m_height) {
+        : m_data(other.m_data), m_pitch(other.m_pitch), m_dims(other.m_dims) {
         other.reset_members();
     }
 
@@ -102,8 +100,7 @@ template <typename T> class DeviceMemory2D {
 
         this->m_data = other.m_data;
         this->m_pitch = other.m_pitch;
-        this->m_width = other.m_width;
-        this->m_height = other.m_height;
+        this->m_dims = other.m_dims;
 
         other.reset_members();
 
@@ -148,7 +145,7 @@ template <typename T> class DeviceMemory2D {
      *
      * @return Width (number of bytes of a single row excluding padding bytes).
      */
-    size_t width() const { return m_width; }
+    size_t width() const { return m_dims[1] * sizeof(T); }
 
     /**
      * @brief Get the height of the allocation in terms of number of elements.
@@ -158,7 +155,14 @@ template <typename T> class DeviceMemory2D {
      *
      * @return Height (number of elements in a single column of the matrix).
      */
-    size_t height() const { return m_height; }
+    size_t height() const { return m_dims[0]; }
+
+    /**
+     * @brief Get the dimensions of this memory region in terms of elements.
+     *
+     * @return A bnmf_algs::shape<2> object of the form {rows, cols}.
+     */
+    shape<2> dims() const { return m_dims; }
 
   private:
     /**
@@ -177,8 +181,7 @@ template <typename T> class DeviceMemory2D {
     void reset_members() {
         this->m_data = nullptr;
         this->m_pitch = 0;
-        this->m_width = 0;
-        this->m_height = 0;
+        this->m_dims = {0, 0};
     }
 
   private:
@@ -195,16 +198,9 @@ template <typename T> class DeviceMemory2D {
     size_t m_pitch;
 
     /**
-     * @brief Width of the allocation (number of bytes of a single row excluding
-     * padding bytes).
+     * @brief Dimensions of this memory region as {rows, cols}.
      */
-    size_t m_width;
-
-    /**
-     * @brief Height of the allocation (number of elements in a single column of
-     * the allocated matrix).
-     */
-    size_t m_height;
+    shape<2> m_dims;
 };
 } // namespace cuda
 } // namespace bnmf_algs

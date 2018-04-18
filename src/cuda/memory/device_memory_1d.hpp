@@ -43,7 +43,7 @@ template <typename T> class DeviceMemory1D {
      * @param num_elems Number of T types to allocate on the GPU.
      */
     explicit DeviceMemory1D(size_t num_elems)
-        : m_num_elems(num_elems), m_data(nullptr) {
+        : m_dims(shape<1>{num_elems}), m_data(nullptr) {
         size_t alloc_size = num_elems * sizeof(T);
         auto err = cudaMalloc((void**)(&m_data), alloc_size);
         BNMF_ASSERT(
@@ -77,7 +77,7 @@ template <typename T> class DeviceMemory1D {
      * @param other Other DeviceMemory1D object to move from.
      */
     DeviceMemory1D(DeviceMemory1D&& other)
-        : m_num_elems(other.m_num_elems), m_data(other.m_data) {
+        : m_dims(other.m_dims), m_data(other.m_data) {
         other.reset_members();
     }
 
@@ -94,7 +94,7 @@ template <typename T> class DeviceMemory1D {
      */
     DeviceMemory1D& operator=(DeviceMemory1D&& other) {
         this->free_cuda_mem();
-        this->m_num_elems = other.m_num_elems;
+        this->m_dims = other.m_dims;
         this->m_data = other.m_data;
 
         other.reset_members();
@@ -125,7 +125,14 @@ template <typename T> class DeviceMemory1D {
      *
      * @return Number of bytes of the allocated GPU memory.
      */
-    size_t bytes() const { return m_num_elems * sizeof(T); }
+    size_t bytes() const { return m_dims[0] * sizeof(T); }
+
+    /**
+     * @brief Get the dimensions of this memory region in terms of elements.
+     *
+     * @return A bnmf_algs::shape representing the dimension.
+     */
+    shape<1> dims() const { return m_dims; }
 
   private:
     /**
@@ -142,15 +149,15 @@ template <typename T> class DeviceMemory1D {
      * @brief Reset all members.
      */
     void reset_members() {
-        m_num_elems = 0;
+        m_dims[0] = 0;
         m_data = nullptr;
     }
 
   private:
     /**
-     * @brief Number of elements in the GPU memory sequence.
+     * @brief Dimension (length) of this memory region.
      */
-    size_t m_num_elems;
+    shape<1> m_dims;
 
     /**
      * @brief Device pointer pointing to the beginning address of the GPU memory

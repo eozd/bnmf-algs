@@ -1,3 +1,4 @@
+#include "defs.hpp"
 #include <cstddef>
 
 namespace bnmf_algs {
@@ -40,7 +41,7 @@ template <typename T> class HostMemory1D {
      * data.
      */
     HostMemory1D(T* data, size_t num_elems)
-        : m_num_elems(num_elems), m_data(data){};
+        : m_dims(shape<1>{num_elems}), m_data(data){};
 
     /**
      * @brief Get the address of the memory sequence wrapped with the current
@@ -57,14 +58,20 @@ template <typename T> class HostMemory1D {
      *
      * @return Number of bytes of the memory sequence.
      */
-    size_t bytes() const { return m_num_elems * sizeof(T); }
+    size_t bytes() const { return m_dims[0] * sizeof(T); }
+
+    /**
+     * @brief Get the dimensions of this memory region in terms of elements.
+     *
+     * @return A bnmf_algs::shape representing the dimension.
+     */
+    shape<1> dims() const { return m_dims; }
 
   private:
     /**
-     * @brief Number of elements (T values) in the memory sequence starting at
-     * m_data.
+     * @brief Dimension (length) of this memory region.
      */
-    size_t m_num_elems;
+    shape<1> m_dims;
     /**
      * @brief Beginning address of the memory sequence.
      */
