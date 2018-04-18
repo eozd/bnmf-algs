@@ -11,6 +11,7 @@ namespace kernel {
 /**
  * @brief Device function to return psi_appr of a real number.
  *
+ * @tparam Real Type of the input parameter. Must be double or float.
  * @param x Value to apply psi_appr function.
  * @return psi_appr of x.
  */
@@ -27,6 +28,7 @@ template <typename Real> __device__ Real psi_appr(Real x);
  *     size_t i = blockDim.x * blockIdx.y + threadIdx.x;
  * @endcode
  *
+ * @tparam Real Type of the input parameter. Must be double or float.
  * @param begin Device pointer indicating the beginning of the range residing
  * in a GPU device.
  * @param num_elems Number of elements in the GPU device to apply psi_appr func.
@@ -46,6 +48,8 @@ __global__ void apply_psi(Real* begin, size_t num_elems);
  * documentation for more information regarding row-major storage of
  * multidimensional tensors.
  *
+ * @tparam Real Type of the entries of the matrices/tensors. Must be doueble or
+ * float.
  * @param S Pitched pointer pointing to S tensor on the GPU device.
  * @param beta_eph Raw pointer pointing to beta_eph matrix on the GPU device.
  * @param pitch Pitch of the beta_eph matrix (number of bytes used to store a

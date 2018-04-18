@@ -88,8 +88,8 @@ template <typename Real> Real* cuda::apply_psi(Real* begin, size_t num_elems) {
     // apply kernel
     kernel::apply_psi<<<blocks_per_grid, threads_per_block>>>(
         device_data.data(), num_elems);
-    BNMF_ASSERT(cudaGetLastError() == cudaSuccess,
-                "Error running kernel in cuda::apply_psi");
+    auto err = cudaGetLastError();
+    BNMF_ASSERT(err == cudaSuccess, "Error running kernel in cuda::apply_psi");
 
     // copy from GPU to main memory
     cuda::copy1D(host_data, device_data, cudaMemcpyDeviceToHost);
@@ -135,7 +135,8 @@ void cuda::bld_mult::update_grad_plus(const tensor_t<T, 3>& S,
     kernel::update_grad_plus<<<grid_dims, block_dims>>>(
         device_S.pitched_ptr(), device_beta_eph.data(), device_beta_eph.pitch(),
         device_grad_plus.pitched_ptr(), y, x, z);
-    BNMF_ASSERT(cudaGetLastError() == cudaSuccess,
+    auto err = cudaGetLastError();
+    BNMF_ASSERT(err == cudaSuccess,
                 "Error running kernel in cuda::bld_mult::update_grad_plus");
 
     // copy result onto grad_plus

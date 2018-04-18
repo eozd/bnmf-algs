@@ -59,6 +59,7 @@ std::array<tensor_t<T, 2>, 3> tensor_sums(const tensor_t<T, 3>& tensor);
  * procedure completely in parallel and copying the results in the GPU onto the
  * range beginning in the pointer parameter begin.
  *
+ * @tparam Real A real type such as double or float.
  * @param begin Pointer to the beginning of the range to apply util::psi_appr
  * function.
  * @param num_elems Number of elements in the range [begin, begin + num_elems).
@@ -102,14 +103,17 @@ namespace bld_mult {
  * (1,1,0) (1,1,1) (1,1,2)
  * </blockquote>
  *
+ * @tparam Real Type of the entries of matrices and tensors such as double or
+ * float.
  * @param S \f$S\f$ tensor, that is the output of bld_mult algorithm.
  * @param beta_eph beta_eph matrix used during bld_mult algorithm.
  * @param grad_plus grad_plus tensor that will store the results of grad_plus
  * update.
  */
-template <typename T>
-void update_grad_plus(const tensor_t<T, 3>& S, const matrix_t<T>& beta_eph,
-                      tensor_t<T, 3>& grad_plus);
+template <typename Real>
+void update_grad_plus(const tensor_t<Real, 3>& S,
+                      const matrix_t<Real>& beta_eph,
+                      tensor_t<Real, 3>& grad_plus);
 } // namespace bld_mult
 } // namespace cuda
 } // namespace bnmf_algs
