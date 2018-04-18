@@ -45,30 +45,17 @@ void cuda::tensor_sums(const cuda::DeviceMemory1D<T>& tensor,
     }
 }
 
-template <typename Real> Real* cuda::apply_psi(Real* begin, size_t num_elems) {
-    // host memory wrapper
-    cuda::HostMemory1D<Real> host_data(begin, num_elems);
-
-    // allocate device memory
-    cuda::DeviceMemory1D<Real> device_data(num_elems);
-
-    // copy range to GPU
-    cuda::copy1D(device_data, host_data, cudaMemcpyHostToDevice);
-
+template <typename Real> void cuda::apply_psi(DeviceMemory1D<Real>& range) {
     // grid/block dimensions
+    const auto num_elems = range.dims()[0];
     size_t threads_per_block = 1024;
     size_t blocks_per_grid = cuda::idiv_ceil(num_elems, threads_per_block);
 
     // apply kernel
-    kernel::apply_psi<<<blocks_per_grid, threads_per_block>>>(
-        device_data.data(), num_elems);
+    kernel::apply_psi<<<blocks_per_grid, threads_per_block>>>(range.data(),
+                                                              num_elems);
     auto err = cudaGetLastError();
     BNMF_ASSERT(err == cudaSuccess, "Error running kernel in cuda::apply_psi");
-
-    // copy from GPU to main memory
-    cuda::copy1D(host_data, device_data, cudaMemcpyDeviceToHost);
-
-    return begin;
 }
 
 template <typename T>
@@ -134,8 +121,8 @@ template void
 cuda::tensor_sums<size_t>(const cuda::DeviceMemory1D<size_t>&, const shape<3>&,
                           std::array<cuda::DeviceMemory1D<size_t>, 3>&);
 
-template double* cuda::apply_psi<double>(double*, size_t);
-template float* cuda::apply_psi<float>(float*, size_t);
+template void cuda::apply_psi<double>(cuda::DeviceMemory1D<double>&);
+template void cuda::apply_psi<float>(cuda::DeviceMemory1D<float>&);
 
 template void cuda::bld_mult::update_grad_plus<double>(
     const tensor_t<double, 3>&, const matrix_t<double>&, tensor_t<double, 3>&);

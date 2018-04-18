@@ -55,9 +55,14 @@ TEST_CASE("Test apply_psi", "[tensor_ops]") {
         Eigen::TensorMap<tensord<3>> data_tensor(data.data(), x, y, z);
 
         matrixd data_copy = data;
+
         // Reduction on GPU
         Eigen::TensorMap<tensord<3>> actual(data_copy.data(), x, y, z);
-        cuda::apply_psi(actual.data(), x * y * z);
+        cuda::HostMemory1D<double> actual_host(actual.data(), x * y * z);
+        cuda::DeviceMemory1D<double> actual_device(x * y * z);
+        cuda::copy1D(actual_device, actual_host, cudaMemcpyHostToDevice);
+        cuda::apply_psi(actual_device);
+        cuda::copy1D(actual_host, actual_device, cudaMemcpyDeviceToHost);
 
         // Reduction on CPU
         tensord<3> expected(x, y, z);
@@ -93,18 +98,16 @@ TEST_CASE("Test tensor_sums", "[tensor_ops]") {
         std::array<cuda::HostMemory1D<double>, 3> result_arr = {
             cuda::HostMemory1D<double>(S_pjk.data(), y * z),
             cuda::HostMemory1D<double>(S_ipk.data(), x * z),
-            cuda::HostMemory1D<double>(S_ijp.data(), x * y)
-        };
+            cuda::HostMemory1D<double>(S_ijp.data(), x * y)};
 
         // Reduction on GPU
         {
             // allocate GPU memory
             cuda::DeviceMemory1D<double> S_device(x * y * z);
             std::array<cuda::DeviceMemory1D<double>, 3> device_result_arr = {
-                    cuda::DeviceMemory1D<double>(y * z),
-                    cuda::DeviceMemory1D<double>(x * z),
-                    cuda::DeviceMemory1D<double>(x * y)
-            };
+                cuda::DeviceMemory1D<double>(y * z),
+                cuda::DeviceMemory1D<double>(x * z),
+                cuda::DeviceMemory1D<double>(x * y)};
 
             // copy S to GPU
             cuda::copy1D(S_device, S_host, cudaMemcpyHostToDevice);

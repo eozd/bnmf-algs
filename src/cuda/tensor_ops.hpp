@@ -68,7 +68,7 @@ void tensor_sums(const DeviceMemory1D<T>& tensor, const shape<3>& dims,
  * @return Pointer to the beginning of the altered range. This pointer is
  * equal to the given pointer parameter begin.
  */
-template <typename Real> Real* apply_psi(Real* begin, size_t num_elems);
+template <typename Real> void apply_psi(DeviceMemory1D<Real>& range);
 
 /**
  * @brief Namespace containing update functions that are employed in
