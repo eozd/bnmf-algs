@@ -1,4 +1,5 @@
 #include "../catch2.hpp"
+#include "cuda/memory.hpp"
 #include "cuda/tensor_ops.hpp"
 #include "cuda/util.hpp"
 #include "defs.hpp"
@@ -84,11 +85,40 @@ TEST_CASE("Test tensor_sums", "[tensor_ops]") {
         tensord<3> S(x, y, z);
         S.setRandom();
 
+        tensord<2> S_pjk(y, z);
+        tensord<2> S_ipk(x, z);
+        tensord<2> S_ijp(x, y);
+
+        cuda::HostMemory1D<const double> S_host(S.data(), x * y * z);
+        std::array<cuda::HostMemory1D<double>, 3> result_arr = {
+            cuda::HostMemory1D<double>(S_pjk.data(), y * z),
+            cuda::HostMemory1D<double>(S_ipk.data(), x * z),
+            cuda::HostMemory1D<double>(S_ijp.data(), x * y)
+        };
+
         // Reduction on GPU
-        auto sums = cuda::tensor_sums(S);
-        const auto& S_pjk = sums[0];
-        const auto& S_ipk = sums[1];
-        const auto& S_ijp = sums[2];
+        {
+            // allocate GPU memory
+            cuda::DeviceMemory1D<double> S_device(x * y * z);
+            std::array<cuda::DeviceMemory1D<double>, 3> device_result_arr = {
+                    cuda::DeviceMemory1D<double>(y * z),
+                    cuda::DeviceMemory1D<double>(x * z),
+                    cuda::DeviceMemory1D<double>(x * y)
+            };
+
+            // copy S to GPU
+            cuda::copy1D(S_device, S_host, cudaMemcpyHostToDevice);
+
+            // calculate sums
+            shape<3> dims = {x, y, z};
+            cuda::tensor_sums(S_device, dims, device_result_arr);
+
+            // copy from GPU to main memory
+            for (size_t i = 0; i < 3; ++i) {
+                cuda::copy1D(result_arr[i], device_result_arr[i],
+                             cudaMemcpyDeviceToHost);
+            }
+        }
 
         tensord<2> E_pjk = S.sum(shape<1>({0}));
         tensord<2> E_ipk = S.sum(shape<1>({1}));

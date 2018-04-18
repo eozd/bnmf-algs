@@ -2,8 +2,8 @@
 
 #include "alloc_model/alloc_model_params.hpp"
 #include "defs.hpp"
-#include "util_details.hpp"
 #include "util/util.hpp"
+#include "util_details.hpp"
 #include <gsl/gsl_sf_psi.h>
 
 #ifdef USE_OPENMP
@@ -92,6 +92,8 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
     auto x = static_cast<size_t>(X.rows());
     auto y = static_cast<size_t>(X.cols());
 
+    shape<3> dims = {x, y, z};
+
     // initialize tensor S
     tensor_t<T, 3> S(x, y, z);
     vectord dirichlet_params = vectord::Constant(z, 1);
@@ -140,6 +142,23 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
     tensor_t<T, 2> S_ipk_tensor(x, z);
     tensor_t<T, 2> S_ijp_tensor(x, y);
 
+#ifdef USE_CUDA
+    cuda::HostMemory1D<T> S_host(S.data(), x * y * z);
+    std::array<cuda::HostMemory1D<T>, 3> host_sums = {
+        cuda::HostMemory1D<T>(S_pjk_tensor.data(), y * z),
+        cuda::HostMemory1D<T>(S_ipk_tensor.data(), x * z),
+        cuda::HostMemory1D<T>(S_ijp_tensor.data(), x * y)};
+
+    cuda::DeviceMemory1D<T> S_device(x * y * z);
+    std::array<cuda::DeviceMemory1D<T>, 3> device_sums = {
+        cuda::DeviceMemory1D<T>(y * z), cuda::DeviceMemory1D<T>(x * z),
+        cuda::DeviceMemory1D<T>(x * y)};
+
+    for (size_t i = 0; i < 3; ++i) {
+        cuda::copy1D(device_sums[i], host_sums[i], cudaMemcpyHostToDevice);
+    }
+#endif
+
     Eigen::Map<const vector_t<Scalar>> alpha(model_params.alpha.data(),
                                              model_params.alpha.size());
     Eigen::Map<const vector_t<Scalar>> beta(model_params.beta.data(),
@@ -154,10 +173,12 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
     for (size_t eph = 0; eph < max_iter; ++eph) {
         // update S_pjk, S_ipk, S_ijp
 #ifdef USE_CUDA
-        const auto tensor_sums = cuda::tensor_sums(S);
-        S_pjk_tensor = tensor_sums[0];
-        S_ipk_tensor = tensor_sums[1];
-        S_ijp_tensor = tensor_sums[2];
+        cuda::copy1D(S_device, S_host, cudaMemcpyHostToDevice);
+        cuda::tensor_sums(S_device, dims, device_sums);
+
+        for (size_t i = 0; i < 3; ++i) {
+            cuda::copy1D(host_sums[i], device_sums[i], cudaMemcpyDeviceToHost);
+        }
 #elif USE_OPENMP
         S_pjk_tensor.device(thread_dev) = S.sum(shape<1>({0}));
         S_ipk_tensor.device(thread_dev) = S.sum(shape<1>({1}));

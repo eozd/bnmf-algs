@@ -1,25 +1,21 @@
 #include "cuda/memory.hpp"
 #include "cuda/tensor_ops.hpp"
+#include "cuda/tensor_ops_kernels.hpp"
 #include "cuda/util.hpp"
 #include "defs.hpp"
+#include <array>
+#include <cuda_runtime.h>
 
 using namespace bnmf_algs;
 
 template <typename T>
-std::array<tensor_t<T, 2>, 3> cuda::tensor_sums(const tensor_t<T, 3>& tensor) {
+void cuda::tensor_sums(const cuda::DeviceMemory1D<T>& tensor,
+                       const shape<3>& dims,
+                       std::array<cuda::DeviceMemory1D<T>, 3>& result_arr) {
     // input tensor properties
-    const long x = tensor.dimension(0);
-    const long y = tensor.dimension(1);
-    const long z = tensor.dimension(2);
-    const size_t in_num_elems = static_cast<size_t>(x * y * z);
-
-    // since Eigen tensormap can't handle pitched memory, we need to use
-    // contiguous 1D memory
-    HostMemory1D<const T> host_tensor(tensor.data(), in_num_elems);
-    DeviceMemory1D<T> device_tensor(in_num_elems);
-
-    // copy input tensor to GPU
-    copy1D(device_tensor, host_tensor, cudaMemcpyHostToDevice);
+    const long x = dims[0];
+    const long y = dims[1];
+    const long z = dims[2];
 
     // create GPU stream and device (default stream)
     Eigen::CudaStreamDevice stream;
@@ -29,32 +25,15 @@ std::array<tensor_t<T, 2>, 3> cuda::tensor_sums(const tensor_t<T, 3>& tensor) {
     shape<1> sum_axis;
 
     // map GPU tensor to Eigen (no copying)
-    Eigen::TensorMap<tensor_t<T, 3>> in_tensor(device_tensor.data(), x, y, z);
-
-    // results
-    std::array<tensor_t<T, 2>, 3> result = {
-        tensor_t<T, 2>(y, z), // along axis 0
-        tensor_t<T, 2>(x, z), // along axis 1
-        tensor_t<T, 2>(x, y)  // along axis 2
-    };
-
-    // memory maps to result tensors
-    std::array<HostMemory1D<T>, 3> result_mems = {
-        HostMemory1D<T>(result[0].data(), static_cast<size_t>(y * z)),
-        HostMemory1D<T>(result[1].data(), static_cast<size_t>(x * z)),
-        HostMemory1D<T>(result[2].data(), static_cast<size_t>(x * y))};
+    Eigen::TensorMap<tensor_t<T, 3>> in_tensor(tensor.data(), x, y, z);
 
     // compute sum along each axis
     for (size_t axis = 0; axis < 3; ++axis) {
         long rows = (axis == 0) ? y : x;
         long cols = (axis == 2) ? y : z;
-        const auto out_num_elems = static_cast<size_t>(rows * cols);
-
-        // allocate memory on GPU for sum along current axis
-        DeviceMemory1D<T> device_sum_tensor(out_num_elems);
 
         // map GPU tensor to Eigen (no copying)
-        Eigen::TensorMap<tensor_t<T, 2>> out_tensor(device_sum_tensor.data(),
+        Eigen::TensorMap<tensor_t<T, 2>> out_tensor(result_arr[axis].data(),
                                                     rows, cols);
 
         // axis to sum along
@@ -63,12 +42,7 @@ std::array<tensor_t<T, 2>, 3> cuda::tensor_sums(const tensor_t<T, 3>& tensor) {
         // sum the tensor on GPU
         out_tensor.device(dev) = in_tensor.sum(sum_axis);
         cudaStreamSynchronize(stream.stream());
-
-        // copy result back to main memory
-        copy1D(result_mems[axis], device_sum_tensor, cudaMemcpyDeviceToHost);
     }
-
-    return result;
 }
 
 template <typename Real> Real* cuda::apply_psi(Real* begin, size_t num_elems) {
@@ -144,23 +118,27 @@ void cuda::bld_mult::update_grad_plus(const tensor_t<T, 3>& S,
 }
 
 /************************ TEMPLATE INSTANTIATIONS *****************************/
-template std::array<tensor_t<double, 2>, 3>
-cuda::tensor_sums(const tensor_t<double, 3>&);
-template std::array<tensor_t<float, 2>, 3>
-cuda::tensor_sums(const tensor_t<float, 3>&);
-template std::array<tensor_t<int, 2>, 3>
-cuda::tensor_sums(const tensor_t<int, 3>&);
-template std::array<tensor_t<long, 2>, 3>
-cuda::tensor_sums(const tensor_t<long, 3>&);
-template std::array<tensor_t<size_t, 2>, 3>
-cuda::tensor_sums(const tensor_t<size_t, 3>&);
+template void
+cuda::tensor_sums<double>(const cuda::DeviceMemory1D<double>&, const shape<3>&,
+                          std::array<cuda::DeviceMemory1D<double>, 3>&);
+template void
+cuda::tensor_sums<float>(const cuda::DeviceMemory1D<float>&, const shape<3>&,
+                         std::array<cuda::DeviceMemory1D<float>, 3>&);
+template void cuda::tensor_sums<int>(const cuda::DeviceMemory1D<int>&,
+                                     const shape<3>&,
+                                     std::array<cuda::DeviceMemory1D<int>, 3>&);
+template void
+cuda::tensor_sums<long>(const cuda::DeviceMemory1D<long>&, const shape<3>&,
+                        std::array<cuda::DeviceMemory1D<long>, 3>&);
+template void
+cuda::tensor_sums<size_t>(const cuda::DeviceMemory1D<size_t>&, const shape<3>&,
+                          std::array<cuda::DeviceMemory1D<size_t>, 3>&);
 
-template double* cuda::apply_psi(double*, size_t);
-template float* cuda::apply_psi(float*, size_t);
+template double* cuda::apply_psi<double>(double*, size_t);
+template float* cuda::apply_psi<float>(float*, size_t);
 
-template void cuda::bld_mult::update_grad_plus(const tensor_t<double, 3>&,
-                                               const matrix_t<double>&,
-                                               tensor_t<double, 3>&);
-template void cuda::bld_mult::update_grad_plus(const tensor_t<float, 3>&,
-                                               const matrix_t<float>&,
-                                               tensor_t<float, 3>&);
+template void cuda::bld_mult::update_grad_plus<double>(
+    const tensor_t<double, 3>&, const matrix_t<double>&, tensor_t<double, 3>&);
+template void cuda::bld_mult::update_grad_plus<float>(const tensor_t<float, 3>&,
+                                                      const matrix_t<float>&,
+                                                      tensor_t<float, 3>&);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "cuda/tensor_ops_kernels.hpp"
+#include "cuda/memory.hpp"
 #include "defs.hpp"
 #include <array>
 
@@ -40,7 +40,8 @@ namespace cuda {
  * \times y})\f$.
  */
 template <typename T>
-std::array<tensor_t<T, 2>, 3> tensor_sums(const tensor_t<T, 3>& tensor);
+void tensor_sums(const DeviceMemory1D<T>& tensor, const shape<3>& dims,
+                 std::array<DeviceMemory1D<T>, 3>& result_arr);
 
 /**
  * @brief Apply cuda::kernel::psi_appr function to every element in the range

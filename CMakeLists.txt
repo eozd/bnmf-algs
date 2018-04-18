@@ -52,7 +52,8 @@ set(CUDA_TEST_SRC_FILES
 if (BUILD_CUDA)
     # we are using CUDA 8 ---> the newest possible g++ is g++-5.
     set(CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
-    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 -O3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DEIGEN_AVOID_STL_ARRAY")
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -std=c++11 -O3 -DEIGEN_AVOID_STL_ARRAY")
 
     add_definitions(-DUSE_CUDA)
     find_package(CUDA REQUIRED)
@@ -60,15 +61,13 @@ if (BUILD_CUDA)
 
     add_definitions(-DEIGEN_USE_GPU)
     CUDA_INCLUDE_DIRECTORIES(src ${EIGEN3_INCLUDE_DIR})
-
-    CUDA_COMPILE(CUDA_OBJ_FILES ${CUDA_KERNEL_FILES})
 endif (BUILD_CUDA)
 
 # Build tests
 if (BUILD_TESTING)
     add_definitions(-DBUILD_TESTING)
     if (BUILD_CUDA)
-        add_executable(tests ${TEST_SRC_FILES} ${CUDA_TEST_SRC_FILES} ${CUDA_OBJ_FILES})
+        CUDA_ADD_EXECUTABLE(tests ${TEST_SRC_FILES} ${CUDA_TEST_SRC_FILES} ${CUDA_KERNEL_FILES})
         target_link_libraries(tests ${CUDA_LIBRARIES})
     else (BUILD_CUDA)
         add_executable (tests ${TEST_SRC_FILES})
