@@ -158,7 +158,31 @@ void cuda::bld_mult::update_S(const DeviceMemory2D<Real>& X,
                               const DeviceMemory2D<Real>& grad_minus,
                               const DeviceMemory3D<Real>& grad_plus,
                               const DeviceMemory2D<Real>& S_ijp,
-                              DeviceMemory3D<Real>& S) {}
+                              DeviceMemory3D<Real>& S) {
+    // tensor dimensions
+    const auto x = S.dims()[0];
+    const auto y = S.dims()[1];
+    const auto z = S.dims()[2];
+
+    // block dimensions (number of threads per block axis)
+    constexpr size_t block_size_x = 16;
+    constexpr size_t block_size_y = 16;
+    constexpr size_t block_size_z = 4;
+    dim3 block_dims(block_size_y, block_size_x, block_size_z);
+    dim3 grid_dims(cuda::idiv_ceil(y, block_size_y),
+                   cuda::idiv_ceil(x, block_size_x),
+                   cuda::idiv_ceil(z, block_size_z));
+
+    // run kernel
+    kernel::update_S<<<grid_dims, block_dims>>>(
+        X.data(), X.pitch(), nom.data(), nom.pitch(), denom.data(),
+        denom.pitch(), grad_minus.data(), grad_minus.pitch(),
+        grad_plus.pitched_ptr(), S_ijp.data(), S_ijp.pitch(), S.pitched_ptr(),
+        y, x, z);
+    auto err = cudaGetLastError();
+    BNMF_ASSERT(err == cudaSuccess,
+                "Error running kernel in cuda::bld_mult::update_grad_plus");
+}
 
 /************************ TEMPLATE INSTANTIATIONS *****************************/
 // We need these because nvcc requires explicit instantiations of all template

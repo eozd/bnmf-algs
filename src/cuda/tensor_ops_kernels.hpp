@@ -157,6 +157,14 @@ __global__ void update_denom(cudaPitchedPtr S, const Real* X_reciprocal,
                              cudaPitchedPtr grad_plus, Real* denom_mult,
                              size_t denom_mult_pitch, size_t width,
                              size_t height, size_t depth);
+
+template <typename Real>
+__global__ void
+update_S(const Real* X, size_t X_pitch, const Real* nom_mult,
+         size_t nom_mult_pitch, const Real* denom_mult, size_t denom_mult_pitch,
+         const Real* grad_minus, size_t grad_minus_pitch,
+         cudaPitchedPtr grad_plus, const Real* S_ijp, size_t S_ijp_pitch,
+         cudaPitchedPtr S, size_t width, size_t height, size_t depth);
 } // namespace kernel
 } // namespace cuda
 } // namespace bnmf_algs

@@ -265,6 +265,62 @@ cuda::kernel::update_denom(cudaPitchedPtr S, const Real* X_reciprocal,
     *denom_mult_ij = sum;
 }
 
+template <typename Real>
+__global__ void
+cuda::kernel::update_S(const Real* X, size_t X_pitch, const Real* nom_mult,
+                       size_t nom_mult_pitch, const Real* denom_mult,
+                       size_t denom_mult_pitch, const Real* grad_minus,
+                       size_t grad_minus_pitch, cudaPitchedPtr grad_plus,
+                       const Real* S_ijp, size_t S_ijp_pitch, cudaPitchedPtr S,
+                       size_t width, size_t height, size_t depth) {
+    constexpr double eps = 1e-50;
+    // index for rows
+    const int i = blockIdx.y * blockDim.y + threadIdx.y;
+    // index for columns
+    const int j = blockIdx.x * blockDim.x + threadIdx.x;
+    // index for depth
+    const int k = blockIdx.z * blockDim.z + threadIdx.z;
+
+    if (not(i < height && j < width & k < depth)) {
+        return;
+    }
+
+    // S(i, j, k)
+    size_t fiber_pitch = S.pitch;
+    size_t num_cols = S.ysize;
+    size_t roof_pitch = fiber_pitch * num_cols;
+    size_t offset = roof_pitch * i + // go i roofs towards bottom
+                    j * fiber_pitch; // go j fibers to the right
+    Real* S_ijk = (Real*)((char*)S.ptr + offset) + k;
+
+    // grad_plus(i, j, k)
+    Real grad_plus_ijk = *((Real*)((char*)grad_plus.ptr + offset) + k);
+
+    // grad_minus(i, k)
+    offset = i * grad_minus_pitch;
+    Real grad_minus_ik = *((Real*)((char*)grad_minus + offset) + k);
+
+    // X(i, j)
+    offset = i * X_pitch;
+    Real X_ij = *((Real*)((char*)X + offset) + j);
+
+    // nom_mult(i, j)
+    offset = i * nom_mult_pitch;
+    Real nom_mult_ij = *((Real*)((char*)nom_mult + offset) + j);
+
+    // denom_mult(i, j)
+    offset = i * denom_mult_pitch;
+    Real denom_mult_ij = *((Real*)((char*)denom_mult + offset) + j);
+
+    // S_ijp(i, j)
+    offset = i * S_ijp_pitch;
+    Real S_ijp_ij = *((Real*)((char*)S_ijp + offset) + j);
+
+    // calculation
+    *S_ijk *= (grad_plus_ijk + nom_mult_ij) * (X_ij / (S_ijp_ij + eps)) /
+              (grad_minus_ik + denom_mult_ij + eps);
+}
+
 /************************ TEMPLATE INSTANTIATIONS *****************************/
 // We need these because CUDA requires explicit instantiations of all template
 // kernels.
@@ -332,3 +388,18 @@ cuda::kernel::update_denom(cudaPitchedPtr S, const float* X_reciprocal,
                            size_t X_reciprocal_pitch, cudaPitchedPtr grad_plus,
                            float* denom_mult, size_t denom_mult_pitch,
                            size_t width, size_t height, size_t depth);
+
+// update_S
+template __global__ void cuda::kernel::update_S(
+    const double* X, size_t X_pitch, const double* nom_mult,
+    size_t nom_mult_pitch, const double* denom_mult, size_t denom_mult_pitch,
+    const double* grad_minus, size_t grad_minus_pitch, cudaPitchedPtr grad_plus,
+    const double* S_ijp, size_t S_ijp_pitch, cudaPitchedPtr S, size_t width,
+    size_t height, size_t depth);
+template __global__ void
+cuda::kernel::update_S(const float* X, size_t X_pitch, const float* nom_mult,
+                       size_t nom_mult_pitch, const float* denom_mult,
+                       size_t denom_mult_pitch, const float* grad_minus,
+                       size_t grad_minus_pitch, cudaPitchedPtr grad_plus,
+                       const float* S_ijp, size_t S_ijp_pitch, cudaPitchedPtr S,
+                       size_t width, size_t height, size_t depth);

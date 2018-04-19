@@ -299,6 +299,9 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, const size_t z,
 #endif
     }
 
+#ifdef USE_CUDA
+    cuda::copy3D(S_host, S_device);
+#endif
     return S;
 }
 } // namespace bld
