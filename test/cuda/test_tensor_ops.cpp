@@ -216,3 +216,62 @@ TEST_CASE("Test update_nom", "[tensor_ops]") {
         REQUIRE(actual.isApprox(expected));
     }
 }
+
+TEST_CASE("Test update_denom", "[tensor_ops]") {
+    SECTION("Same results on GPU and CPU") {
+        const double eps = 1e-50;
+        cuda::init(0);
+
+        size_t x = 356, y = 478, z = 17;
+
+        // initialization
+        matrixd X = matrixd::Random(x, y) + matrixd::Constant(x, y, 10);
+        matrixd X_reciprocal = matrixd::Constant(x, y, 1).array() / X.array();
+        tensord<3> S(x, y, z);
+        {
+            matrixd data =
+                matrixd::Random(x, y * z) + matrixd::Constant(x, y * z, 1);
+            std::copy(data.data(), data.data() + x * y * z, S.data());
+        }
+        tensord<3> grad_plus(S);
+
+        matrixd actual(x, y);
+        // Calculate on GPU
+        {
+            cuda::HostMemory2D<double> X_reciprocal_host(X_reciprocal.data(), x,
+                                                         y);
+            cuda::HostMemory3D<double> grad_plus_host(grad_plus.data(), x, y,
+                                                      z);
+            cuda::HostMemory3D<double> S_host(S.data(), x, y, z);
+            cuda::HostMemory2D<double> actual_host(actual.data(), x, y);
+
+            cuda::DeviceMemory2D<double> X_reciprocal_device(x, y);
+            cuda::DeviceMemory3D<double> grad_plus_device(x, y, z);
+            cuda::DeviceMemory3D<double> S_device(x, y, z);
+            cuda::DeviceMemory2D<double> actual_device(x, y);
+
+            cuda::copy2D(X_reciprocal_device, X_reciprocal_host);
+            cuda::copy3D(grad_plus_device, grad_plus_host);
+            cuda::copy3D(S_device, S_host);
+
+            cuda::bld_mult::update_denom(X_reciprocal_device, grad_plus_device,
+                                         S_device, actual_device);
+            cuda::copy2D(actual_host, actual_device);
+        }
+
+        // Calculate on CPU
+        matrixd expected(x, y);
+        for (size_t i = 0; i < x; ++i) {
+            for (size_t j = 0; j < y; ++j) {
+                double xdiv = 1.0 / (X(i, j) + eps);
+                double denom_sum = 0;
+                for (size_t k = 0; k < z; ++k) {
+                    denom_sum += (S(i, j, k) * xdiv * grad_plus(i, j, k));
+                }
+                expected(i, j) = denom_sum;
+            }
+        }
+
+        REQUIRE(actual.isApprox(expected));
+    }
+}

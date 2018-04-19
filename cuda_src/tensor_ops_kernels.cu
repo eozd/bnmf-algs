@@ -223,6 +223,48 @@ __global__ void cuda::kernel::update_nom(
     *nom_mult_ij = sum;
 }
 
+template <typename Real>
+__global__ void
+cuda::kernel::update_denom(cudaPitchedPtr S, const Real* X_reciprocal,
+                           size_t X_reciprocal_pitch, cudaPitchedPtr grad_plus,
+                           Real* denom_mult, size_t denom_mult_pitch,
+                           size_t width, size_t height, size_t depth) {
+
+    // index for rows
+    const int i = blockIdx.y * blockDim.y + threadIdx.y;
+    // index for columns
+    const int j = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (not(i < height && j < width)) {
+        return;
+    }
+
+    // S(i, j, :)
+    size_t fiber_pitch = S.pitch;
+    size_t num_cols = S.ysize;
+    size_t roof_pitch = fiber_pitch * num_cols;
+    size_t offset = roof_pitch * i + // go i roofs towards bottom
+                    j * fiber_pitch; // go j fibers to the right
+    const Real* S_ij = (Real*)((char*)S.ptr + offset);
+
+    // grad_plus(i, j, :)
+    const Real* grad_plus_ij = (Real*)((char*)grad_plus.ptr + offset);
+
+    // X_reciprocal(i, j)
+    offset = i * X_reciprocal_pitch;
+    const Real* X_reciprocal_ij = (Real*)((char*)X_reciprocal + offset) + j;
+
+    // denom_mult(i, j)
+    offset = i * denom_mult_pitch;
+    Real* denom_mult_ij = (Real*)((char*)denom_mult + offset) + j;
+
+    Real sum = Real();
+    for (size_t k = 0; k < depth; ++k) {
+        sum += S_ij[k] * (*X_reciprocal_ij) * grad_plus_ij[k];
+    }
+    *denom_mult_ij = sum;
+}
+
 /************************ TEMPLATE INSTANTIATIONS *****************************/
 // We need these because CUDA requires explicit instantiations of all template
 // kernels.
@@ -278,3 +320,15 @@ template __global__ void cuda::kernel::update_nom(
     cudaPitchedPtr S, const float* X_reciprocal, size_t X_reciprocal_pitch,
     const float* grad_minus, size_t grad_minus_pitch, float* nom_mult,
     size_t nom_mult_pitch, size_t width, size_t height, size_t depth);
+
+// update_denom
+template __global__ void
+cuda::kernel::update_denom(cudaPitchedPtr S, const double* X_reciprocal,
+                           size_t X_reciprocal_pitch, cudaPitchedPtr grad_plus,
+                           double* denom_mult, size_t denom_mult_pitch,
+                           size_t width, size_t height, size_t depth);
+template __global__ void
+cuda::kernel::update_denom(cudaPitchedPtr S, const float* X_reciprocal,
+                           size_t X_reciprocal_pitch, cudaPitchedPtr grad_plus,
+                           float* denom_mult, size_t denom_mult_pitch,
+                           size_t width, size_t height, size_t depth);

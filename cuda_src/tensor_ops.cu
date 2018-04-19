@@ -128,7 +128,28 @@ template <typename Real>
 void cuda::bld_mult::update_denom(const DeviceMemory2D<Real>& X_reciprocal,
                                   const DeviceMemory3D<Real>& grad_plus,
                                   const DeviceMemory3D<Real>& S,
-                                  DeviceMemory2D<Real>& denom) {}
+                                  DeviceMemory2D<Real>& denom) {
+    // tensor dimensions
+    const auto x = S.dims()[0];
+    const auto y = S.dims()[1];
+    const auto z = S.dims()[2];
+
+    // block dimensions (number of threads per block axis)
+    constexpr size_t block_size_x = 32;
+    constexpr size_t block_size_y = 32;
+    constexpr size_t block_size_z = 1;
+    dim3 block_dims(block_size_y, block_size_x, block_size_z);
+    dim3 grid_dims(cuda::idiv_ceil(y, block_size_y),
+                   cuda::idiv_ceil(x, block_size_x), 1);
+
+    // run kernel
+    kernel::update_denom<<<grid_dims, block_dims>>>(
+        S.pitched_ptr(), X_reciprocal.data(), X_reciprocal.pitch(),
+        grad_plus.pitched_ptr(), denom.data(), denom.pitch(), y, x, z);
+    auto err = cudaGetLastError();
+    BNMF_ASSERT(err == cudaSuccess,
+                "Error running kernel in cuda::bld_mult::update_nom");
+}
 
 template <typename Real>
 void cuda::bld_mult::update_S(const DeviceMemory2D<Real>& X,
