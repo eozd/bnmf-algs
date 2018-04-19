@@ -74,7 +74,7 @@ BASELINE(nmf_seq_elems, SEQ_0_to_5, 0, 1) {
 
     beg = 0, scale = 5;
 
-    auto params = make_params(x, y, r);
+    auto params = make_params<double>(x, y, r);
     matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(bld::seq_greedy_bld(X, r, params));
 }
@@ -86,7 +86,7 @@ BENCHMARK(nmf_seq_elems, SEQ_0_to_10, 0, 1) {
 
     beg = 0, scale = 10;
 
-    auto params = make_params(x, y, r);
+    auto params = make_params<double>(x, y, r);
     matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(bld::seq_greedy_bld(X, r, params));
 }
@@ -98,7 +98,7 @@ BENCHMARK(nmf_seq_elems, SEQ_0_to_50, 0, 1) {
 
     beg = 0, scale = 50;
 
-    auto params = make_params(x, y, r);
+    auto params = make_params<double>(x, y, r);
     matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(bld::seq_greedy_bld(X, r, params));
 }
@@ -110,7 +110,7 @@ BENCHMARK(nmf_seq_elems, SEQ_0_to_200, 0, 1) {
 
     beg = 0, scale = 20;
 
-    auto params = make_params(x, y, r);
+    auto params = make_params<double>(x, y, r);
     matrixd X = make_matrix(x, y, beg, scale);
     celero::DoNotOptimizeAway(bld::seq_greedy_bld(X, r, params));
 }

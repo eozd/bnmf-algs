@@ -17,8 +17,8 @@ size_t r = 15;
 double beta;
 long x = 100;
 long y = 100;
-long beg = 0;
-long scale = 10;
+double beg = 0;
+double scale = 10;
 size_t max_iter = 1000;
 } // namespace nmf_bench_vars
 
