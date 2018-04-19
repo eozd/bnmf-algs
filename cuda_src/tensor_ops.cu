@@ -8,43 +8,6 @@
 
 using namespace bnmf_algs;
 
-template <typename T>
-void cuda::tensor_sums(const cuda::DeviceMemory1D<T>& tensor,
-                       const shape<3>& dims,
-                       std::array<cuda::DeviceMemory1D<T>, 3>& result_arr) {
-    // input tensor properties
-    const long x = dims[0];
-    const long y = dims[1];
-    const long z = dims[2];
-
-    // create GPU stream and device (default stream)
-    Eigen::CudaStreamDevice stream;
-    Eigen::GpuDevice dev(&stream);
-
-    // sum axis
-    shape<1> sum_axis;
-
-    // map GPU tensor to Eigen (no copying)
-    Eigen::TensorMap<tensor_t<T, 3>> in_tensor(tensor.data(), x, y, z);
-
-    // compute sum along each axis
-    for (size_t axis = 0; axis < 3; ++axis) {
-        long rows = (axis == 0) ? y : x;
-        long cols = (axis == 2) ? y : z;
-
-        // map GPU tensor to Eigen (no copying)
-        Eigen::TensorMap<tensor_t<T, 2>> out_tensor(result_arr[axis].data(),
-                                                    rows, cols);
-
-        // axis to sum along
-        sum_axis[0] = axis;
-
-        // sum the tensor on GPU
-        out_tensor.device(dev) = in_tensor.sum(sum_axis);
-        cudaStreamSynchronize(stream.stream());
-    }
-}
-
 template <typename Real> void cuda::apply_psi(DeviceMemory1D<Real>& range) {
     // grid/block dimensions
     const auto num_elems = range.dims()[0];
@@ -86,32 +49,79 @@ void cuda::bld_mult::update_grad_plus(
                 "Error running kernel in cuda::bld_mult::update_grad_plus");
 }
 
-/************************ TEMPLATE INSTANTIATIONS *****************************/
-template void
-cuda::tensor_sums<double>(const cuda::DeviceMemory1D<double>&, const shape<3>&,
-                          std::array<cuda::DeviceMemory1D<double>, 3>&);
-template void
-cuda::tensor_sums<float>(const cuda::DeviceMemory1D<float>&, const shape<3>&,
-                         std::array<cuda::DeviceMemory1D<float>, 3>&);
-template void cuda::tensor_sums<int>(const cuda::DeviceMemory1D<int>&,
-                                     const shape<3>&,
-                                     std::array<cuda::DeviceMemory1D<int>, 3>&);
-template void
-cuda::tensor_sums<long>(const cuda::DeviceMemory1D<long>&, const shape<3>&,
-                        std::array<cuda::DeviceMemory1D<long>, 3>&);
-template void
-cuda::tensor_sums<size_t>(const cuda::DeviceMemory1D<size_t>&, const shape<3>&,
-                          std::array<cuda::DeviceMemory1D<size_t>, 3>&);
+template <typename T>
+void cuda::tensor_sums(const cuda::DeviceMemory3D<T>& tensor,
+                       std::array<cuda::DeviceMemory2D<T>, 3>& result_arr) {
+    // input tensor properties
+    const auto dims = tensor.dims();
+    const size_t height = dims[0];
+    const size_t width = dims[1];
+    const size_t depth = dims[2];
 
+    // block dimensions (number of threads per block axis)
+    constexpr size_t block_size_height = 32;
+    constexpr size_t block_size_width = 32;
+    constexpr size_t block_size_depth = 1;
+    dim3 block_dims(block_size_width, block_size_height, block_size_depth);
+
+    constexpr size_t num_axes = 3;
+    // launch each sum kernel on different CUDA stream
+    std::array<cudaStream_t, num_axes> stream_arr;
+    for (size_t i = 0; i < num_axes; ++i) {
+        cudaStreamCreate(&stream_arr[i]);
+    }
+
+    // compute sum along each axis
+    for (size_t axis = 0; axis < num_axes; ++axis) {
+        // rows, cols, layers set when looked at the tensor from the face along
+        // the current axis
+        const size_t n_rows = (axis == 0) ? width : height;
+        const size_t n_cols = (axis == 2) ? width : depth;
+        const size_t n_layers = dims[axis];
+
+        // kernel grid dimensions
+        dim3 grid_dims(cuda::idiv_ceil(n_cols, block_size_width),
+                       cuda::idiv_ceil(n_rows, block_size_height), 1);
+
+        // launch asynchronous kernel
+        kernel::sum_tensor3D<<<grid_dims, block_dims, 0, stream_arr[axis]>>>(
+            tensor.pitched_ptr(), result_arr[axis].data(),
+            result_arr[axis].pitch(), axis, n_rows, n_cols, n_layers);
+    }
+
+    // synchronize all streams
+    for (size_t i = 0; i < num_axes; ++i) {
+        cudaStreamSynchronize(stream_arr[i]);
+        cudaStreamDestroy(stream_arr[i]);
+    }
+}
+
+/************************ TEMPLATE INSTANTIATIONS *****************************/
+// We need these because nvcc requires explicit instantiations of all template
+// functions.
+
+// apply_psi
 template void cuda::apply_psi<double>(cuda::DeviceMemory1D<double>&);
 template void cuda::apply_psi<float>(cuda::DeviceMemory1D<float>&);
 
+// update_grad_plus
 template void
 cuda::bld_mult::update_grad_plus<double>(const cuda::DeviceMemory3D<double>&,
                                          const cuda::DeviceMemory2D<double>&,
                                          cuda::DeviceMemory3D<double>&);
-
 template void
 cuda::bld_mult::update_grad_plus<float>(const cuda::DeviceMemory3D<float>&,
                                         const cuda::DeviceMemory2D<float>&,
                                         cuda::DeviceMemory3D<float>&);
+
+// tensor_sums
+template void cuda::tensor_sums(const cuda::DeviceMemory3D<double>&,
+                                std::array<cuda::DeviceMemory2D<double>, 3>&);
+template void cuda::tensor_sums(const cuda::DeviceMemory3D<float>&,
+                                std::array<cuda::DeviceMemory2D<float>, 3>&);
+template void cuda::tensor_sums(const cuda::DeviceMemory3D<int>&,
+                                std::array<cuda::DeviceMemory2D<int>, 3>&);
+template void cuda::tensor_sums(const cuda::DeviceMemory3D<long>&,
+                                std::array<cuda::DeviceMemory2D<long>, 3>&);
+template void cuda::tensor_sums(const cuda::DeviceMemory3D<size_t>&,
+                                std::array<cuda::DeviceMemory2D<size_t>, 3>&);

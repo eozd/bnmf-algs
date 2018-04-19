@@ -17,7 +17,7 @@ namespace cuda {
  *
  * This function computes the sum of the given 3D input tensor along each
  * dimension by performing the computation on GPU using CUDA. Summing a 3D
- * \f$x \times y \times z\f$ tensor \f$S\f$ along its first axis creates a new
+ * \f$x \times y \times z\f$ tensor \f$S\f$ along its first axis computes a new
  * 2D tensor \f$M\f$ of shape \f$y \times z\f$ where
  *
  * \f[
@@ -25,27 +25,25 @@ namespace cuda {
  * \f]
  *
  * Summing along the other axes is defined similarly. \f$i^{th}\f$ entry of the
- * returned array contains the result of summing the input tensor \f$S\f$ along
+ * output array contains the result of summing the input tensor \f$S\f$ along
  * its \f$(i + 1)^{th}\f$ axis.
  *
- * Since sending and receiving large tensors to/from GPU takes a long time, this
- * function sends the input tensor only once to the GPU. Each sum tensor is
- * deallocated after it is computed to make space for the other sum tensors.
- * Therefore, the total consumed space on GPU is \f$xyz + \max\{xy, xz,
- * yz\}\f$ number of elements.
+ * The given 3D tensor must be previously copied to the GPU. Additionally, GPU
+ * memory for all sum tensors must be already allocated. cuda::DeviceMemory3D
+ * and cuda::DeviceMemory2D objects provide simple APIs for these tasks.
  *
  * @tparam T Type of the entries of the input tensor.
  * @param tensor Input tensor to sum along each of its axes.
- * @return An array of sum tensors \f$(M_{y \times z}, M_{x \times z}, M_{x
+ * @param An array of sum tensors \f$(M_{y \times z}, M_{x \times z}, M_{x
  * \times y})\f$.
  */
 template <typename T>
-void tensor_sums(const DeviceMemory1D<T>& tensor, const shape<3>& dims,
-                 std::array<DeviceMemory1D<T>, 3>& result_arr);
+void tensor_sums(const DeviceMemory3D<T>& tensor,
+                 std::array<DeviceMemory2D<T>, 3>& result_arr);
 
 /**
- * @brief Apply cuda::kernel::psi_appr function to every element in the range
- * [begin, begin + num_elems) in-place using CUDA.
+ * @brief Apply cuda::kernel::psi_appr function to every element in the given
+ * 1D sequence on the GPU.
  *
  * This function makes the following update to every \f$x\f$ in the range
  * [begin, begin + num_elems)
@@ -56,17 +54,9 @@ void tensor_sums(const DeviceMemory1D<T>& tensor, const shape<3>& dims,
  *
  * where \f$\psi\f$ is cuda::kernel::psi_appr.
  *
- * apply_psi executes by copying the range to the GPU, executing psi application
- * procedure completely in parallel and copying the results in the GPU onto the
- * range beginning in the pointer parameter begin.
- *
  * @tparam Real A real type such as double or float.
- * @param begin Pointer to the beginning of the range to apply util::psi_appr
- * function.
- * @param num_elems Number of elements in the range [begin, begin + num_elems).
- *
- * @return Pointer to the beginning of the altered range. This pointer is
- * equal to the given pointer parameter begin.
+ * @param range A DeviceMemory1D object holding the GPU memory to be updated
+ * with psi_appr function.
  */
 template <typename Real> void apply_psi(DeviceMemory1D<Real>& range);
 
@@ -83,14 +73,12 @@ namespace bld_mult {
  * @brief Perform grad_plus update employed in bld_mult algorithm using CUDA.
  *
  * This function performs the grad_plus update employed in bld_mult algorithm
- * by copying S tensor and beta_eph matrix to GPU and performing the update in
- * parallel using CUDA. Afterwards, the result of the update is copied back onto
- * the given tensor parameter grad_plus.
+ * using CUDA.
  *
  * <B> All the given tensor and matrix objects are assumed to be in row-major
  * order </B>. This is the allocation order specified in defs.hpp file. All the
- * CUDA memory allocations and indexing operations are performed according to
- * the row-major allocation order.
+ * CUDA indexing operations are performed according to the row-major allocation
+ * order.
  *
  * Row-major order means that the last index of a matrix/tensor objects changes
  * the fastest. This is easy to understand with matrices: Matrix is stored
@@ -106,10 +94,9 @@ namespace bld_mult {
  *
  * @tparam Real Type of the entries of matrices and tensors such as double or
  * float.
- * @param S \f$S\f$ tensor, that is the output of bld_mult algorithm.
- * @param beta_eph beta_eph matrix used during bld_mult algorithm.
- * @param grad_plus grad_plus tensor that will store the results of grad_plus
- * update.
+ * @param S \f$S\f$ tensor on the GPU.
+ * @param beta_eph beta_eph matrix on the GPU.
+ * @param grad_plus grad_plus tensor on the GPU.
  */
 template <typename Real>
 void update_grad_plus(const DeviceMemory3D<Real>& S,
