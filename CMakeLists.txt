@@ -78,13 +78,17 @@ endif (BUILD_TESTING)
 # Build benchmarks
 if (BUILD_BENCH)
     # todo: move this elsewhere?
-#    add_executable(dataset_nmf main_nmf_on_file.cpp)
-#    target_link_libraries(dataset_nmf gsl gslcblas)
     if (BUILD_CUDA)
+        CUDA_ADD_EXECUTABLE(dataset_nmf main_nmf_on_file.cpp ${CUDA_KERNEL_FILES})
         CUDA_ADD_EXECUTABLE(benchmark ${BENCH_SRC_FILES} ${CUDA_KERNEL_FILES})
+
+        target_link_libraries(dataset_nmf gsl gslcblas ${CUDA_LIBRARIES})
         target_link_libraries(benchmark ${CUDA_LIBRARIES})
     else (BUILD_CUDA)
+        add_executable(dataset_nmf main_nmf_on_file.cpp)
         add_executable(benchmark ${BENCH_SRC_FILES})
+
+        target_link_libraries(dataset_nmf gsl gslcblas)
         target_include_directories(benchmark PUBLIC /usr/local/include/celero)
     endif (BUILD_CUDA)
     target_link_libraries(benchmark /usr/local/lib/libcelero.so Threads::Threads gsl gslcblas)

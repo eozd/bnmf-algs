@@ -2,7 +2,6 @@
 #include "cuda/tensor_ops.hpp"
 #include "cuda/tensor_ops_kernels.hpp"
 #include "cuda/util.hpp"
-#include "defs.hpp"
 #include <array>
 #include <cuda_runtime.h>
 
