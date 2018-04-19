@@ -123,12 +123,6 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
         }
     }
 
-#ifdef USE_CUDA
-    cuda::HostMemory2D<const T> X_host(X.data(), x, y);
-    cuda::DeviceMemory2D<T> X_device(x, y);
-    cuda::copy2D(X_device, X_host);
-#endif
-
     tensor_t<T, 3> grad_plus(x, y, z);
     matrix_t<T> grad_minus(x, z);
     matrix_t<T> nom_mult(x, y);
@@ -141,16 +135,24 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
     tensor_t<T, 2> S_ijp_tensor(x, y);
 
 #ifdef USE_CUDA
+    cuda::HostMemory2D<const T> X_host(X.data(), x, y);
     cuda::HostMemory3D<T> S_host(S.data(), x, y, z);
     std::array<cuda::HostMemory2D<T>, 3> host_sums = {
         cuda::HostMemory2D<T>(S_pjk_tensor.data(), y, z),
         cuda::HostMemory2D<T>(S_ipk_tensor.data(), x, z),
         cuda::HostMemory2D<T>(S_ijp_tensor.data(), x, y)};
+    cuda::HostMemory3D<T> grad_plus_host(grad_plus.data(), x, y, z);
+    cuda::HostMemory2D<T> beta_eph_host(beta_eph.data(), y, z);
 
+    cuda::DeviceMemory2D<T> X_device(x, y);
     cuda::DeviceMemory3D<T> S_device(x, y, z);
     std::array<cuda::DeviceMemory2D<T>, 3> device_sums = {
         cuda::DeviceMemory2D<T>(y, z), cuda::DeviceMemory2D<T>(x, z),
         cuda::DeviceMemory2D<T>(x, y)};
+    cuda::DeviceMemory3D<T> grad_plus_device(x, y, z);
+    cuda::DeviceMemory2D<T> beta_eph_device(y, z);
+
+    cuda::copy2D(X_device, X_host);
 #endif
 
     Eigen::Map<const vector_t<Scalar>> alpha(model_params.alpha.data(),
@@ -200,8 +202,13 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
         }
 
 #ifdef USE_CUDA
-        //cuda::bld_mult::update_grad_plus(S, beta_eph, grad_plus);
-//#else
+        cuda::copy3D(grad_plus_device, grad_plus_host);
+        cuda::copy2D(beta_eph_device, beta_eph_host);
+        cuda::bld_mult::update_grad_plus(S_device, beta_eph_device,
+                                         grad_plus_device);
+        cuda::copy3D(grad_plus_host, grad_plus_device);
+        cuda::copy2D(beta_eph_host, beta_eph_device);
+#else
         // update grad_plus
         #pragma omp parallel for schedule(static)
         for (size_t i = 0; i < x; ++i) {
