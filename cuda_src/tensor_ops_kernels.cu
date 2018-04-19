@@ -92,41 +92,6 @@ __global__ void cuda::kernel::apply_psi(Real* begin, size_t num_elems) {
     }
 }
 
-template <typename Real>
-__global__ void
-cuda::kernel::update_grad_plus(cudaPitchedPtr S, const Real* beta_eph,
-                               size_t pitch, cudaPitchedPtr grad_plus,
-                               size_t width, size_t height, size_t depth) {
-    // index for rows
-    const int i = blockIdx.y * blockDim.y + threadIdx.y;
-    // index for columns
-    const int j = blockIdx.x * blockDim.x + threadIdx.x;
-    // index for depth
-    const int k = blockIdx.z * blockDim.z + threadIdx.z;
-
-    if (not(i < height && j < width & k < depth)) {
-        return;
-    }
-
-    // S(i, j, :)
-    size_t fiber_pitch = S.pitch;
-    size_t num_cols = S.ysize;
-    size_t roof_pitch = fiber_pitch * num_cols;
-    size_t offset = roof_pitch * i + // go i roofs towards bottom
-                    j * fiber_pitch; // go j fibers to the right
-    const Real* S_fiber = (Real*)((char*)S.ptr + offset);
-
-    // grad_plus(i, j, :) : S and grad_plus have exact same shapes
-    Real* grad_plus_fiber = (Real*)((char*)grad_plus.ptr + offset);
-
-    // beta_eph(j, :)
-    offset = j * pitch; // go j rows towards bottom
-    const Real* beta_eph_row = (Real*)((char*)beta_eph + offset);
-
-    // grad_plus(i, j, k) = psi(beta_eph(j, k)) - psi(S(i, j, k) + 1);
-    grad_plus_fiber[k] = psi_appr(beta_eph_row[k]) - psi_appr(S_fiber[k] + 1);
-}
-
 template <typename Scalar>
 __global__ void cuda::kernel::sum_tensor3D(cudaPitchedPtr tensor, Scalar* out,
                                            size_t out_pitch, size_t axis,
@@ -181,6 +146,83 @@ __global__ void cuda::kernel::sum_tensor3D(cudaPitchedPtr tensor, Scalar* out,
     *out_ij = sum;
 }
 
+template <typename Real>
+__global__ void
+cuda::kernel::update_grad_plus(cudaPitchedPtr S, const Real* beta_eph,
+                               size_t pitch, cudaPitchedPtr grad_plus,
+                               size_t width, size_t height, size_t depth) {
+    // index for rows
+    const int i = blockIdx.y * blockDim.y + threadIdx.y;
+    // index for columns
+    const int j = blockIdx.x * blockDim.x + threadIdx.x;
+    // index for depth
+    const int k = blockIdx.z * blockDim.z + threadIdx.z;
+
+    if (not(i < height && j < width & k < depth)) {
+        return;
+    }
+
+    // S(i, j, :)
+    size_t fiber_pitch = S.pitch;
+    size_t num_cols = S.ysize;
+    size_t roof_pitch = fiber_pitch * num_cols;
+    size_t offset = roof_pitch * i + // go i roofs towards bottom
+                    j * fiber_pitch; // go j fibers to the right
+    const Real* S_fiber = (Real*)((char*)S.ptr + offset);
+
+    // grad_plus(i, j, :) : S and grad_plus have exact same shapes
+    Real* grad_plus_fiber = (Real*)((char*)grad_plus.ptr + offset);
+
+    // beta_eph(j, :)
+    offset = j * pitch; // go j rows towards bottom
+    const Real* beta_eph_row = (Real*)((char*)beta_eph + offset);
+
+    // grad_plus(i, j, k) = psi(beta_eph(j, k)) - psi(S(i, j, k) + 1);
+    grad_plus_fiber[k] = psi_appr(beta_eph_row[k]) - psi_appr(S_fiber[k] + 1);
+}
+
+template <typename Real>
+__global__ void cuda::kernel::update_nom(
+    cudaPitchedPtr S, const Real* X_reciprocal, size_t X_reciprocal_pitch,
+    const Real* grad_minus, size_t grad_minus_pitch, Real* nom_mult,
+    size_t nom_mult_pitch, size_t width, size_t height, size_t depth) {
+
+    // index for rows
+    const int i = blockIdx.y * blockDim.y + threadIdx.y;
+    // index for columns
+    const int j = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if (not(i < height && j < width)) {
+        return;
+    }
+
+    // S(i, j, :)
+    size_t fiber_pitch = S.pitch;
+    size_t num_cols = S.ysize;
+    size_t roof_pitch = fiber_pitch * num_cols;
+    size_t offset = roof_pitch * i + // go i roofs towards bottom
+                    j * fiber_pitch; // go j fibers to the right
+    const Real* S_ij = (Real*)((char*)S.ptr + offset);
+
+    // X_reciprocal(i, j)
+    offset = i * X_reciprocal_pitch;
+    const Real* X_reciprocal_ij = (Real*)((char*)X_reciprocal + offset) + j;
+
+    // grad_minus(i, :)
+    offset = i * grad_minus_pitch;
+    const Real* grad_minus_i = (Real*)((char*)grad_minus + offset);
+
+    // nom_mult(i, j)
+    offset = i * nom_mult_pitch;
+    Real* nom_mult_ij = (Real*)((char*)nom_mult + offset) + j;
+
+    Real sum = Real();
+    for (size_t k = 0; k < depth; ++k) {
+        sum += S_ij[k] * (*X_reciprocal_ij) * grad_minus_i[k];
+    }
+    *nom_mult_ij = sum;
+}
+
 /************************ TEMPLATE INSTANTIATIONS *****************************/
 // We need these because CUDA requires explicit instantiations of all template
 // kernels.
@@ -192,16 +234,6 @@ template __device__ float cuda::kernel::psi_appr(float);
 // apply_psi
 template __global__ void cuda::kernel::apply_psi(double*, size_t);
 template __global__ void cuda::kernel::apply_psi(float*, size_t);
-
-// update_grad_plus
-template __global__ void
-cuda::kernel::update_grad_plus(cudaPitchedPtr S, const double* beta_eph,
-                               size_t pitch, cudaPitchedPtr grad_plus,
-                               size_t width, size_t height, size_t depth);
-template __global__ void
-cuda::kernel::update_grad_plus(cudaPitchedPtr S, const float* beta_eph,
-                               size_t pitch, cudaPitchedPtr grad_plus,
-                               size_t width, size_t height, size_t depth);
 
 // sum_tensor3D
 template __global__ void
@@ -226,3 +258,23 @@ template __global__ void
 cuda::kernel::sum_tensor3D(cudaPitchedPtr tensor, size_t* out, size_t out_pitch,
                            size_t axis, size_t width, size_t height,
                            size_t depth);
+
+// update_grad_plus
+template __global__ void
+cuda::kernel::update_grad_plus(cudaPitchedPtr S, const double* beta_eph,
+                               size_t pitch, cudaPitchedPtr grad_plus,
+                               size_t width, size_t height, size_t depth);
+template __global__ void
+cuda::kernel::update_grad_plus(cudaPitchedPtr S, const float* beta_eph,
+                               size_t pitch, cudaPitchedPtr grad_plus,
+                               size_t width, size_t height, size_t depth);
+
+// update_nom
+template __global__ void cuda::kernel::update_nom(
+    cudaPitchedPtr S, const double* X_reciprocal, size_t X_reciprocal_pitch,
+    const double* grad_minus, size_t grad_minus_pitch, double* nom_mult,
+    size_t nom_mult_pitch, size_t width, size_t height, size_t depth);
+template __global__ void cuda::kernel::update_nom(
+    cudaPitchedPtr S, const float* X_reciprocal, size_t X_reciprocal_pitch,
+    const float* grad_minus, size_t grad_minus_pitch, float* nom_mult,
+    size_t nom_mult_pitch, size_t width, size_t height, size_t depth);

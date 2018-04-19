@@ -79,7 +79,7 @@ namespace bld {
  * not equal to number of beta parameters.
  */
 template <typename T, typename Scalar>
-tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
+tensor_t<T, 3> bld_mult(const matrix_t<T>& X, const size_t z,
                         const alloc_model::Params<Scalar>& model_params,
                         size_t max_iter = 1000, bool use_psi_appr = false,
                         double eps = 1e-50) {
@@ -89,8 +89,8 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
     const int num_threads = std::thread::hardware_concurrency();
 #endif
 
-    auto x = static_cast<size_t>(X.rows());
-    auto y = static_cast<size_t>(X.cols());
+    const auto x = static_cast<size_t>(X.rows());
+    const auto y = static_cast<size_t>(X.cols());
 
     // initialize tensor S
     tensor_t<T, 3> S(x, y, z);
@@ -123,10 +123,21 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
         }
     }
 
+    // initialize X_reciprocal
+    matrix_t<T> X_reciprocal(x, y);
+    #pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t j = 0; j < y; ++j) {
+            X_reciprocal(i, j) = 1.0 / (X(i, j) + eps);
+        }
+    }
+
+#ifndef USE_CUDA
     tensor_t<T, 3> grad_plus(x, y, z);
-    matrix_t<T> grad_minus(x, z);
     matrix_t<T> nom_mult(x, y);
     matrix_t<T> denom_mult(x, y);
+#endif
+    matrix_t<T> grad_minus(x, z);
     matrix_t<T> alpha_eph(x, z);
     vector_t<T> alpha_eph_sum(z);
     matrix_t<T> beta_eph(y, z);
@@ -135,24 +146,35 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
     tensor_t<T, 2> S_ijp_tensor(x, y);
 
 #ifdef USE_CUDA
-    cuda::HostMemory2D<const T> X_host(X.data(), x, y);
+    cuda::DeviceMemory2D<T> X_device(x, y);
+    cuda::DeviceMemory2D<T> X_reciprocal_device(x, y);
+    {
+        cuda::HostMemory2D<const T> X_host(X.data(), x, y);
+        cuda::HostMemory2D<const T> X_reciprocal_host(X_reciprocal.data(), x,
+                                                      y);
+        cuda::copy2D(X_device, X_host);
+        cuda::copy2D(X_reciprocal_device, X_reciprocal_host);
+    }
+
     cuda::HostMemory3D<T> S_host(S.data(), x, y, z);
     std::array<cuda::HostMemory2D<T>, 3> host_sums = {
         cuda::HostMemory2D<T>(S_pjk_tensor.data(), y, z),
         cuda::HostMemory2D<T>(S_ipk_tensor.data(), x, z),
         cuda::HostMemory2D<T>(S_ijp_tensor.data(), x, y)};
-    cuda::HostMemory3D<T> grad_plus_host(grad_plus.data(), x, y, z);
     cuda::HostMemory2D<T> beta_eph_host(beta_eph.data(), y, z);
+    cuda::HostMemory2D<T> grad_minus_host(grad_minus.data(), x, z);
 
-    cuda::DeviceMemory2D<T> X_device(x, y);
     cuda::DeviceMemory3D<T> S_device(x, y, z);
     std::array<cuda::DeviceMemory2D<T>, 3> device_sums = {
         cuda::DeviceMemory2D<T>(y, z), cuda::DeviceMemory2D<T>(x, z),
         cuda::DeviceMemory2D<T>(x, y)};
     cuda::DeviceMemory3D<T> grad_plus_device(x, y, z);
     cuda::DeviceMemory2D<T> beta_eph_device(y, z);
+    cuda::DeviceMemory2D<T> nom_device(x, y);
+    cuda::DeviceMemory2D<T> denom_device(x, y);
+    cuda::DeviceMemory2D<T> grad_minus_device(x, z);
 
-    cuda::copy2D(X_device, X_host);
+    cuda::copy3D(S_device, S_host);
 #endif
 
     Eigen::Map<const vector_t<Scalar>> alpha(model_params.alpha.data(),
@@ -169,7 +191,6 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
     for (size_t eph = 0; eph < max_iter; ++eph) {
         // update S_pjk, S_ipk, S_ijp
 #ifdef USE_CUDA
-        cuda::copy3D(S_device, S_host);
         cuda::tensor_sums(S_device, device_sums);
 
         for (size_t i = 0; i < 3; ++i) {
@@ -202,12 +223,9 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
         }
 
 #ifdef USE_CUDA
-        cuda::copy3D(grad_plus_device, grad_plus_host);
         cuda::copy2D(beta_eph_device, beta_eph_host);
         cuda::bld_mult::update_grad_plus(S_device, beta_eph_device,
                                          grad_plus_device);
-        cuda::copy3D(grad_plus_host, grad_plus_device);
-        cuda::copy2D(beta_eph_host, beta_eph_device);
 #else
         // update grad_plus
         #pragma omp parallel for schedule(static)
@@ -239,6 +257,17 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
             }
         }
 
+#ifdef USE_CUDA
+        cuda::copy2D(grad_minus_device, grad_minus_host);
+        cuda::bld_mult::update_nom(X_reciprocal_device, grad_minus_device,
+                                   S_device, nom_device);
+        cuda::bld_mult::update_denom(X_reciprocal_device, grad_plus_device,
+                                     S_device, denom_device);
+        const auto& S_ijp_device = device_sums[2];
+        cuda::bld_mult::update_S(X_device, nom_device, denom_device,
+                                 grad_minus_device, grad_plus_device,
+                                 S_ijp_device, S_device);
+#else
         // update nom_mult, denom_mult
         #pragma omp parallel for schedule(static)
         for (size_t i = 0; i < x; ++i) {
@@ -267,6 +296,7 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, size_t z,
                 }
             }
         }
+#endif
     }
 
     return S;

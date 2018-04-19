@@ -102,6 +102,23 @@ template <typename Real>
 void update_grad_plus(const DeviceMemory3D<Real>& S,
                       const DeviceMemory2D<Real>& beta_eph,
                       DeviceMemory3D<Real>& grad_plus);
+
+template <typename Real>
+void update_nom(const DeviceMemory2D<Real>& X_reciprocal,
+                const DeviceMemory2D<Real>& grad_minus,
+                const DeviceMemory3D<Real>& S, DeviceMemory2D<Real>& nom);
+
+template <typename Real>
+void update_denom(const DeviceMemory2D<Real>& X_reciprocal,
+                  const DeviceMemory3D<Real>& grad_plus,
+                  const DeviceMemory3D<Real>& S, DeviceMemory2D<Real>& denom);
+
+template <typename Real>
+void update_S(const DeviceMemory2D<Real>& X, const DeviceMemory2D<Real>& nom,
+              const DeviceMemory2D<Real>& denom,
+              const DeviceMemory2D<Real>& grad_minus,
+              const DeviceMemory3D<Real>& grad_plus,
+              const DeviceMemory2D<Real>& S_ijp, DeviceMemory3D<Real>& S);
 } // namespace bld_mult
 } // namespace cuda
 } // namespace bnmf_algs

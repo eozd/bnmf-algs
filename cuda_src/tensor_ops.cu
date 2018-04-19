@@ -21,34 +21,6 @@ template <typename Real> void cuda::apply_psi(DeviceMemory1D<Real>& range) {
     BNMF_ASSERT(err == cudaSuccess, "Error running kernel in cuda::apply_psi");
 }
 
-template <typename Real>
-void cuda::bld_mult::update_grad_plus(
-    const cuda::DeviceMemory3D<Real>& S,
-    const cuda::DeviceMemory2D<Real>& beta_eph,
-    cuda::DeviceMemory3D<Real>& grad_plus) {
-    // tensor dimensions
-    const auto x = S.dims()[0];
-    const auto y = S.dims()[1];
-    const auto z = S.dims()[2];
-
-    // block dimensions (number of threads per block axis)
-    constexpr size_t block_size_x = 16;
-    constexpr size_t block_size_y = 16;
-    constexpr size_t block_size_z = 4;
-    dim3 block_dims(block_size_y, block_size_x, block_size_z);
-    dim3 grid_dims(cuda::idiv_ceil(y, block_size_y),
-                   cuda::idiv_ceil(x, block_size_x),
-                   cuda::idiv_ceil(z, block_size_z));
-
-    // run kernel
-    kernel::update_grad_plus<<<grid_dims, block_dims>>>(
-        S.pitched_ptr(), beta_eph.data(), beta_eph.pitch(),
-        grad_plus.pitched_ptr(), y, x, z);
-    auto err = cudaGetLastError();
-    BNMF_ASSERT(err == cudaSuccess,
-                "Error running kernel in cuda::bld_mult::update_grad_plus");
-}
-
 template <typename T>
 void cuda::tensor_sums(const cuda::DeviceMemory3D<T>& tensor,
                        std::array<cuda::DeviceMemory2D<T>, 3>& result_arr) {
@@ -96,23 +68,84 @@ void cuda::tensor_sums(const cuda::DeviceMemory3D<T>& tensor,
     }
 }
 
+template <typename Real>
+void cuda::bld_mult::update_grad_plus(
+    const cuda::DeviceMemory3D<Real>& S,
+    const cuda::DeviceMemory2D<Real>& beta_eph,
+    cuda::DeviceMemory3D<Real>& grad_plus) {
+    // tensor dimensions
+    const auto x = S.dims()[0];
+    const auto y = S.dims()[1];
+    const auto z = S.dims()[2];
+
+    // block dimensions (number of threads per block axis)
+    constexpr size_t block_size_x = 16;
+    constexpr size_t block_size_y = 16;
+    constexpr size_t block_size_z = 4;
+    dim3 block_dims(block_size_y, block_size_x, block_size_z);
+    dim3 grid_dims(cuda::idiv_ceil(y, block_size_y),
+                   cuda::idiv_ceil(x, block_size_x),
+                   cuda::idiv_ceil(z, block_size_z));
+
+    // run kernel
+    kernel::update_grad_plus<<<grid_dims, block_dims>>>(
+        S.pitched_ptr(), beta_eph.data(), beta_eph.pitch(),
+        grad_plus.pitched_ptr(), y, x, z);
+    auto err = cudaGetLastError();
+    BNMF_ASSERT(err == cudaSuccess,
+                "Error running kernel in cuda::bld_mult::update_grad_plus");
+}
+
+template <typename Real>
+void cuda::bld_mult::update_nom(const DeviceMemory2D<Real>& X_reciprocal,
+                                const DeviceMemory2D<Real>& grad_minus,
+                                const DeviceMemory3D<Real>& S,
+                                DeviceMemory2D<Real>& nom) {
+    // tensor dimensions
+    const auto x = S.dims()[0];
+    const auto y = S.dims()[1];
+    const auto z = S.dims()[2];
+
+    // block dimensions (number of threads per block axis)
+    constexpr size_t block_size_x = 32;
+    constexpr size_t block_size_y = 32;
+    constexpr size_t block_size_z = 1;
+    dim3 block_dims(block_size_y, block_size_x, block_size_z);
+    dim3 grid_dims(cuda::idiv_ceil(y, block_size_y),
+                   cuda::idiv_ceil(x, block_size_x), 1);
+
+    // run kernel
+    kernel::update_nom<<<grid_dims, block_dims>>>(
+        S.pitched_ptr(), X_reciprocal.data(), X_reciprocal.pitch(),
+        grad_minus.data(), grad_minus.pitch(), nom.data(), nom.pitch(), y, x,
+        z);
+    auto err = cudaGetLastError();
+    BNMF_ASSERT(err == cudaSuccess,
+                "Error running kernel in cuda::bld_mult::update_nom");
+}
+
+template <typename Real>
+void cuda::bld_mult::update_denom(const DeviceMemory2D<Real>& X_reciprocal,
+                                  const DeviceMemory3D<Real>& grad_plus,
+                                  const DeviceMemory3D<Real>& S,
+                                  DeviceMemory2D<Real>& denom) {}
+
+template <typename Real>
+void cuda::bld_mult::update_S(const DeviceMemory2D<Real>& X,
+                              const DeviceMemory2D<Real>& nom,
+                              const DeviceMemory2D<Real>& denom,
+                              const DeviceMemory2D<Real>& grad_minus,
+                              const DeviceMemory3D<Real>& grad_plus,
+                              const DeviceMemory2D<Real>& S_ijp,
+                              DeviceMemory3D<Real>& S) {}
+
 /************************ TEMPLATE INSTANTIATIONS *****************************/
 // We need these because nvcc requires explicit instantiations of all template
 // functions.
 
 // apply_psi
-template void cuda::apply_psi<double>(cuda::DeviceMemory1D<double>&);
-template void cuda::apply_psi<float>(cuda::DeviceMemory1D<float>&);
-
-// update_grad_plus
-template void
-cuda::bld_mult::update_grad_plus<double>(const cuda::DeviceMemory3D<double>&,
-                                         const cuda::DeviceMemory2D<double>&,
-                                         cuda::DeviceMemory3D<double>&);
-template void
-cuda::bld_mult::update_grad_plus<float>(const cuda::DeviceMemory3D<float>&,
-                                        const cuda::DeviceMemory2D<float>&,
-                                        cuda::DeviceMemory3D<float>&);
+template void cuda::apply_psi(cuda::DeviceMemory1D<double>&);
+template void cuda::apply_psi(cuda::DeviceMemory1D<float>&);
 
 // tensor_sums
 template void cuda::tensor_sums(const cuda::DeviceMemory3D<double>&,
@@ -125,3 +158,53 @@ template void cuda::tensor_sums(const cuda::DeviceMemory3D<long>&,
                                 std::array<cuda::DeviceMemory2D<long>, 3>&);
 template void cuda::tensor_sums(const cuda::DeviceMemory3D<size_t>&,
                                 std::array<cuda::DeviceMemory2D<size_t>, 3>&);
+
+// update_grad_plus
+template void
+cuda::bld_mult::update_grad_plus(const cuda::DeviceMemory3D<double>&,
+                                 const cuda::DeviceMemory2D<double>&,
+                                 cuda::DeviceMemory3D<double>&);
+template void
+cuda::bld_mult::update_grad_plus(const cuda::DeviceMemory3D<float>&,
+                                 const cuda::DeviceMemory2D<float>&,
+                                 cuda::DeviceMemory3D<float>&);
+
+// update_nom
+template void
+cuda::bld_mult::update_nom(const DeviceMemory2D<double>& X_reciprocal,
+                           const DeviceMemory2D<double>& grad_minus,
+                           const DeviceMemory3D<double>& S,
+                           DeviceMemory2D<double>& nom);
+template void
+cuda::bld_mult::update_nom(const DeviceMemory2D<float>& X_reciprocal,
+                           const DeviceMemory2D<float>& grad_minus,
+                           const DeviceMemory3D<float>& S,
+                           DeviceMemory2D<float>& nom);
+
+// update_denom
+template void
+cuda::bld_mult::update_denom(const DeviceMemory2D<double>& X_reciprocal,
+                             const DeviceMemory3D<double>& grad_plus,
+                             const DeviceMemory3D<double>& S,
+                             DeviceMemory2D<double>& denom);
+template void
+cuda::bld_mult::update_denom(const DeviceMemory2D<float>& X_reciprocal,
+                             const DeviceMemory3D<float>& grad_plus,
+                             const DeviceMemory3D<float>& S,
+                             DeviceMemory2D<float>& denom);
+
+// update_S
+template void cuda::bld_mult::update_S(const DeviceMemory2D<double>& X,
+                                       const DeviceMemory2D<double>& nom,
+                                       const DeviceMemory2D<double>& denom,
+                                       const DeviceMemory2D<double>& grad_minus,
+                                       const DeviceMemory3D<double>& grad_plus,
+                                       const DeviceMemory2D<double>& S_ijp,
+                                       DeviceMemory3D<double>& S);
+template void cuda::bld_mult::update_S(const DeviceMemory2D<float>& X,
+                                       const DeviceMemory2D<float>& nom,
+                                       const DeviceMemory2D<float>& denom,
+                                       const DeviceMemory2D<float>& grad_minus,
+                                       const DeviceMemory3D<float>& grad_plus,
+                                       const DeviceMemory2D<float>& S_ijp,
+                                       DeviceMemory3D<float>& S);
