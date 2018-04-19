@@ -1,9 +1,10 @@
 #pragma once
 
 #include "alloc_model/alloc_model_params.hpp"
+#include "bld/util_details.hpp"
+#include "bld_mult_cuda_funcs.hpp"
 #include "defs.hpp"
 #include "util/util.hpp"
-#include "util_details.hpp"
 #include <gsl/gsl_sf_psi.h>
 
 #ifdef USE_OPENMP
@@ -224,8 +225,8 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, const size_t z,
 
 #ifdef USE_CUDA
         cuda::copy2D(beta_eph_device, beta_eph_host);
-        cuda::bld_mult::update_grad_plus(S_device, beta_eph_device,
-                                         grad_plus_device);
+        details::bld_mult_update_grad_plus(S_device, beta_eph_device,
+                                           grad_plus_device);
 #else
         // update grad_plus
         #pragma omp parallel for schedule(static)
@@ -259,14 +260,14 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, const size_t z,
 
 #ifdef USE_CUDA
         cuda::copy2D(grad_minus_device, grad_minus_host);
-        cuda::bld_mult::update_nom(X_reciprocal_device, grad_minus_device,
-                                   S_device, nom_device);
-        cuda::bld_mult::update_denom(X_reciprocal_device, grad_plus_device,
-                                     S_device, denom_device);
+        details::bld_mult_update_nom(X_reciprocal_device, grad_minus_device,
+                                     S_device, nom_device);
+        details::bld_mult_update_denom(X_reciprocal_device, grad_plus_device,
+                                       S_device, denom_device);
         const auto& S_ijp_device = device_sums[2];
-        cuda::bld_mult::update_S(X_device, nom_device, denom_device,
-                                 grad_minus_device, grad_plus_device,
-                                 S_ijp_device, S_device);
+        details::bld_mult_update_S(X_device, nom_device, denom_device,
+                                   grad_minus_device, grad_plus_device,
+                                   S_ijp_device, S_device);
 #else
         // update nom_mult, denom_mult
         #pragma omp parallel for schedule(static)

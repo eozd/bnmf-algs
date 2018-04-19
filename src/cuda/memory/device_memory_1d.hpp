@@ -1,3 +1,5 @@
+#pragma once
+
 #include "defs.hpp"
 #include <cstddef>
 #include <cuda_runtime.h>

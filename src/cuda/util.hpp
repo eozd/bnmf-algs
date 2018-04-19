@@ -9,10 +9,12 @@ namespace cuda {
  *
  * This function initializes CUDA runtime so that future CUDA library calls
  * don't incur the cost of initializing the library.
+ *
+ * @param device ID of the GPU device to set.
  */
 template <typename Integer> void init(Integer device) {
-    BNMF_ASSERT(cudaSetDevice(device) == cudaSuccess,
-                "Error initializing CUDA runtime");
+    auto err = cudaSetDevice(device);
+    BNMF_ASSERT(err == cudaSuccess, "Error setting CUDA device in cuda::init");
 }
 
 /**

@@ -1,3 +1,5 @@
+#pragma once
+
 #include "defs.hpp"
 #include <cuda_runtime.h>
 #include <type_traits>
