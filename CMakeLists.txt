@@ -34,6 +34,7 @@ set(TEST_SRC_FILES
     test/util/test_util.cpp
     test/bld/test_bld_algs.cpp
     test/bld/bld_mult/test_bld_mult.cpp
+    test/bld/bld_mult/test_bld_mult_funcs.cpp
     test/allocation_model/test_alloc_model_params.cpp
     test/util/test_generator.cpp
     test/util/test_sampling.cpp)
@@ -51,6 +52,7 @@ set(CUDA_TEST_SRC_FILES
     test/cuda/test_memory.cpp
     test/cuda/test_tensor_ops.cpp
     test/cuda/test_util.cpp
+    test/bld/bld_mult/test_bld_mult_cuda.cpp
     test/bld/bld_mult/test_bld_mult_cuda_funcs.cpp)
 
 if (BUILD_CUDA)

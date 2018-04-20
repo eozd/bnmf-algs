@@ -37,8 +37,8 @@ TEST_CASE("Test update_grad_plus", "[tensor_ops]") {
             cuda::copy2D(beta_eph_device, beta_eph_host);
             cuda::copy3D(actual_device, actual_host);
 
-            details::bld_mult_update_grad_plus(S_device, beta_eph_device,
-                                               actual_device);
+            details::bld_mult_update_grad_plus_cuda(S_device, beta_eph_device,
+                                                    actual_device);
 
             cuda::copy3D(actual_host, actual_device);
         }
@@ -97,8 +97,9 @@ TEST_CASE("Test update_nom", "[tensor_ops]") {
             cuda::copy2D(grad_minus_device, grad_minus_host);
             cuda::copy3D(S_device, S_host);
 
-            details::bld_mult_update_nom(X_reciprocal_device, grad_minus_device,
-                                         S_device, actual_device);
+            details::bld_mult_update_nom_cuda(X_reciprocal_device,
+                                              grad_minus_device, S_device,
+                                              actual_device);
             cuda::copy2D(actual_host, actual_device);
         }
 
@@ -156,7 +157,7 @@ TEST_CASE("Test update_denom", "[tensor_ops]") {
             cuda::copy3D(grad_plus_device, grad_plus_host);
             cuda::copy3D(S_device, S_host);
 
-            details::bld_mult_update_denom(
+            details::bld_mult_update_denom_cuda(
                 X_reciprocal_device, grad_plus_device, S_device, actual_device);
             cuda::copy2D(actual_host, actual_device);
         }
@@ -227,9 +228,9 @@ TEST_CASE("Test update_S", "[tensor_ops]") {
             cuda::copy3D(S_device, S_host);
             cuda::copy2D(S_ijp_device, S_ijp_host);
 
-            details::bld_mult_update_S(X_device, nom_device, denom_device,
-                                       grad_minus_device, grad_plus_device,
-                                       S_ijp_device, S_device);
+            details::bld_mult_update_S_cuda(X_device, nom_device, denom_device,
+                                            grad_minus_device, grad_plus_device,
+                                            S_ijp_device, S_device);
             cuda::copy3D(S_host, S_device);
         }
 
