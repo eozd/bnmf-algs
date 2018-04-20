@@ -252,10 +252,8 @@ tensor_t<T, 3> bld_mult_cuda(const matrix_t<T>& X, const size_t z,
     // host memory wrappers to be used during copying between main memory and
     // GPU
     cuda::HostMemory3D<T> S_host(S.data(), x, y, z);
-    std::array<cuda::HostMemory2D<T>, 3> host_sums = {
-        cuda::HostMemory2D<T>(S_pjk.data(), y, z),
-        cuda::HostMemory2D<T>(S_ipk.data(), x, z),
-        cuda::HostMemory2D<T>(S_ijp.data(), x, y)};
+    cuda::HostMemory2D<T> S_pjk_host(S_pjk.data(), y, z);
+    cuda::HostMemory2D<T> S_ipk_host(S_ipk.data(), x, z);
     cuda::HostMemory2D<T> beta_eph_host(beta_eph.data(), y, z);
     cuda::HostMemory2D<T> grad_minus_host(grad_minus.data(), x, z);
 
@@ -290,10 +288,8 @@ tensor_t<T, 3> bld_mult_cuda(const matrix_t<T>& X, const size_t z,
     for (size_t eph = 0; eph < max_iter; ++eph) {
         // update S_pjk, S_ipk, S_ijp
         cuda::tensor_sums(S_device, device_sums);
-
-        for (size_t i = 0; i < 3; ++i) {
-            cuda::copy2D(host_sums[i], device_sums[i]);
-        }
+        cuda::copy2D(S_pjk_host, device_sums[0]);
+        cuda::copy2D(S_ipk_host, device_sums[1]);
 
         details::bld_mult::update_beta_eph(S_pjk, beta, beta_eph);
 
@@ -301,20 +297,20 @@ tensor_t<T, 3> bld_mult_cuda(const matrix_t<T>& X, const size_t z,
         cuda::copy2D(beta_eph_device, beta_eph_host);
         details::bld_mult::update_grad_plus_cuda(S_device, beta_eph_device,
                                                  grad_plus_device);
-        // todo: compute these at the same time
+        // update denom using CUDA
+        details::bld_mult::update_denom_cuda(
+                X_reciprocal_device, grad_plus_device, S_device, denom_device);
+
+        // above two cuda calls are asynchronous; immediately start working on
+        // the CPU
+
         details::bld_mult::update_alpha_eph(S_ipk, alpha, alpha_eph);
         details::bld_mult::update_grad_minus(alpha_eph, psi_fn, grad_minus);
 
-        // todo: synchronize
-        // update nom using CUDA
+        // copy synchronizes
         cuda::copy2D(grad_minus_device, grad_minus_host);
         details::bld_mult::update_nom_cuda(
             X_reciprocal_device, grad_minus_device, S_device, nom_device);
-
-        // todo:
-        // update denom using CUDA
-        details::bld_mult::update_denom_cuda(
-            X_reciprocal_device, grad_plus_device, S_device, denom_device);
 
         // update S using CUDA
         const auto& S_ijp_device = device_sums[2];
@@ -322,7 +318,6 @@ tensor_t<T, 3> bld_mult_cuda(const matrix_t<T>& X, const size_t z,
                                          grad_minus_device, grad_plus_device,
                                          S_ijp_device, S_device);
     }
-
     cuda::copy3D(S_host, S_device);
     return S;
 }
