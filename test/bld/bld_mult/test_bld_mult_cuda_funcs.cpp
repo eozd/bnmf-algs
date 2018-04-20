@@ -1,5 +1,6 @@
 #include "../../catch2.hpp"
 #include "bld/bld_mult/bld_mult_cuda_funcs.hpp"
+#include "bld/bld_mult/bld_mult_funcs.hpp"
 #include "cuda/memory.hpp"
 #include "cuda/util.hpp"
 #include "defs.hpp"
@@ -44,15 +45,8 @@ TEST_CASE("Test update_grad_plus", "[tensor_ops]") {
         }
 
         tensord<3> expected(x, y, z);
-        // Reduction on CPU
-        for (size_t i = 0; i < x; ++i) {
-            for (size_t j = 0; j < y; ++j) {
-                for (size_t k = 0; k < z; ++k) {
-                    expected(i, j, k) = util::psi_appr(beta_eph(j, k)) -
-                                        util::psi_appr(S(i, j, k) + 1);
-                }
-            }
-        }
+        auto psi_fn = util::psi_appr<double>;
+        details::bld_mult_update_grad_plus(S, beta_eph, psi_fn, expected);
 
         Eigen::Map<matrixd> actual_mat(actual.data(), x, y * z);
         Eigen::Map<matrixd> expect_mat(expected.data(), x, y * z);
@@ -105,16 +99,8 @@ TEST_CASE("Test update_nom", "[tensor_ops]") {
 
         // Calculate on CPU
         matrixd expected(x, y);
-        for (size_t i = 0; i < x; ++i) {
-            for (size_t j = 0; j < y; ++j) {
-                double xdiv = 1.0 / (X(i, j) + eps);
-                double nom_sum = 0;
-                for (size_t k = 0; k < z; ++k) {
-                    nom_sum += (S(i, j, k) * xdiv * grad_minus(i, k));
-                }
-                expected(i, j) = nom_sum;
-            }
-        }
+        details::bld_mult_update_nom_mult(X_reciprocal, grad_minus, S,
+                                          expected);
 
         REQUIRE(actual.isApprox(expected));
     }
@@ -164,16 +150,8 @@ TEST_CASE("Test update_denom", "[tensor_ops]") {
 
         // Calculate on CPU
         matrixd expected(x, y);
-        for (size_t i = 0; i < x; ++i) {
-            for (size_t j = 0; j < y; ++j) {
-                double xdiv = 1.0 / (X(i, j) + eps);
-                double denom_sum = 0;
-                for (size_t k = 0; k < z; ++k) {
-                    denom_sum += (S(i, j, k) * xdiv * grad_plus(i, j, k));
-                }
-                expected(i, j) = denom_sum;
-            }
-        }
+        details::bld_mult_update_denom_mult(X_reciprocal, grad_plus, S,
+                                            expected);
 
         REQUIRE(actual.isApprox(expected));
     }
@@ -234,18 +212,8 @@ TEST_CASE("Test update_S", "[tensor_ops]") {
             cuda::copy3D(S_host, S_device);
         }
 
-        // calculate on CPU
-        for (size_t i = 0; i < x; ++i) {
-            for (size_t j = 0; j < y; ++j) {
-                double s_ij = S_ijp(i, j);
-                double x_over_s = X(i, j) / (s_ij + eps);
-                for (size_t k = 0; k < z; ++k) {
-                    expected(i, j, k) *=
-                        (grad_plus(i, j, k) + nom_mult(i, j)) * x_over_s /
-                        (grad_minus(i, k) + denom_mult(i, j) + eps);
-                }
-            }
-        }
+        details::bld_mult_update_S(X, nom_mult, denom_mult, grad_minus,
+                                   grad_plus, S_ijp, expected, eps);
 
         Eigen::Map<matrixd> actual_mat(S.data(), x, y * z);
         Eigen::Map<matrixd> expect_mat(expected.data(), x, y * z);
