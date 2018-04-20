@@ -2,6 +2,7 @@
 
 #include "defs.hpp"
 #include "util/generator.hpp"
+#include <tuple>
 
 namespace bnmf_algs {
 
@@ -59,9 +60,9 @@ RandomIterator choice(RandomIterator cum_prob_begin,
  *
  * Functions and classes in this namespace are not meant for direct usage by the
  * users of bnmf-algs library; hence, behaviours of some functions may not be
- * as expected. Additionally, these functions and types are not directly tested;
- * their behaviour is verified through correct behaviour of the API functions
- * and types bnmf-algs library exposes.
+ * as expected. Additionally, some of these functions and types are not directly
+ * tested, and their behaviour is verified through correct behaviour of the API
+ * functions and types using them.
  */
 namespace details {
 
@@ -74,10 +75,25 @@ namespace details {
  * performed in-place.
  *
  * When computing the next sample, a systematic sampling technique is used. Each
- * element and its index in the matrix to sample is stored in a heap. Then, at
- * each call to operator(), indices of the highest value is returned. Since the
- * sampling is performed without replacement, the found value is decremented and
- * pushed back to the heap.
+ * entry of the input matrix, \f$X_{ij}\f$, is sampled \f$\lceil X_{ij}
+ * \rceil\f$ many times. This can be thought of as sampling each entry
+ * one-by-one. We call the implemented procedure systematic because,
+ * conceptually, samples from every \f$X_{ij}\f$ are distributed on a timeline.
+ * Afterwards, all sample timelines are merged and the sample closest to our
+ * current timestep is chosen. This is easily implemented using a minimum heap
+ * ordered according to timestamp of each sample.
+ *
+ * The above described procedure is conceptual. To decrease the space, and
+ * therefore time, complexity of the heap ordering procedures, timestamp of the
+ * next sample is computed just after the current sample is drawn. Therefore,
+ * the maximum number of elements in the heap is exactly \f$xy\f$ where \f$x\f$
+ * and \f$y\f$ are the dimensions of the input matrix. This number gradually
+ * decreases as matrix entries become less than or equal to 0 and get discarded
+ * from the heap.
+ *
+ * Sample timestamps are drawn from Beta distribution, \f$\mathcal{B}(\alpha,
+ * \beta)\f$. Here, \f$\alpha = X_{ij} - t + 1\f$ and \f$\beta = 1\f$ where
+ * \f$t\f$ is the number of samples drawn from entry \f$X_{ij}\f$.
  *
  * @tparam Scalar Type of the matrix entries that will be sampled.
  */
@@ -87,29 +103,34 @@ template <typename Scalar> class SampleOnesNoReplaceComputer {
      * @brief Construct a new SampleOnesNoReplaceComputer.
      *
      * This method constructs the data structures that will be used during
-     * sampling procedure. In particular, a max heap of elements and their
-     * indices is constructed in linear time.
+     * sampling procedure. In particular, a min heap of elements and their
+     * indices is constructed in time linear in the number of matrix entries.
      *
      * @param X Matrix \f$X\f$ that will be used during sampling.
      *
      * @remark Time complexity is \f$O(N)\f$ where \f$N\f$ is the number of
-     * nonzero entries in matrix parameter X.
+     * elements of X.
      */
     explicit SampleOnesNoReplaceComputer(const matrix_t<Scalar>& X)
-        : vals_indices(),
-          no_repl_comp([](const val_index& left, const val_index& right) {
-              return left.first < right.first;
-          }) {
+        : m_heap(),
+          no_repl_comp([](const HeapElem& left, const HeapElem& right) {
+              // min heap with respect to timestamp
+              return left.timestamp >= right.timestamp;
+          }),
+          rnd_gen(gsl_rng_alloc(gsl_rng_taus), gsl_rng_free) {
 
         for (int i = 0; i < X.rows(); ++i) {
             for (int j = 0; j < X.cols(); ++j) {
-                auto val = X(i, j);
-                if (val > 0) {
-                    vals_indices.emplace_back(val, std::make_pair(i, j));
+                Scalar entry = X(i, j);
+                if (entry > 0) {
+                    double timestamp =
+                        gsl_ran_beta(rnd_gen.get(), entry + 1, 1);
+
+                    m_heap.emplace_back(timestamp, entry, std::make_pair(i, j));
                 }
             }
         }
-        std::make_heap(vals_indices.begin(), vals_indices.end(), no_repl_comp);
+        std::make_heap(m_heap.begin(), m_heap.end(), no_repl_comp);
     }
     /**
      * @brief Function call operator that will compute the next sample
@@ -133,34 +154,72 @@ template <typename Scalar> class SampleOnesNoReplaceComputer {
      * completely sampled yet.
      */
     void operator()(size_t curr_step, std::pair<int, int>& prev_val) {
-        // max heap sampling (deterministic)
-        if (vals_indices.empty()) {
+        // min heap sampling. Root contains the entry with the smallest beta
+        // value
+        if (m_heap.empty()) {
             return;
         }
-        std::pop_heap(vals_indices.begin(), vals_indices.end(), no_repl_comp);
-        auto& curr_sample = vals_indices.back();
+        std::pop_heap(m_heap.begin(), m_heap.end(), no_repl_comp);
+
+        auto& heap_entry = m_heap.back();
         int ii, jj;
-        std::tie(ii, jj) = curr_sample.second;
+        std::tie(ii, jj) = heap_entry.idx;
 
-        // decrement sample's value
-        --curr_sample.first;
-        if (curr_sample.first <= 0) {
-            vals_indices.pop_back();
+        // decrement entry value and update beta value
+        --heap_entry.matrix_entry;
+        if (heap_entry.matrix_entry <= 0) {
+            m_heap.pop_back();
+        } else {
+            heap_entry.timestamp +=
+                gsl_ran_beta(rnd_gen.get(), heap_entry.matrix_entry + 1, 1);
+            std::push_heap(m_heap.begin(), m_heap.end(), no_repl_comp);
         }
-        std::push_heap(vals_indices.begin(), vals_indices.end(), no_repl_comp);
 
-        // store results
+        // store indices of the sample
         prev_val.first = ii;
         prev_val.second = jj;
     }
 
-    // computation variables
   private:
-    using index = std::pair<int, int>;
-    using val_index = std::pair<Scalar, index>;
+    /**
+     * @brief A single entry of m_heap.
+     */
+    struct HeapElem {
+        HeapElem(double timestamp, Scalar matrix_entry, std::pair<int, int> idx)
+            : timestamp(timestamp), matrix_entry(matrix_entry),
+              idx(std::move(idx)) {}
 
-    std::vector<val_index> vals_indices;
-    std::function<bool(const val_index&, const val_index&)> no_repl_comp;
+        /**
+         * @brief Timestamp of the sample.
+         */
+        double timestamp;
+
+        /**
+         * @brief \f$X_{ij}\f$ where \f$X\f$ is the matrix to be sampled.
+         */
+        Scalar matrix_entry;
+
+        /**
+         * @brief Index of \f$X_{ij}\f$ entry, i.e. (i, j).
+         */
+        std::pair<int, int> idx;
+    };
+
+  private:
+    /**
+     * @brief Heap to be used during systematic sampling.
+     */
+    std::vector<HeapElem> m_heap;
+
+    /**
+     * @brief Comparator function to determine the ordering of heap elements.
+     */
+    std::function<bool(const HeapElem&, const HeapElem&)> no_repl_comp;
+
+    /**
+     * @brief GSL rng object that will be used to draw samples.
+     */
+    util::gsl_rng_wrapper rnd_gen;
 };
 
 /**
@@ -264,7 +323,8 @@ namespace util {
  * of the matrix are sampled. The returned util::Generator object will
  * return the indices of the next sample one at a time. Since the return
  * value is a generator, only a single sample is stored in the memory at a
- * given time.
+ * given time. To learn the details of how the samples are generated, refer to
+ * details::SampleOnesNoReplaceComputer documentation.
  *
  * @param X Matrix to sample one by one without replacement.
  *
