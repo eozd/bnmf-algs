@@ -9,9 +9,9 @@
 
 namespace bnmf_algs {
 namespace details {
+namespace bld_mult {
 
-template <typename T>
-tensor_t<T, 3> bld_mult_init_S(const matrix_t<T>& X, size_t z) {
+template <typename T> tensor_t<T, 3> init_S(const matrix_t<T>& X, size_t z) {
     const auto x = static_cast<size_t>(X.rows());
     const auto y = static_cast<size_t>(X.cols());
 
@@ -52,7 +52,7 @@ tensor_t<T, 3> bld_mult_init_S(const matrix_t<T>& X, size_t z) {
 }
 
 template <typename T>
-matrix_t<T> bld_mult_X_reciprocal(const matrix_t<T>& X, double eps) {
+matrix_t<T> X_reciprocal(const matrix_t<T>& X, double eps) {
     const auto x = static_cast<size_t>(X.rows());
     const auto y = static_cast<size_t>(X.cols());
 
@@ -69,20 +69,18 @@ matrix_t<T> bld_mult_X_reciprocal(const matrix_t<T>& X, double eps) {
 
 template <typename Scalar>
 std::pair<vector_t<Scalar>, vector_t<Scalar>>
-bld_mult_init_alpha_beta(const alloc_model::Params<Scalar>& params) {
+init_alpha_beta(const alloc_model::Params<Scalar>& params) {
     vector_t<Scalar> alpha(params.alpha.size());
     vector_t<Scalar> beta(params.beta.size());
-    std::copy(params.alpha.begin(), params.alpha.end(),
-              alpha.data());
+    std::copy(params.alpha.begin(), params.alpha.end(), alpha.data());
     std::copy(params.beta.begin(), params.beta.end(), beta.data());
 
     return std::make_pair(alpha, beta);
 }
 
 template <typename T>
-void bld_mult_update_alpha_eph(const tensor_t<T, 2>& S_ipk,
-                               const vector_t<T>& alpha,
-                               matrix_t<T>& alpha_eph) {
+void update_alpha_eph(const tensor_t<T, 2>& S_ipk, const vector_t<T>& alpha,
+                      matrix_t<T>& alpha_eph) {
     const auto x = static_cast<size_t>(S_ipk.dimension(0));
     const auto z = static_cast<size_t>(S_ipk.dimension(1));
 
@@ -95,8 +93,8 @@ void bld_mult_update_alpha_eph(const tensor_t<T, 2>& S_ipk,
 }
 
 template <typename T>
-void bld_mult_update_beta_eph(const tensor_t<T, 2>& S_pjk,
-                              const vector_t<T>& beta, matrix_t<T>& beta_eph) {
+void update_beta_eph(const tensor_t<T, 2>& S_pjk, const vector_t<T>& beta,
+                     matrix_t<T>& beta_eph) {
     const auto y = static_cast<size_t>(S_pjk.dimension(0));
     const auto z = static_cast<size_t>(S_pjk.dimension(1));
 
@@ -109,9 +107,8 @@ void bld_mult_update_beta_eph(const tensor_t<T, 2>& S_pjk,
 }
 
 template <typename T, typename PsiFunction>
-void bld_mult_update_grad_plus(const tensor_t<T, 3>& S,
-                               const matrix_t<T>& beta_eph, PsiFunction psi_fn,
-                               tensor_t<T, 3>& grad_plus) {
+void update_grad_plus(const tensor_t<T, 3>& S, const matrix_t<T>& beta_eph,
+                      PsiFunction psi_fn, tensor_t<T, 3>& grad_plus) {
     const auto x = static_cast<size_t>(S.dimension(0));
     const auto y = static_cast<size_t>(S.dimension(1));
     const auto z = static_cast<size_t>(S.dimension(2));
@@ -128,8 +125,8 @@ void bld_mult_update_grad_plus(const tensor_t<T, 3>& S,
 }
 
 template <typename T, typename PsiFunction>
-void bld_mult_update_grad_minus(const matrix_t<T>& alpha_eph,
-                                PsiFunction psi_fn, matrix_t<T>& grad_minus) {
+void update_grad_minus(const matrix_t<T>& alpha_eph, PsiFunction psi_fn,
+                       matrix_t<T>& grad_minus) {
 
     const auto x = static_cast<size_t>(grad_minus.rows());
     const auto z = static_cast<size_t>(grad_minus.cols());
@@ -155,9 +152,9 @@ void bld_mult_update_grad_minus(const matrix_t<T>& alpha_eph,
 }
 
 template <typename T>
-void bld_mult_update_nom_mult(const matrix_t<T>& X_reciprocal,
-                              const matrix_t<T>& grad_minus,
-                              const tensor_t<T, 3>& S, matrix_t<T>& nom_mult) {
+void update_nom_mult(const matrix_t<T>& X_reciprocal,
+                     const matrix_t<T>& grad_minus, const tensor_t<T, 3>& S,
+                     matrix_t<T>& nom_mult) {
     const auto x = static_cast<size_t>(S.dimension(0));
     const auto y = static_cast<size_t>(S.dimension(1));
     const auto z = static_cast<size_t>(S.dimension(2));
@@ -175,10 +172,9 @@ void bld_mult_update_nom_mult(const matrix_t<T>& X_reciprocal,
 }
 
 template <typename T>
-void bld_mult_update_denom_mult(const matrix_t<T>& X_reciprocal,
-                                const tensor_t<T, 3>& grad_plus,
-                                const tensor_t<T, 3>& S,
-                                matrix_t<T>& denom_mult) {
+void update_denom_mult(const matrix_t<T>& X_reciprocal,
+                       const tensor_t<T, 3>& grad_plus, const tensor_t<T, 3>& S,
+                       matrix_t<T>& denom_mult) {
     const auto x = static_cast<size_t>(S.dimension(0));
     const auto y = static_cast<size_t>(S.dimension(1));
     const auto z = static_cast<size_t>(S.dimension(2));
@@ -197,11 +193,10 @@ void bld_mult_update_denom_mult(const matrix_t<T>& X_reciprocal,
 }
 
 template <typename T>
-void bld_mult_update_S(const matrix_t<T>& X, const matrix_t<T>& nom,
-                       const matrix_t<T>& denom, const matrix_t<T>& grad_minus,
-                       const tensor_t<T, 3>& grad_plus,
-                       const tensor_t<T, 2>& S_ijp, tensor_t<T, 3>& S,
-                       double eps) {
+void update_S(const matrix_t<T>& X, const matrix_t<T>& nom,
+              const matrix_t<T>& denom, const matrix_t<T>& grad_minus,
+              const tensor_t<T, 3>& grad_plus, const tensor_t<T, 2>& S_ijp,
+              tensor_t<T, 3>& S, double eps) {
     const auto x = static_cast<size_t>(S.dimension(0));
     const auto y = static_cast<size_t>(S.dimension(1));
     const auto z = static_cast<size_t>(S.dimension(2));
@@ -220,5 +215,6 @@ void bld_mult_update_S(const matrix_t<T>& X, const matrix_t<T>& nom,
     }
 }
 
+} // namespace bld_mult
 } // namespace details
 } // namespace bnmf_algs

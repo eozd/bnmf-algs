@@ -5,7 +5,8 @@
 
 using namespace bnmf_algs;
 
-template <typename Real> __device__ Real details::kernel::psi_appr(Real x) {
+template <typename Real>
+__device__ Real details::bld_mult::kernel::psi_appr(Real x) {
     Real extra = 0;
 
     // write each case separately to minimize number of divisions as much as
@@ -82,7 +83,7 @@ template <typename Real> __device__ Real details::kernel::psi_appr(Real x) {
 }
 
 template <typename Real>
-__global__ void details::kernel::bld_mult_update_grad_plus(
+__global__ void details::bld_mult::kernel::update_grad_plus(
     cudaPitchedPtr S, const Real* beta_eph, size_t pitch,
     cudaPitchedPtr grad_plus, size_t width, size_t height, size_t depth) {
     // index for rows
@@ -116,7 +117,7 @@ __global__ void details::kernel::bld_mult_update_grad_plus(
 }
 
 template <typename Real>
-__global__ void details::kernel::bld_mult_update_nom(
+__global__ void details::bld_mult::kernel::update_nom(
     cudaPitchedPtr S, const Real* X_reciprocal, size_t X_reciprocal_pitch,
     const Real* grad_minus, size_t grad_minus_pitch, Real* nom_mult,
     size_t nom_mult_pitch, size_t width, size_t height, size_t depth) {
@@ -158,7 +159,7 @@ __global__ void details::kernel::bld_mult_update_nom(
 }
 
 template <typename Real>
-__global__ void details::kernel::bld_mult_update_denom(
+__global__ void details::bld_mult::kernel::update_denom(
     cudaPitchedPtr S, const Real* X_reciprocal, size_t X_reciprocal_pitch,
     cudaPitchedPtr grad_plus, Real* denom_mult, size_t denom_mult_pitch,
     size_t width, size_t height, size_t depth) {
@@ -199,7 +200,7 @@ __global__ void details::kernel::bld_mult_update_denom(
 }
 
 template <typename Real>
-__global__ void details::kernel::bld_mult_update_S(
+__global__ void details::bld_mult::kernel::update_S(
     const Real* X, size_t X_pitch, const Real* nom_mult, size_t nom_mult_pitch,
     const Real* denom_mult, size_t denom_mult_pitch, const Real* grad_minus,
     size_t grad_minus_pitch, cudaPitchedPtr grad_plus, const Real* S_ijp,
@@ -257,45 +258,45 @@ __global__ void details::kernel::bld_mult_update_S(
 // We need these because CUDA requires explicit instantiations of all template
 // kernels.
 // psi_appr
-template __device__ double details::kernel::psi_appr(double);
-template __device__ float details::kernel::psi_appr(float);
+template __device__ double details::bld_mult::kernel::psi_appr(double);
+template __device__ float details::bld_mult::kernel::psi_appr(float);
 
 // update_grad_plus
-template __global__ void details::kernel::bld_mult_update_grad_plus(
+template __global__ void details::bld_mult::kernel::update_grad_plus(
     cudaPitchedPtr S, const double* beta_eph, size_t pitch,
     cudaPitchedPtr grad_plus, size_t width, size_t height, size_t depth);
-template __global__ void details::kernel::bld_mult_update_grad_plus(
+template __global__ void details::bld_mult::kernel::update_grad_plus(
     cudaPitchedPtr S, const float* beta_eph, size_t pitch,
     cudaPitchedPtr grad_plus, size_t width, size_t height, size_t depth);
 
 // update_nom
-template __global__ void details::kernel::bld_mult_update_nom(
+template __global__ void details::bld_mult::kernel::update_nom(
     cudaPitchedPtr S, const double* X_reciprocal, size_t X_reciprocal_pitch,
     const double* grad_minus, size_t grad_minus_pitch, double* nom_mult,
     size_t nom_mult_pitch, size_t width, size_t height, size_t depth);
-template __global__ void details::kernel::bld_mult_update_nom(
+template __global__ void details::bld_mult::kernel::update_nom(
     cudaPitchedPtr S, const float* X_reciprocal, size_t X_reciprocal_pitch,
     const float* grad_minus, size_t grad_minus_pitch, float* nom_mult,
     size_t nom_mult_pitch, size_t width, size_t height, size_t depth);
 
 // update_denom
-template __global__ void details::kernel::bld_mult_update_denom(
+template __global__ void details::bld_mult::kernel::update_denom(
     cudaPitchedPtr S, const double* X_reciprocal, size_t X_reciprocal_pitch,
     cudaPitchedPtr grad_plus, double* denom_mult, size_t denom_mult_pitch,
     size_t width, size_t height, size_t depth);
-template __global__ void details::kernel::bld_mult_update_denom(
+template __global__ void details::bld_mult::kernel::update_denom(
     cudaPitchedPtr S, const float* X_reciprocal, size_t X_reciprocal_pitch,
     cudaPitchedPtr grad_plus, float* denom_mult, size_t denom_mult_pitch,
     size_t width, size_t height, size_t depth);
 
 // update_S
-template __global__ void details::kernel::bld_mult_update_S(
+template __global__ void details::bld_mult::kernel::update_S(
     const double* X, size_t X_pitch, const double* nom_mult,
     size_t nom_mult_pitch, const double* denom_mult, size_t denom_mult_pitch,
     const double* grad_minus, size_t grad_minus_pitch, cudaPitchedPtr grad_plus,
     const double* S_ijp, size_t S_ijp_pitch, cudaPitchedPtr S, size_t width,
     size_t height, size_t depth);
-template __global__ void details::kernel::bld_mult_update_S(
+template __global__ void details::bld_mult::kernel::update_S(
     const float* X, size_t X_pitch, const float* nom_mult,
     size_t nom_mult_pitch, const float* denom_mult, size_t denom_mult_pitch,
     const float* grad_minus, size_t grad_minus_pitch, cudaPitchedPtr grad_plus,

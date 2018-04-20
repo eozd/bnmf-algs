@@ -5,7 +5,7 @@
 using namespace bnmf_algs;
 
 template <typename Real>
-void details::bld_mult_update_grad_plus_cuda(
+void details::bld_mult::update_grad_plus_cuda(
     const cuda::DeviceMemory3D<Real>& S,
     const cuda::DeviceMemory2D<Real>& beta_eph,
     cuda::DeviceMemory3D<Real>& grad_plus) {
@@ -24,7 +24,7 @@ void details::bld_mult_update_grad_plus_cuda(
                    cuda::idiv_ceil(z, block_size_z));
 
     // run kernel
-    kernel::bld_mult_update_grad_plus<<<grid_dims, block_dims>>>(
+    kernel::update_grad_plus<<<grid_dims, block_dims>>>(
         S.pitched_ptr(), beta_eph.data(), beta_eph.pitch(),
         grad_plus.pitched_ptr(), y, x, z);
     auto err = cudaGetLastError();
@@ -33,7 +33,7 @@ void details::bld_mult_update_grad_plus_cuda(
 }
 
 template <typename Real>
-void details::bld_mult_update_nom_cuda(
+void details::bld_mult::update_nom_cuda(
     const cuda::DeviceMemory2D<Real>& X_reciprocal,
     const cuda::DeviceMemory2D<Real>& grad_minus,
     const cuda::DeviceMemory3D<Real>& S, cuda::DeviceMemory2D<Real>& nom) {
@@ -51,7 +51,7 @@ void details::bld_mult_update_nom_cuda(
                    cuda::idiv_ceil(x, block_size_x), 1);
 
     // run kernel
-    kernel::bld_mult_update_nom<<<grid_dims, block_dims>>>(
+    kernel::update_nom<<<grid_dims, block_dims>>>(
         S.pitched_ptr(), X_reciprocal.data(), X_reciprocal.pitch(),
         grad_minus.data(), grad_minus.pitch(), nom.data(), nom.pitch(), y, x,
         z);
@@ -61,7 +61,7 @@ void details::bld_mult_update_nom_cuda(
 }
 
 template <typename Real>
-void details::bld_mult_update_denom_cuda(
+void details::bld_mult::update_denom_cuda(
     const cuda::DeviceMemory2D<Real>& X_reciprocal,
     const cuda::DeviceMemory3D<Real>& grad_plus,
     const cuda::DeviceMemory3D<Real>& S, cuda::DeviceMemory2D<Real>& denom) {
@@ -79,7 +79,7 @@ void details::bld_mult_update_denom_cuda(
                    cuda::idiv_ceil(x, block_size_x), 1);
 
     // run kernel
-    kernel::bld_mult_update_denom<<<grid_dims, block_dims>>>(
+    kernel::update_denom<<<grid_dims, block_dims>>>(
         S.pitched_ptr(), X_reciprocal.data(), X_reciprocal.pitch(),
         grad_plus.pitched_ptr(), denom.data(), denom.pitch(), y, x, z);
     auto err = cudaGetLastError();
@@ -88,7 +88,7 @@ void details::bld_mult_update_denom_cuda(
 }
 
 template <typename Real>
-void details::bld_mult_update_S_cuda(
+void details::bld_mult::update_S_cuda(
     const cuda::DeviceMemory2D<Real>& X, const cuda::DeviceMemory2D<Real>& nom,
     const cuda::DeviceMemory2D<Real>& denom,
     const cuda::DeviceMemory2D<Real>& grad_minus,
@@ -109,7 +109,7 @@ void details::bld_mult_update_S_cuda(
                    cuda::idiv_ceil(z, block_size_z));
 
     // run kernel
-    kernel::bld_mult_update_S<<<grid_dims, block_dims>>>(
+    kernel::update_S<<<grid_dims, block_dims>>>(
         X.data(), X.pitch(), nom.data(), nom.pitch(), denom.data(),
         denom.pitch(), grad_minus.data(), grad_minus.pitch(),
         grad_plus.pitched_ptr(), S_ijp.data(), S_ijp.pitch(), S.pitched_ptr(),
@@ -125,48 +125,48 @@ void details::bld_mult_update_S_cuda(
 
 // update_grad_plus
 template void
-details::bld_mult_update_grad_plus_cuda(const cuda::DeviceMemory3D<double>&,
-                                        const cuda::DeviceMemory2D<double>&,
-                                        cuda::DeviceMemory3D<double>&);
+details::bld_mult::update_grad_plus_cuda(const cuda::DeviceMemory3D<double>&,
+                                         const cuda::DeviceMemory2D<double>&,
+                                         cuda::DeviceMemory3D<double>&);
 template void
-details::bld_mult_update_grad_plus_cuda(const cuda::DeviceMemory3D<float>&,
-                                        const cuda::DeviceMemory2D<float>&,
-                                        cuda::DeviceMemory3D<float>&);
+details::bld_mult::update_grad_plus_cuda(const cuda::DeviceMemory3D<float>&,
+                                         const cuda::DeviceMemory2D<float>&,
+                                         cuda::DeviceMemory3D<float>&);
 
 // update_nom
-template void details::bld_mult_update_nom_cuda(
+template void details::bld_mult::update_nom_cuda(
     const cuda::DeviceMemory2D<double>& X_reciprocal,
     const cuda::DeviceMemory2D<double>& grad_minus,
     const cuda::DeviceMemory3D<double>& S, cuda::DeviceMemory2D<double>& nom);
-template void details::bld_mult_update_nom_cuda(
+template void details::bld_mult::update_nom_cuda(
     const cuda::DeviceMemory2D<float>& X_reciprocal,
     const cuda::DeviceMemory2D<float>& grad_minus,
     const cuda::DeviceMemory3D<float>& S, cuda::DeviceMemory2D<float>& nom);
 
 // update_denom
-template void details::bld_mult_update_denom_cuda(
+template void details::bld_mult::update_denom_cuda(
     const cuda::DeviceMemory2D<double>& X_reciprocal,
     const cuda::DeviceMemory3D<double>& grad_plus,
     const cuda::DeviceMemory3D<double>& S, cuda::DeviceMemory2D<double>& denom);
-template void details::bld_mult_update_denom_cuda(
+template void details::bld_mult::update_denom_cuda(
     const cuda::DeviceMemory2D<float>& X_reciprocal,
     const cuda::DeviceMemory3D<float>& grad_plus,
     const cuda::DeviceMemory3D<float>& S, cuda::DeviceMemory2D<float>& denom);
 
 // update_S
 template void
-details::bld_mult_update_S_cuda(const cuda::DeviceMemory2D<double>& X,
-                                const cuda::DeviceMemory2D<double>& nom,
-                                const cuda::DeviceMemory2D<double>& denom,
-                                const cuda::DeviceMemory2D<double>& grad_minus,
-                                const cuda::DeviceMemory3D<double>& grad_plus,
-                                const cuda::DeviceMemory2D<double>& S_ijp,
-                                cuda::DeviceMemory3D<double>& S);
+details::bld_mult::update_S_cuda(const cuda::DeviceMemory2D<double>& X,
+                                 const cuda::DeviceMemory2D<double>& nom,
+                                 const cuda::DeviceMemory2D<double>& denom,
+                                 const cuda::DeviceMemory2D<double>& grad_minus,
+                                 const cuda::DeviceMemory3D<double>& grad_plus,
+                                 const cuda::DeviceMemory2D<double>& S_ijp,
+                                 cuda::DeviceMemory3D<double>& S);
 template void
-details::bld_mult_update_S_cuda(const cuda::DeviceMemory2D<float>& X,
-                                const cuda::DeviceMemory2D<float>& nom,
-                                const cuda::DeviceMemory2D<float>& denom,
-                                const cuda::DeviceMemory2D<float>& grad_minus,
-                                const cuda::DeviceMemory3D<float>& grad_plus,
-                                const cuda::DeviceMemory2D<float>& S_ijp,
-                                cuda::DeviceMemory3D<float>& S);
+details::bld_mult::update_S_cuda(const cuda::DeviceMemory2D<float>& X,
+                                 const cuda::DeviceMemory2D<float>& nom,
+                                 const cuda::DeviceMemory2D<float>& denom,
+                                 const cuda::DeviceMemory2D<float>& grad_minus,
+                                 const cuda::DeviceMemory3D<float>& grad_plus,
+                                 const cuda::DeviceMemory2D<float>& S_ijp,
+                                 cuda::DeviceMemory3D<float>& S);

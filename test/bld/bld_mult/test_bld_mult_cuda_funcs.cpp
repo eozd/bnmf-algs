@@ -5,12 +5,10 @@
 #include "cuda/util.hpp"
 #include "defs.hpp"
 #include "util/util.hpp"
-#include <chrono>
-#include <iostream>
 
 using namespace bnmf_algs;
 
-TEST_CASE("Test update_grad_plus", "[tensor_ops]") {
+TEST_CASE("Test update_grad_plus", "[bld_mult_cuda]") {
     SECTION("Same results on GPU and CPU") {
         cuda::init(0);
 
@@ -38,15 +36,15 @@ TEST_CASE("Test update_grad_plus", "[tensor_ops]") {
             cuda::copy2D(beta_eph_device, beta_eph_host);
             cuda::copy3D(actual_device, actual_host);
 
-            details::bld_mult_update_grad_plus_cuda(S_device, beta_eph_device,
-                                                    actual_device);
+            details::bld_mult::update_grad_plus_cuda(S_device, beta_eph_device,
+                                                     actual_device);
 
             cuda::copy3D(actual_host, actual_device);
         }
 
         tensord<3> expected(x, y, z);
         auto psi_fn = util::psi_appr<double>;
-        details::bld_mult_update_grad_plus(S, beta_eph, psi_fn, expected);
+        details::bld_mult::update_grad_plus(S, beta_eph, psi_fn, expected);
 
         Eigen::Map<matrixd> actual_mat(actual.data(), x, y * z);
         Eigen::Map<matrixd> expect_mat(expected.data(), x, y * z);
@@ -55,7 +53,7 @@ TEST_CASE("Test update_grad_plus", "[tensor_ops]") {
     }
 }
 
-TEST_CASE("Test update_nom", "[tensor_ops]") {
+TEST_CASE("Test update_nom", "[bld_mult_cuda]") {
     SECTION("Same results on GPU and CPU") {
         const double eps = 1e-50;
         cuda::init(0);
@@ -91,22 +89,22 @@ TEST_CASE("Test update_nom", "[tensor_ops]") {
             cuda::copy2D(grad_minus_device, grad_minus_host);
             cuda::copy3D(S_device, S_host);
 
-            details::bld_mult_update_nom_cuda(X_reciprocal_device,
-                                              grad_minus_device, S_device,
-                                              actual_device);
+            details::bld_mult::update_nom_cuda(X_reciprocal_device,
+                                               grad_minus_device, S_device,
+                                               actual_device);
             cuda::copy2D(actual_host, actual_device);
         }
 
         // Calculate on CPU
         matrixd expected(x, y);
-        details::bld_mult_update_nom_mult(X_reciprocal, grad_minus, S,
-                                          expected);
+        details::bld_mult::update_nom_mult(X_reciprocal, grad_minus, S,
+                                           expected);
 
         REQUIRE(actual.isApprox(expected));
     }
 }
 
-TEST_CASE("Test update_denom", "[tensor_ops]") {
+TEST_CASE("Test update_denom", "[bld_mult_cuda]") {
     SECTION("Same results on GPU and CPU") {
         const double eps = 1e-50;
         cuda::init(0);
@@ -143,21 +141,21 @@ TEST_CASE("Test update_denom", "[tensor_ops]") {
             cuda::copy3D(grad_plus_device, grad_plus_host);
             cuda::copy3D(S_device, S_host);
 
-            details::bld_mult_update_denom_cuda(
+            details::bld_mult::update_denom_cuda(
                 X_reciprocal_device, grad_plus_device, S_device, actual_device);
             cuda::copy2D(actual_host, actual_device);
         }
 
         // Calculate on CPU
         matrixd expected(x, y);
-        details::bld_mult_update_denom_mult(X_reciprocal, grad_plus, S,
-                                            expected);
+        details::bld_mult::update_denom_mult(X_reciprocal, grad_plus, S,
+                                             expected);
 
         REQUIRE(actual.isApprox(expected));
     }
 }
 
-TEST_CASE("Test update_S", "[tensor_ops]") {
+TEST_CASE("Test update_S", "[bld_mult_cuda]") {
     SECTION("Same results on GPU and CPU") {
         const double eps = 1e-50;
         cuda::init(0);
@@ -206,14 +204,14 @@ TEST_CASE("Test update_S", "[tensor_ops]") {
             cuda::copy3D(S_device, S_host);
             cuda::copy2D(S_ijp_device, S_ijp_host);
 
-            details::bld_mult_update_S_cuda(X_device, nom_device, denom_device,
-                                            grad_minus_device, grad_plus_device,
-                                            S_ijp_device, S_device);
+            details::bld_mult::update_S_cuda(
+                X_device, nom_device, denom_device, grad_minus_device,
+                grad_plus_device, S_ijp_device, S_device);
             cuda::copy3D(S_host, S_device);
         }
 
-        details::bld_mult_update_S(X, nom_mult, denom_mult, grad_minus,
-                                   grad_plus, S_ijp, expected, eps);
+        details::bld_mult::update_S(X, nom_mult, denom_mult, grad_minus,
+                                    grad_plus, S_ijp, expected, eps);
 
         Eigen::Map<matrixd> actual_mat(S.data(), x, y * z);
         Eigen::Map<matrixd> expect_mat(expected.data(), x, y * z);

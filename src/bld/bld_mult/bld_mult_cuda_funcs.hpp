@@ -4,6 +4,7 @@
 
 namespace bnmf_algs {
 namespace details {
+namespace bld_mult {
 /**
  * @brief Perform grad_plus update employed in bld_mult algorithm using CUDA.
  *
@@ -34,30 +35,31 @@ namespace details {
  * @param grad_plus grad_plus tensor on the GPU.
  */
 template <typename Real>
-void bld_mult_update_grad_plus_cuda(const cuda::DeviceMemory3D<Real>& S,
-                                    const cuda::DeviceMemory2D<Real>& beta_eph,
-                                    cuda::DeviceMemory3D<Real>& grad_plus);
+void update_grad_plus_cuda(const cuda::DeviceMemory3D<Real>& S,
+                           const cuda::DeviceMemory2D<Real>& beta_eph,
+                           cuda::DeviceMemory3D<Real>& grad_plus);
 
 template <typename Real>
-void bld_mult_update_nom_cuda(const cuda::DeviceMemory2D<Real>& X_reciprocal,
-                              const cuda::DeviceMemory2D<Real>& grad_minus,
-                              const cuda::DeviceMemory3D<Real>& S,
-                              cuda::DeviceMemory2D<Real>& nom);
+void update_nom_cuda(const cuda::DeviceMemory2D<Real>& X_reciprocal,
+                     const cuda::DeviceMemory2D<Real>& grad_minus,
+                     const cuda::DeviceMemory3D<Real>& S,
+                     cuda::DeviceMemory2D<Real>& nom);
 
 template <typename Real>
-void bld_mult_update_denom_cuda(const cuda::DeviceMemory2D<Real>& X_reciprocal,
-                                const cuda::DeviceMemory3D<Real>& grad_plus,
-                                const cuda::DeviceMemory3D<Real>& S,
-                                cuda::DeviceMemory2D<Real>& denom);
+void update_denom_cuda(const cuda::DeviceMemory2D<Real>& X_reciprocal,
+                       const cuda::DeviceMemory3D<Real>& grad_plus,
+                       const cuda::DeviceMemory3D<Real>& S,
+                       cuda::DeviceMemory2D<Real>& denom);
 
 template <typename Real>
-void bld_mult_update_S_cuda(const cuda::DeviceMemory2D<Real>& X,
-                            const cuda::DeviceMemory2D<Real>& nom,
-                            const cuda::DeviceMemory2D<Real>& denom,
-                            const cuda::DeviceMemory2D<Real>& grad_minus,
-                            const cuda::DeviceMemory3D<Real>& grad_plus,
-                            const cuda::DeviceMemory2D<Real>& S_ijp,
-                            cuda::DeviceMemory3D<Real>& S);
+void update_S_cuda(const cuda::DeviceMemory2D<Real>& X,
+                   const cuda::DeviceMemory2D<Real>& nom,
+                   const cuda::DeviceMemory2D<Real>& denom,
+                   const cuda::DeviceMemory2D<Real>& grad_minus,
+                   const cuda::DeviceMemory3D<Real>& grad_plus,
+                   const cuda::DeviceMemory2D<Real>& S_ijp,
+                   cuda::DeviceMemory3D<Real>& S);
 
+} // namespace bld_mult
 } // namespace details
 } // namespace bnmf_algs
