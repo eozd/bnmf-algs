@@ -9,8 +9,30 @@
 
 namespace bnmf_algs {
 namespace details {
+/**
+ * @brief Namespace containing bld_mult update functions (CUDA/non-CUDA).
+ */
 namespace bld_mult {
 
+/**
+ * @brief Initialize S tensor using a Dirichlet sample of size z with all
+ * concentration parameters set to 1.
+ *
+ * S tensor is initialized according to the following update
+ *
+ * \f[
+ *     S_{ijk} \leftarrow X_{ij}\mathcal{D}_{ij}(k)
+ * \f]
+ *
+ * where \f$\mathcal{D}_{ij}(k)\f$ is the kth entry of the \f$ij^{th}\f$
+ * Dirichlet sample.
+ *
+ * @tparam T Type of the entries of the matrix X and tensor S
+ * @param X X matrix sent as input to bld algorithm.
+ * @param z Rank of the decomposition.
+ * @return S_{x \times y \times z} tensor for a matrix \f$X_{x \times y}\f$
+ * and rank parameter z.
+ */
 template <typename T> tensor_t<T, 3> init_S(const matrix_t<T>& X, size_t z) {
     const auto x = static_cast<size_t>(X.rows());
     const auto y = static_cast<size_t>(X.cols());
@@ -51,6 +73,16 @@ template <typename T> tensor_t<T, 3> init_S(const matrix_t<T>& X, size_t z) {
     return S;
 }
 
+/**
+ * @brief Compute the reciprocal \f$\hat{X}\f$ of the input matrix \f$X\f$.
+ *
+ * \f$\hat{X}_{ij} = \frac{1}{X_{ij} + \epsilon}\f$.
+ *
+ * @tparam T Type of the entries of the input matrix.
+ * @param X Input matrix.
+ * @param eps Epsilon value to be used to prevent division by 0 errors.
+ * @return Reciprocal of the input matrix.
+ */
 template <typename T>
 matrix_t<T> X_reciprocal(const matrix_t<T>& X, double eps) {
     const auto x = static_cast<size_t>(X.rows());
@@ -67,6 +99,14 @@ matrix_t<T> X_reciprocal(const matrix_t<T>& X, double eps) {
     return X_reciprocal;
 }
 
+/**
+ * @brief Initialize alpha and beta vectors used in bld_mult.
+ *
+ * @tparam Scalar Type of the entries of model parameters.
+ * @param params Allocation model parameters.
+ * @return std::pair of alpha and beta vectors which are copies of the model
+ * parameter alpha and beta vectors.
+ */
 template <typename Scalar>
 std::pair<vector_t<Scalar>, vector_t<Scalar>>
 init_alpha_beta(const alloc_model::Params<Scalar>& params) {
@@ -78,6 +118,14 @@ init_alpha_beta(const alloc_model::Params<Scalar>& params) {
     return std::make_pair(alpha, beta);
 }
 
+/**
+ * @brief Update alpha_eph matrix used in bld_mult.
+ *
+ * @tparam T Type of the matrix entries.
+ * @param S_ipk Sum of S tensor along its 1st axis (0 based indexing)
+ * @param alpha alpha vector used in bld_mult
+ * @param alpha_eph alpha_eph matrix to update.
+ */
 template <typename T>
 void update_alpha_eph(const tensor_t<T, 2>& S_ipk, const vector_t<T>& alpha,
                       matrix_t<T>& alpha_eph) {
@@ -92,6 +140,14 @@ void update_alpha_eph(const tensor_t<T, 2>& S_ipk, const vector_t<T>& alpha,
     }
 }
 
+/**
+ * @brief Update beta_eph matrix used in bld_mult.
+ *
+ * @tparam T Type of the matrix entries.
+ * @param S_pjk Sum of S tensor along its 0th axis (0 based indexing)
+ * @param beta beta vector used in bld_mult
+ * @param beta_eph beta_eph matrix to update.
+ */
 template <typename T>
 void update_beta_eph(const tensor_t<T, 2>& S_pjk, const vector_t<T>& beta,
                      matrix_t<T>& beta_eph) {
@@ -106,6 +162,17 @@ void update_beta_eph(const tensor_t<T, 2>& S_pjk, const vector_t<T>& beta,
     }
 }
 
+/**
+ * @brief Update grad_plus tensor used in bld_mult.
+ *
+ * @tparam T Type of the matrix/tensor entries
+ * @tparam PsiFunction A callable type that will return \f$\psi(x)\f$ for an
+ * input parameter \f$x\f$.
+ * @param S S tensor (output of bld_mult).
+ * @param beta_eph beta_eph matrix used in bld_mult.
+ * @param psi_fn Psi computing callable.
+ * @param grad_plus grad_plus tensor to update.
+ */
 template <typename T, typename PsiFunction>
 void update_grad_plus(const tensor_t<T, 3>& S, const matrix_t<T>& beta_eph,
                       PsiFunction psi_fn, tensor_t<T, 3>& grad_plus) {
@@ -124,6 +191,16 @@ void update_grad_plus(const tensor_t<T, 3>& S, const matrix_t<T>& beta_eph,
     }
 }
 
+/**
+ * @brief Update grad_minus tensor used in bld_mult.
+ *
+ * @tparam T Type of the matrix/tensor entries
+ * @tparam PsiFunction A callable type that will return \f$\psi(x)\f$ for an
+ * input parameter \f$x\f$.
+ * @param alpha_eph alpha_matrix used in bld_mult.
+ * @param psi_fn Psi computing callable.
+ * @param grad_minus grad_minus tensor to update.
+ */
 template <typename T, typename PsiFunction>
 void update_grad_minus(const matrix_t<T>& alpha_eph, PsiFunction psi_fn,
                        matrix_t<T>& grad_minus) {
@@ -151,6 +228,16 @@ void update_grad_minus(const matrix_t<T>& alpha_eph, PsiFunction psi_fn,
     }
 }
 
+/**
+ * @brief Update nom_mult matrix used in bld_mult.
+ *
+ * @tparam T Type of the matrix entries.
+ * @param X_reciprocal Matrix containing reciprocals of entries of input matrix
+ * X.
+ * @param grad_minus grad_minus matrix.
+ * @param S S tensor
+ * @param nom_mult nom_mult matrix to update.
+ */
 template <typename T>
 void update_nom_mult(const matrix_t<T>& X_reciprocal,
                      const matrix_t<T>& grad_minus, const tensor_t<T, 3>& S,
@@ -171,6 +258,16 @@ void update_nom_mult(const matrix_t<T>& X_reciprocal,
     }
 }
 
+/**
+ * @brief Update denom_mult matrix used in bld_mult.
+ *
+ * @tparam T Type of the matrix entries.
+ * @param X_reciprocal Matrix containing reciprocals of entries of input matrix
+ * X.
+ * @param grad_plus grad_plus tensor.
+ * @param S S tensor
+ * @param denom_mult denom_mult matrix to update.
+ */
 template <typename T>
 void update_denom_mult(const matrix_t<T>& X_reciprocal,
                        const tensor_t<T, 3>& grad_plus, const tensor_t<T, 3>& S,
@@ -192,6 +289,20 @@ void update_denom_mult(const matrix_t<T>& X_reciprocal,
     }
 }
 
+/**
+ * @brief Update S tensor (output of bld_mult algorithm).
+ *
+ * @tparam T Type of tensor entries.
+ * @param X Input matrix passed to bld_mult algorithm.
+ * @param nom nom_mult matrix used in bld_mult algorithm.
+ * @param denom denom_mult matrix used in bld_mult algorithm.
+ * @param grad_minus grad_minus matrix used in bld_mult algorithm.
+ * @param grad_plus grad_plus tensor used in bld_mult algorithm.
+ * @param S_ijp Matrix computed by summing tensor S along its 2nd axis (0 based
+ * indexing).
+ * @param S S tensor to update.
+ * @param eps Epsilon value to prevent division by 0 errors.
+ */
 template <typename T>
 void update_S(const matrix_t<T>& X, const matrix_t<T>& nom,
               const matrix_t<T>& denom, const matrix_t<T>& grad_minus,

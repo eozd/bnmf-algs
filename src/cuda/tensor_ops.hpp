@@ -34,8 +34,8 @@ namespace cuda {
  *
  * @tparam T Type of the entries of the input tensor.
  * @param tensor Input tensor to sum along each of its axes.
- * @param An array of sum tensors \f$(M_{y \times z}, M_{x \times z}, M_{x
- * \times y})\f$.
+ * @param result_arr An array of sum tensors \f$(M_{y \times z}, M_{x \times z},
+ * M_{x \times y})\f$.
  */
 template <typename T>
 void tensor_sums(const DeviceMemory3D<T>& tensor,
