@@ -77,6 +77,11 @@ int main(int argc, char** argv) {
     } else if (alg == "bld_mult") {
         S = bld::bld_mult(X, n_components, params, max_iter, true);
         std::tie(W, H, L) = bld::bld_fact(S, params);
+#ifdef USE_CUDA
+    } else if (alg == "bld_mult_cuda") {
+        S = bld::bld_mult_cuda(X, n_components, params, max_iter, true);
+        std::tie(W, H, L) = bld::bld_fact(S, params);
+#endif
     } else if (alg == "bld_add") {
         S = bld::bld_add(X, n_components, params, max_iter);
         std::tie(W, H, L) = bld::bld_fact(S, params);
