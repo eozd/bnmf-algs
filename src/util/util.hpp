@@ -5,6 +5,10 @@
 #include <cstddef>
 #include <utility>
 
+#ifdef USE_OPENMP
+#include <thread>
+#endif
+
 namespace bnmf_algs {
 
 /**
@@ -131,40 +135,73 @@ enum class NormType {
 /**
  * @brief Normalize a tensor in-place along the given axis.
  *
+ * @tparam Scalar Type of the tensor entries
  * @tparam N Dimension of the tensor. Must be known at compile time.
  * @param input Input tensor to normalize in-place.
  * @param axis Axis along which the tensor will be normalized.
  * @param type Normalization type. See bnmf_algs::util::NormType for details.
  * @param eps Floating point epsilon value to prevent division by 0 errors.
  */
-template <int N>
-void normalize(tensord<N>& input, size_t axis, NormType type = NormType::L1,
-               double eps = 1e-50) {
+template <typename Scalar, int N>
+void normalize(tensor_t<Scalar, N>& input, size_t axis,
+               NormType type = NormType::L1, double eps = 1e-50) {
     static_assert(N >= 1, "Tensor must be at least 1 dimensional");
-    if (axis >= N) {
-        throw std::invalid_argument("Normalization axis must be less than N");
+    BNMF_ASSERT(axis < N, "Normalization axis must be less than N");
+
+    // calculate output dimensions
+    auto input_dims = input.dimensions();
+    Eigen::array<long, N - 1> output_dims;
+    for (size_t i = 0, j = 0; i < N; ++i) {
+        if (i != axis) {
+            output_dims[j] = input_dims[i];
+            ++j;
+        }
     }
 
-    tensord<N - 1> norms;
+    // initialize thread device if using openmp
+#ifdef USE_OPENMP
+    Eigen::ThreadPool tp(std::thread::hardware_concurrency());
+    Eigen::ThreadPoolDevice thread_dev(&tp,
+                                       std::thread::hardware_concurrency());
+#endif
+
+    // calculate norms
+    tensor_t<Scalar, N - 1> norms(output_dims);
     shape<1> reduction_dim{axis};
     switch (type) {
     case NormType::L1:
+#ifdef USE_OPENMP
+        norms.device(thread_dev) = input.abs().sum(reduction_dim);
+#else
         norms = input.abs().sum(reduction_dim);
+#endif
         break;
     case NormType::L2:
+#ifdef USE_OPENMP
+        norms.device(thread_dev) = input.square().sum(reduction_dim);
+#else
         norms = input.square().sum(reduction_dim);
+#endif
         break;
     case NormType::Inf:
+#ifdef USE_OPENMP
+        norms.device(thread_dev) = input.abs().maximum(reduction_dim);
+#else
         norms = input.abs().maximum(reduction_dim);
+#endif
         break;
     }
-    {
-        tensord<N - 1> eps_tensor(norms.dimensions());
-        eps_tensor.setConstant(eps);
-        norms += eps_tensor;
+
+    // add epsilon to norms values to prevent division by zeros
+    Scalar* norms_begin = norms.data();
+    #pragma omp parallel for schedule(static)
+    for (long i = 0; i < norms.size(); ++i) {
+        norms_begin[i] += eps;
     }
 
+    // divide along each slice
     int axis_dims = input.dimensions()[axis];
+    #pragma omp parallel for schedule(static)
     for (int i = 0; i < axis_dims; ++i) {
         input.chip(i, axis) /= norms;
     }
@@ -173,6 +210,7 @@ void normalize(tensord<N>& input, size_t axis, NormType type = NormType::L1,
 /**
  * @brief Return a normalized copy of a tensor along the given axis.
  *
+ * @tparam Scalar Type of the tensor entries
  * @tparam N Dimension of the tensor. Must be known at compile time.
  * @param input Input tensor to normalize.
  * @param axis Axis along which the tensor will be normalized.
@@ -181,11 +219,12 @@ void normalize(tensord<N>& input, size_t axis, NormType type = NormType::L1,
  *
  * @return Normalized copy of the input tensor along the given axis
  */
-template <int N>
-tensord<N> normalized(const tensord<N>& input, size_t axis,
-                      NormType type = NormType::L1, double eps = 1e-50) {
-    tensord<N> out = input;
-    normalize(out, axis, type);
+template <typename Scalar, int N>
+tensor_t<Scalar, N> normalized(const tensor_t<Scalar, N>& input, size_t axis,
+                               NormType type = NormType::L1,
+                               double eps = 1e-50) {
+    tensor_t<Scalar, N> out = input;
+    normalize(out, axis, type, eps);
     return out;
 }
 
@@ -223,7 +262,7 @@ tensord<N> normalized(const tensord<N>& input, size_t axis,
  * @see Appendix C.1 of @cite beal2003variational for a discussion of this
  * method.
  */
-template <typename Real> Real psi_appr(Real x) noexcept {
+template <typename Real> Real psi_appr(Real x) {
     Real extra = 0;
 
     // write each case separately to minimize number of divisions as much as
