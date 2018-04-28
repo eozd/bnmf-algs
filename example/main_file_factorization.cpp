@@ -1,6 +1,4 @@
-#include "defs.hpp"
-#include "nmf/nmf.hpp"
-#include <bld/bld_algs.hpp>
+#include "bnmf_algs.hpp"
 #include <chrono>
 #include <fstream>
 #include <iostream>
@@ -10,8 +8,10 @@ using namespace std::chrono;
 using namespace bnmf_algs;
 
 /**
- * @brief Read a matrix X from a given file, run NMF on it, and write the
- * resulting two matrices to W.txt and H.txt files.
+ * @brief Read a matrix X from a given file, run a factorization algorithm on it,
+ * and write the resulting two matrices to W.txt and H.txt, and the resulting
+ * tensor to S.txt files. If NMF is run, only W.txt and H.txt contain meaningful
+ * results.
  *
  * Given input file must contain each row of the matrix on a separated line.
  * Each entry in a row must be separated using a single space character.
@@ -22,7 +22,8 @@ int main(int argc, char** argv) {
         std::cout << "usage: " << argv[0]
                   << " alg filename n_components beta max_iter\n\n"
                   << "where alg is one of <nmf | seq_greedy_bld | bld_mult | "
-                     "bld_add | bld_appr | collapsed_gibbs | collapsed_icm>"
+                     "bld_add | bld_appr | collapsed_gibbs | "
+                     "collapsed_icm>"
                   << std::endl;
         return -1;
     }
@@ -77,11 +78,6 @@ int main(int argc, char** argv) {
     } else if (alg == "bld_mult") {
         S = bld::bld_mult(X, n_components, params, max_iter, true);
         std::tie(W, H, L) = bld::bld_fact(S, params);
-#ifdef USE_CUDA
-    } else if (alg == "bld_mult_cuda") {
-        S = bld::bld_mult_cuda(X, n_components, params, max_iter, true);
-        std::tie(W, H, L) = bld::bld_fact(S, params);
-#endif
     } else if (alg == "bld_add") {
         S = bld::bld_add(X, n_components, params, max_iter);
         std::tie(W, H, L) = bld::bld_fact(S, params);

@@ -20,6 +20,9 @@ endif (CMAKE_BUILD_TYPE MATCHES Release)
 
 include_directories(src)
 
+set(CELERO_INCLUDE_DIR /usr/local/include/celero)
+set(CELERO_LIBRARY_PATH /usr/local/lib/libcelero.so)
+
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 find_package(GSL REQUIRED)
@@ -86,17 +89,11 @@ endif (BUILD_TESTING)
 if (BUILD_BENCH)
     # todo: move this elsewhere?
     if (BUILD_CUDA)
-        CUDA_ADD_EXECUTABLE(main_file main_file_factorization.cpp ${CUDA_KERNEL_FILES})
         CUDA_ADD_EXECUTABLE(benchmark ${BENCH_SRC_FILES} ${CUDA_KERNEL_FILES})
-
-        target_link_libraries(main_file gsl gslcblas ${CUDA_LIBRARIES})
         target_link_libraries(benchmark ${CUDA_LIBRARIES})
     else (BUILD_CUDA)
-        add_executable(main_file main_file_factorization.cpp)
         add_executable(benchmark ${BENCH_SRC_FILES})
-
-        target_link_libraries(main_file gsl gslcblas)
-        target_include_directories(benchmark PUBLIC /usr/local/include/celero)
+		target_include_directories(benchmark PUBLIC ${CELERO_INCLUDE_DIR})
     endif (BUILD_CUDA)
-    target_link_libraries(benchmark /usr/local/lib/libcelero.so Threads::Threads gsl gslcblas)
+	target_link_libraries(benchmark ${CELERO_LIBRARY_PATH} Threads::Threads gsl gslcblas)
 endif (BUILD_BENCH)
