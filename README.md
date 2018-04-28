@@ -4,13 +4,13 @@
 [![Documentation Status](https://readthedocs.org/projects/bnmf-algs/badge/?version=latest)](http://bnmf-algs.readthedocs.io/en/latest/?badge=latest)
 [![License: GPL v3](https://img.shields.io/badge/License-GPL%20v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-bnmf_algs is a header only (except benchmark and CUDA parts) C++14 library
+bnmf-algs is a header only (except benchmark and CUDA parts) C++14 library
 providing parallelized implementations of nonnegative matrix factorization and
-allocation model algorithms [[1]](#refs). bnmf_algs is built on top of
+allocation model algorithms [[1]](#refs). bnmf-algs is built on top of
 [Eigen3](http://eigen.tuxfamily.org/index.php?title=Main_Page), and uses Eigen
 matrix and tensor types in its API and internal computations.  The library can
 be built with OpenMP support to enable parallel implementations of algorithms.
-Additionally, bnmf_algs supports CUDA 8 and above for computing large
+Additionally, bnmf-algs supports CUDA 8 and above for computing large
 matrix/tensor operations on an NVIDIA GPU for additional speed-up.
 
 ## Introduction
@@ -34,7 +34,7 @@ Below we introduce the namespaces and main algorithms provided by bnmf-algs.
 
 ### General View
 The library is divided into sections using C++ namespaces. The main namespace of
-the library is bnmf_algs. The rest of the large namespaces are as follows:
+the library is bnmf-algs. The rest of the large namespaces are as follows:
 
 #### alloc_model
 This namespace contains allocation model related parameter classes and
@@ -65,7 +65,7 @@ util namespace contains various utility functions and classes.
 ## Requirements
 1. cmake 3.2.2 and above
 2. g++ 5 and above
-  * If bnmf_algs is built with CUDA support, then the compiler version must be
+  * If bnmf-algs is built with CUDA support, then the compiler version must be
   compatible with CUDA version. For example, the newest g++ version that is
   compatible with CUDA 8 is g++ 5.
 3. Eigen 3.3.0 and above
@@ -79,7 +79,7 @@ separate CPU cores
 3. CUDA 8 and above to run large matrix/tensor operations on an NVIDIA GPU
 
 ## <a name="build">Building</a>
-To use bnmf_algs in your project, you can follow the steps described in this
+To use bnmf-algs in your project, you can follow the steps described in this
 section. You can check the example programs compiled with/without CUDA support
 to have an idea of how to use bnmf-algs in your project. Additionally, we
 describe the main build script used to build benchmarks and tests.
