@@ -4,7 +4,7 @@
 #
 # usage: ./build.sh <BUILD_TYPE> <TARGET>
 #
-# <BUILD_TYPE> must be debug, release, clean.
+# <BUILD_TYPE> must be debug, release, clean, doc.
 # <TARGET> can be test, bench.
 #
 # To pass additional CMake arguments to the build procedure, edit build.config
@@ -12,28 +12,22 @@
 #
 # example usages:
 # 
-# 1. Build only the library
-#
-#        ./build.sh release
-#
-# 2. Build tests
+# 1. Build tests
 #
 #        ./build.sh release test
 #
-# 3. Build benchmarks
+# 2. Build benchmarks
 #
 #        ./build.sh release bench
 #
-# If no build type is given, the library is built in Release mode.
+# 3. Build documentation
+#
+#        ./build.sh doc
 
 build=$1
 shift
 target=$1
 shift
-
-if [[ -z ${build_type} ]]; then
-	build_type=Release
-fi
 
 if [[ ${build} == "debug" ]]; then
 	build="-DCMAKE_BUILD_TYPE=Debug"
@@ -44,15 +38,16 @@ elif [[ ${build} == "clean" ]]; then
 	rm -rf build/CMakeCache.txt ||:
 	rm -rf build/cmake_install.cmake ||:
 	rm -rf build/Makefile ||:
-
-	rm -rf build/dataset_nmf ||:
-	rm -rf build/libbnmf_algs.so ||:
 	rm -rf build/benchmark ||:
 	rm -rf build/tests ||:
-	rm -rf build/cuda_exec ||:
+
+	rm -rf doc/build ||:
+	exit
+elif [[ ${build} == "doc" ]]; then
+	doxygen doc/Doxyfile
 	exit
 else
-	echo "Unknown build type: Use one of debug, release, clean"
+	echo "Unknown build type: Use one of debug, release, clean, doc"
 	exit
 fi
 

@@ -20,9 +20,6 @@ endif (CMAKE_BUILD_TYPE MATCHES Release)
 
 include_directories(src)
 
-set(CELERO_INCLUDE_DIR /usr/local/include/celero)
-set(CELERO_LIBRARY_PATH /usr/local/lib/libcelero.so)
-
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 find_package(Threads REQUIRED)
 find_package(GSL REQUIRED)
