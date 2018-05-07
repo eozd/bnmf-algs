@@ -2,6 +2,7 @@
 
 #include "defs.hpp"
 #include "util/generator.hpp"
+#include <algorithm>
 #include <tuple>
 
 namespace bnmf_algs {
@@ -53,6 +54,82 @@ RandomIterator choice(RandomIterator cum_prob_begin,
     // find the iterator using binary search
     return std::upper_bound(cum_prob_begin, cum_prob_end, p);
 }
+
+template <typename Real, typename Integer>
+void multinomial_mode(Integer num_trials, const vector_t<Real>& prob,
+                      vector_t<Integer>& count, double eps = 1e-50) {
+    BNMF_ASSERT(prob.cols() == count.cols(),
+                "Number of event probabilities and counts differ in "
+                "util::multinomial_mode");
+
+    const auto num_events = prob.cols();
+
+    vector_t<Real> count_real, diff;
+    {
+        vector_t<Real> freq = (num_trials + 0.5) * prob.array();
+        count_real = freq.array().floor();
+        diff = freq - count_real;
+        count = count_real.template cast<Integer>();
+    }
+    const Integer total_count = count.sum();
+
+    if (total_count == num_trials) {
+        return;
+    }
+
+    std::vector<std::pair<int, Real>> diff_normalized(num_events);
+    {
+        vector_t<Real> diff_norm_vec;
+        if (total_count < num_trials) {
+            diff_norm_vec = (1 - diff.array()) / (count_real.array() + 1);
+        } else if (total_count > num_trials) {
+            diff_norm_vec = diff.array() / (count_real.array() + eps);
+        }
+
+        for (int i = 0; i < num_events; ++i) {
+            diff_normalized[i].first = i;
+            diff_normalized[i].second = diff_norm_vec(i);
+        }
+    }
+
+    auto ordering = [](const std::pair<int, Real>& elem_left,
+                       const std::pair<int, Real>& elem_right) {
+        // min heap
+        return elem_left.second > elem_right.second;
+    };
+    std::make_heap(diff_normalized.begin(), diff_normalized.end(), ordering);
+
+    if (total_count < num_trials) {
+        for (int i = total_count; i < num_trials; ++i) {
+            std::pop_heap(diff_normalized.begin(), diff_normalized.end(),
+                          ordering);
+            int min_idx = diff_normalized.back().first;
+
+            ++count(min_idx);
+            --diff(min_idx);
+            diff_normalized.back().second =
+                (1 - diff(min_idx)) / (count(min_idx) + 1);
+
+            std::push_heap(diff_normalized.begin(), diff_normalized.end(),
+                           ordering);
+        }
+    } else if (total_count > num_trials) {
+        for (int i = total_count; i > num_trials; --i) {
+            std::pop_heap(diff_normalized.begin(), diff_normalized.end(),
+                          ordering);
+            int min_idx = diff_normalized.back().first;
+
+            --count(min_idx);
+            ++diff(min_idx);
+            diff_normalized.back().second =
+                diff(min_idx) / (count(min_idx) + eps);
+
+            std::push_heap(diff_normalized.begin(), diff_normalized.end(),
+                           ordering);
+        }
+    }
+}
+
 } // namespace util
 
 /**
