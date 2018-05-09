@@ -54,14 +54,49 @@ RandomIterator choice(RandomIterator cum_prob_begin,
     return std::upper_bound(cum_prob_begin, cum_prob_end, p);
 }
 
+/**
+ * @brief Find the mode of a multinomial distribution using Finucan's algorithm.
+ *
+ * This function computes the mode of a multinomial distribution,
+ * \f$\mathcal{M}(N, p)\f$, where \f$N\f$ is the number of trials and \f$p\f$
+ * is the probability distribution of events, i.e. \f$p_i\f$ is the probability
+ * of \f$i^{th}\f$ event happening. Mode of a multinomial distribution is
+ * defined as the optimal allocation of occurrence counts to events such that
+ * the likelihood of the sample is maximized. This operation is performed
+ * according to the procedure defined by Finucan \cite finucan1964mode .
+ *
+ * In particular, the procedure implemented in this function computes an initial
+ * allocation. Afterwards, if the number of allocated trials are different than
+ * the given number, it iteratively adds/removes trials one-by-one according to
+ * normalized differences using a heap based procedure.
+ *
+ * @tparam Real Floating point types used to define the probabilities.
+ * @tparam Integer Integer types used to define event occurrence counts.
+ * @param num_trials Number of trials to allocate to different events. Must be
+ * nonnegative.
+ * @param prob Probability distribution of the underlying multinomial
+ * distribution. <b>This distribution is assumed to be normalized (sums to
+ * 1)</b>.
+ * @param count Output count vector that will store the occurrence count of each
+ * event.
+ * @param eps Epsilon value used to prevent division by zero errors.
+ *
+ * @remark Throws assertion error if prob and count have different sizes, if
+ * num_trials is negative.
+ * @remark Assumes that prob is normalized (sums to 1).
+ */
 template <typename Real, typename Integer>
 void multinomial_mode(Integer num_trials, const vector_t<Real>& prob,
                       vector_t<Integer>& count, double eps = 1e-50) {
     BNMF_ASSERT(prob.cols() == count.cols(),
                 "Number of event probabilities and counts differ in "
                 "util::multinomial_mode");
-    const auto num_events = prob.cols();
+    BNMF_ASSERT(
+        num_trials >= 0,
+        "Number of trials must be nonnegative in util::multinomial_mode");
 
+    // initialize counts and differences
+    const auto num_events = prob.cols();
     vector_t<Real> count_real;
     vector_t<Real> diff;
     {
@@ -70,14 +105,13 @@ void multinomial_mode(Integer num_trials, const vector_t<Real>& prob,
         diff = freq - count_real;
         count = count_real.template cast<Integer>();
     }
-    const Integer total_count = count.sum();
 
+    const Integer total_count = count.sum();
     if (total_count == num_trials) {
         return;
     }
 
-    // normalized differences will be used as a heap for the greedy
-    // algorithm
+    // normalized differences will be used as a heap for the iterative alg
     std::vector<std::pair<int, Real>> diff_normalized(num_events);
     {
         // compute normalized differences
@@ -102,6 +136,8 @@ void multinomial_mode(Integer num_trials, const vector_t<Real>& prob,
         return elem_left.second > elem_right.second;
     };
     std::make_heap(diff_normalized.begin(), diff_normalized.end(), ordering);
+
+    // only one of the loops below execute
 
     // distribute the remaining balls
     for (Integer i = total_count; i < num_trials; ++i) {
