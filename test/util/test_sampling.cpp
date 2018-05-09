@@ -178,3 +178,140 @@ TEST_CASE("Test util::choice", "[choice]") {
             [&cum_prob](const auto c_it) { return c_it == cum_prob.end(); }));
     }
 }
+
+TEST_CASE("Test util::multinomial_mode", "[multinomial_mode]") {
+    SECTION("Parameter checks") {
+        const size_t num_events = 5;
+        int num_balls = 0;
+        vector_t<double> prob(num_events);
+        prob << 0.2, 0.2, 0.2, 0.2, 0.2;
+
+        vector_t<int> count(num_events);
+        REQUIRE_NOTHROW(util::multinomial_mode(num_balls, prob, count));
+
+        num_balls = -1;
+        REQUIRE_THROWS(util::multinomial_mode(num_balls, prob, count));
+
+        num_balls = 120;
+        count = vector_t<int>(num_events - 1);
+        REQUIRE_THROWS(util::multinomial_mode(num_balls, prob, count));
+    }
+
+    SECTION("Tests given in Finucan paper") {
+        const size_t num_events = 6;
+        const size_t num_balls = 17;
+        vector_t<size_t> count(num_events);
+        vector_t<size_t> expected(num_events);
+
+        vector_t<double> prob(num_events);
+        prob << 7, 12, 13, 19, 21, 28;
+        prob = prob.array() / prob.sum();
+        expected << 1, 2, 2, 3, 4, 5;
+        util::multinomial_mode(num_balls, prob, count);
+        REQUIRE(count == expected);
+
+        prob << 6, 11, 12, 20, 23, 28;
+        prob = prob.array() / prob.sum();
+        expected << 1, 1, 2, 4, 4, 5;
+        util::multinomial_mode(num_balls, prob, count);
+        REQUIRE(count == expected);
+
+        prob << 7, 11, 12, 21, 22, 27;
+        prob = prob.array() / prob.sum();
+        expected << 1, 2, 2, 3, 4, 5;
+        util::multinomial_mode(num_balls, prob, count);
+        REQUIRE(count == expected);
+
+        prob << 6, 10.5, 11, 21, 21, 30.5;
+        prob = prob.array() / prob.sum();
+        expected << 1, 2, 2, 4, 3, 5; // one of the modes
+        util::multinomial_mode(num_balls, prob, count);
+        REQUIRE(count == expected);
+
+        prob << 52, 104, 104, 208, 208, 324;
+        prob = prob.array() / prob.sum();
+        expected << 0, 2, 1, 4, 4, 6; // one of the modes
+        util::multinomial_mode(num_balls, prob, count);
+        REQUIRE(count == expected);
+
+        prob << 13, 23, 25, 37, 41, 55;
+        prob = prob.array() / prob.sum();
+        expected << 1, 2, 2, 3, 4, 5;
+        util::multinomial_mode(num_balls, prob, count);
+        REQUIRE(count == expected);
+    }
+
+    SECTION("Edge case tests: 0 events") {
+        const size_t num_events = 0;
+        const size_t num_trials = 10;
+        vector_t<double> prob;
+        vector_t<size_t> count;
+        util::multinomial_mode(num_trials, prob, count);
+        REQUIRE(count == vector_t<size_t>());
+    }
+
+    SECTION("Edge case tests: 0 trials") {
+        const size_t num_events = 3;
+        const size_t num_trials = 0;
+        vector_t<double> prob(num_events);
+        prob << 1. / 3, 1. / 3, 1. / 3;
+        vector_t<size_t> count(num_events);
+        util::multinomial_mode(num_trials, prob, count);
+
+        vector_t<size_t> expected(num_events);
+        expected << 0, 0, 0;
+        REQUIRE(count == expected);
+    }
+
+    SECTION("Custom test: 1 ball") {
+        const size_t num_events = 4;
+        const size_t num_trials = 1;
+        vector_t<double> prob(num_events);
+        prob << 0.75, 0.1, 0.1, 0.05;
+        vector_t<size_t> count(num_events);
+        util::multinomial_mode(num_trials, prob, count);
+
+        vector_t<size_t> expected(num_events);
+        expected << 1, 0, 0, 0;
+        REQUIRE(count == expected);
+    }
+
+    SECTION("Custom test: 2 balls") {
+        const size_t num_events = 4;
+        const size_t num_trials = 2;
+        vector_t<double> prob(num_events);
+        prob << 0.4, 0.4, 0.2, 0;
+        vector_t<size_t> count(num_events);
+        util::multinomial_mode(num_trials, prob, count);
+
+        vector_t<size_t> expected(num_events);
+        expected << 1, 1, 0, 0;
+        REQUIRE(count == expected);
+    }
+
+    SECTION("Custom test: Uniform distribution") {
+        const size_t num_events = 4;
+        const size_t num_trials = 60;
+        vector_t<double> prob(num_events);
+        prob << 0.25, 0.25, 0.25, 0.25;
+        vector_t<size_t> count(num_events);
+        util::multinomial_mode(num_trials, prob, count);
+
+        vector_t<size_t> expected(num_events);
+        expected << 15, 15, 15, 15;
+        REQUIRE(count == expected);
+    }
+
+    SECTION("Custom test: dirac delta") {
+        const size_t num_events = 5;
+        const size_t num_trials = 60;
+        vector_t<double> prob(num_events);
+        prob << 0, 0, 1, 0, 0;
+        vector_t<size_t> count(num_events);
+        util::multinomial_mode(num_trials, prob, count);
+
+        vector_t<size_t> expected(num_events);
+        expected << 0, 0, 60, 0, 0;
+        REQUIRE(count == expected);
+    }
+}
