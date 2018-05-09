@@ -315,3 +315,31 @@ TEST_CASE("Test util::multinomial_mode", "[multinomial_mode]") {
         REQUIRE(count == expected);
     }
 }
+
+TEST_CASE("Test dirichlet_mat", "[dirichlet_mat]") {
+    const size_t x = 50, y = 30;
+    matrix_t<double> alpha =
+        matrix_t<double>::Random(x, y) + matrix_t<double>::Constant(x, y, 1);
+
+    SECTION("Parameter checks") {
+        REQUIRE_NOTHROW(util::dirichlet_mat(alpha, 0));
+        REQUIRE_NOTHROW(util::dirichlet_mat(alpha, 1));
+        REQUIRE_THROWS(util::dirichlet_mat(alpha, 2));
+    }
+
+    SECTION("Columnwise normalized Dirichlet matrix") {
+        matrix_t<double> dirichlet = util::dirichlet_mat(alpha, 0);
+        vector_t<double> col_sums = dirichlet.colwise().sum();
+        vector_t<double> expected = vector_t<double>::Constant(y, 1);
+
+        REQUIRE(col_sums.isApprox(expected));
+    }
+
+    SECTION("Rowwise normalized Dirichlet matrix") {
+        matrix_t<double> dirichlet = util::dirichlet_mat(alpha, 1);
+        vector_t<double> row_sums = dirichlet.rowwise().sum();
+        vector_t<double> expected = vector_t<double>::Constant(x, 1);
+
+        REQUIRE(row_sums.isApprox(expected));
+    }
+}
