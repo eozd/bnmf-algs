@@ -116,7 +116,8 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, const size_t z,
 #endif
 
     // which psi function to use
-    const auto psi_fn = use_psi_appr ? util::psi_appr<T> : gsl_sf_psi;
+    const auto psi_fn =
+        use_psi_appr ? util::psi_appr<T> : details::gsl_psi_wrapper<T>;
 
     // iterations
     for (size_t eph = 0; eph < max_iter; ++eph) {
@@ -299,7 +300,7 @@ tensor_t<T, 3> bld_mult_cuda(const matrix_t<T>& X, const size_t z,
                                                  grad_plus_device);
         // update denom using CUDA
         details::bld_mult::update_denom_cuda(
-                X_reciprocal_device, grad_plus_device, S_device, denom_device);
+            X_reciprocal_device, grad_plus_device, S_device, denom_device);
 
         // above two cuda calls are asynchronous; immediately start working on
         // the CPU
