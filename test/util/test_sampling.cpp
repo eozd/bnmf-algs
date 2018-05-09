@@ -212,7 +212,7 @@ TEST_CASE("Test util::multinomial_mode", "[multinomial_mode]") {
 
         prob << 6, 11, 12, 20, 23, 28;
         prob = prob.array() / prob.sum();
-        expected << 1, 1, 2, 4, 4, 5;
+        expected << 1, 2, 2, 3, 4, 5;
         util::multinomial_mode(num_balls, prob, count);
         REQUIRE(count == expected);
 

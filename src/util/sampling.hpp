@@ -75,15 +75,13 @@ RandomIterator choice(RandomIterator cum_prob_begin,
  * @param num_trials Number of trials to allocate to different events. Must be
  * nonnegative.
  * @param prob Probability distribution of the underlying multinomial
- * distribution. <b>This distribution is assumed to be normalized (sums to
- * 1)</b>.
+ * distribution.
  * @param count Output count vector that will store the occurrence count of each
  * event.
  * @param eps Epsilon value used to prevent division by zero errors.
  *
  * @remark Throws assertion error if prob and count have different sizes, if
  * num_trials is negative.
- * @remark Assumes that prob is normalized (sums to 1).
  */
 template <typename Real, typename Integer>
 void multinomial_mode(Integer num_trials, const vector_t<Real>& prob,
@@ -104,7 +102,12 @@ void multinomial_mode(Integer num_trials, const vector_t<Real>& prob,
     vector_t<Real> count_real;
     vector_t<Real> diff;
     {
-        vector_t<Real> freq = (num_trials + 0.5 * num_events) * prob.array();
+        vector_t<Real> normalized_probs = prob.array() + eps;
+        normalized_probs = normalized_probs.array() / normalized_probs.sum();
+
+        vector_t<Real> freq =
+            (num_trials + 0.5 * num_events) * normalized_probs;
+
         count_real = freq.array().floor();
         diff = freq - count_real;
         count = count_real.template cast<Integer>();
@@ -128,9 +131,7 @@ void multinomial_mode(Integer num_trials, const vector_t<Real>& prob,
 
         // store differences and their indices
         for (int i = 0; i < num_events; ++i) {
-            if (std::abs(fractions(i)) > std::numeric_limits<Real>::epsilon()) {
-                fraction_heap.emplace_back(i, fractions(i));
-            }
+            fraction_heap.emplace_back(i, fractions(i));
         }
     }
 
