@@ -3,6 +3,7 @@
 #include "defs.hpp"
 #include "util/generator.hpp"
 #include <algorithm>
+#include <gsl/gsl_randist.h>
 #include <tuple>
 
 namespace bnmf_algs {
@@ -175,6 +176,56 @@ void multinomial_mode(Integer num_trials, const vector_t<Real>& prob,
         // push back to the heap
         std::push_heap(fraction_heap.begin(), fraction_heap.end(), ordering);
     }
+}
+
+/**
+ * @brief Construct a matrix containing Dirichlet distribution samples on its
+ * rows or columns.
+ *
+ * This function constructs a Dirichlet distribution matrix using Gamma
+ * distribution shape parameters given as a parameter. This is done by sampling
+ * each entry of the result, \f$D_{ij}\f$, from a Gamma distribution,
+ * \f$\mathcal{G}(X_{ij}, 1)\f$ where \f$X\f$ is the given Gamma shape matrix.
+ * Afterwards, rows or columns are normalized (sum to 1) according to the given
+ * normalization parameter.
+ *
+ * @tparam T Type of the input and output matrix entries.
+ * @param gamma_shape_mat Matrix containing the \f$(i, j)^{th}\f$ shape
+ * parameter.
+ * @param norm_axis Normalization axis. If 0, then columns of the matrix is
+ * normalized. Therefore, each column is a Dirichlet sample. If 1, then rows of
+ * the matrix is normalized. Therefore, each rows is a Dirichlet sample.
+ *
+ * @return Matrix of the same shape containing Dirichlet samples on its rows or
+ * columns depending on the given normalization parameter.
+ *
+ * @remark Throws assertion error if norm_axis is different than 0 or 1.
+ */
+template <typename T>
+matrix_t<T> dirichlet_mat(const matrix_t<T>& gamma_shape_mat,
+                          size_t norm_axis) {
+    BNMF_ASSERT(norm_axis == 0 || norm_axis == 1,
+                "Axis must be 0 or 1 in util::dirichlet_mat");
+
+    matrix_t<T> result(gamma_shape_mat.rows(), gamma_shape_mat.cols());
+
+    // sample each entry from Gamma
+    util::gsl_rng_wrapper rnd_gen(gsl_rng_alloc(gsl_rng_taus), gsl_rng_free);
+    for (long i = 0; i < result.rows(); ++i) {
+        for (long j = 0; j < result.cols(); ++j) {
+            result(i, j) =
+                gsl_ran_gamma(rnd_gen.get(), gamma_shape_mat(i, j), 1);
+        }
+    }
+
+    // normalize
+    if (norm_axis == 0) {
+        result = result.array().rowwise() / result.colwise().sum().array();
+    } else {
+        result = result.array().colwise() / result.rowwise().sum().array();
+    }
+
+    return result;
 }
 } // namespace util
 
