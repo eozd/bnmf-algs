@@ -95,6 +95,10 @@ void multinomial_mode(Integer num_trials, const vector_t<Real>& prob,
         num_trials >= 0,
         "Number of trials must be nonnegative in util::multinomial_mode");
 
+    if (prob.cols() == 0) {
+        return;
+    }
+
     // initialize counts and differences
     const auto num_events = prob.cols();
     vector_t<Real> count_real;
@@ -112,20 +116,21 @@ void multinomial_mode(Integer num_trials, const vector_t<Real>& prob,
     }
 
     // normalized differences will be used as a heap for the iterative alg
-    std::vector<std::pair<int, Real>> diff_normalized(num_events);
+    std::vector<std::pair<int, Real>> fraction_heap;
     {
         // compute normalized differences
-        vector_t<Real> diff_norm_vec;
+        vector_t<Real> fractions;
         if (total_count < num_trials) {
-            diff_norm_vec = (1 - diff.array()) / (count_real.array() + 1);
+            fractions = (1 - diff.array()) / (count_real.array() + 1);
         } else if (total_count > num_trials) {
-            diff_norm_vec = diff.array() / (count_real.array() + eps);
+            fractions = diff.array() / (count_real.array() + eps);
         }
 
         // store differences and their indices
         for (int i = 0; i < num_events; ++i) {
-            diff_normalized[i].first = i;
-            diff_normalized[i].second = diff_norm_vec(i);
+            if (std::abs(fractions(i)) > std::numeric_limits<Real>::epsilon()) {
+                fraction_heap.emplace_back(i, fractions(i));
+            }
         }
     }
 
@@ -135,41 +140,39 @@ void multinomial_mode(Integer num_trials, const vector_t<Real>& prob,
         // min heap
         return elem_left.second > elem_right.second;
     };
-    std::make_heap(diff_normalized.begin(), diff_normalized.end(), ordering);
+    std::make_heap(fraction_heap.begin(), fraction_heap.end(), ordering);
 
     // only one of the loops below execute
 
     // distribute the remaining balls
     for (Integer i = total_count; i < num_trials; ++i) {
         // get the smallest normalized difference and its index
-        std::pop_heap(diff_normalized.begin(), diff_normalized.end(), ordering);
-        int min_idx = diff_normalized.back().first;
+        std::pop_heap(fraction_heap.begin(), fraction_heap.end(), ordering);
+        int min_idx = fraction_heap.back().first;
 
         // update
         ++count(min_idx);
         --diff(min_idx);
-        diff_normalized.back().second =
+        fraction_heap.back().second =
             (1 - diff(min_idx)) / (count(min_idx) + 1);
 
         // push back to the heap
-        std::push_heap(diff_normalized.begin(), diff_normalized.end(),
-                       ordering);
+        std::push_heap(fraction_heap.begin(), fraction_heap.end(), ordering);
     }
 
     // remove excess balls
     for (Integer i = total_count; i > num_trials; --i) {
         // get the smallest normalized difference and its index
-        std::pop_heap(diff_normalized.begin(), diff_normalized.end(), ordering);
-        int min_idx = diff_normalized.back().first;
+        std::pop_heap(fraction_heap.begin(), fraction_heap.end(), ordering);
+        int min_idx = fraction_heap.back().first;
 
         // update
         --count(min_idx);
         ++diff(min_idx);
-        diff_normalized.back().second = diff(min_idx) / (count(min_idx) + eps);
+        fraction_heap.back().second = diff(min_idx) / (count(min_idx) + eps);
 
         // push back to the heap
-        std::push_heap(diff_normalized.begin(), diff_normalized.end(),
-                       ordering);
+        std::push_heap(fraction_heap.begin(), fraction_heap.end(), ordering);
     }
 }
 } // namespace util
