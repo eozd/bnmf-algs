@@ -33,15 +33,20 @@ EMResult<T> online_EM(const matrix_t<T>& X,
         return res;
     }
 
+    // nonzero elems and indices (including NaN)
+    std::vector<size_t> ii, jj;
+    std::vector<T> xx;
+    std::tie(ii, jj, xx) = details::online_EM::find_nonzero(X);
+
     // init alpha and beta
     matrix_t<Scalar> alpha, beta;
     std::tie(alpha, beta) = details::online_EM::init_alpha_beta(param_vec, y);
     vector_t<Scalar> alpha_pk = alpha.colwise().sum();
 
     // init S sums
-    std::tie(res.S_pjk, res.S_ipk) =
-        details::online_EM::init_S_xx(res.X_full, alpha, beta);
-    vector_t<T> S_ppk = res.S_ipk.colwise().sum();
+    vector_t<T> S_ppk;
+    std::tie(res.S_pjk, res.S_ipk, S_ppk) =
+        details::online_EM::init_S_xx(res.X_full, z, ii, jj);
 
     // psi func to use
     std::function<T(T)> psi_fn =
@@ -54,10 +59,6 @@ EMResult<T> online_EM(const matrix_t<T>& X,
                                     res.logW);
     details::online_EM::update_logH(beta, res.S_pjk, param_vec[0].b, psi_fn,
                                     res.logH);
-    // nonzero elems and indices (including NaN)
-    std::vector<size_t> ii, jj;
-    std::vector<T> xx;
-    std::tie(ii, jj, xx) = details::online_EM::find_nonzero(X);
 
     // iteration variables
     vector_t<T> gammaln_max_fiber(z);

@@ -39,7 +39,14 @@ template <typename T, typename Scalar>
 void check_EM_params(
     const matrix_t<T>& X,
     const std::vector<alloc_model::Params<Scalar>>& param_vec) {
-    BNMF_ASSERT((X.array() >= 0).all(), "X must be nonnegative");
+
+    for (long i = 0; i < X.rows(); ++i) {
+        for (long j = 0; j < X.cols(); ++j) {
+            BNMF_ASSERT(std::isnan(X(i, j)) || X(i, j) >= 0,
+                        "X must contain nonnegative values or NaN");
+        }
+    }
+
     for (const auto& param : param_vec) {
         BNMF_ASSERT(
             param.alpha.size() == static_cast<size_t>(X.rows()),

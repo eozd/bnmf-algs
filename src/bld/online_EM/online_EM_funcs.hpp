@@ -13,7 +13,7 @@ namespace bnmf_algs {
 namespace details {
 namespace online_EM {
 
-template <typename T> size_t init_nan_values(matrix_t<T> X_full) {
+template <typename T> size_t init_nan_values(matrix_t<T>& X_full) {
     const auto x = static_cast<size_t>(X_full.rows());
     const auto y = static_cast<size_t>(X_full.cols());
 
@@ -65,18 +65,35 @@ init_alpha_beta(const std::vector<alloc_model::Params<Scalar>>& param_vec,
     return std::make_pair(alpha, beta);
 }
 
-template <typename T, typename Scalar>
-std::pair<matrix_t<T>, matrix_t<T>> init_S_xx(const matrix_t<T>& X_full,
-                                              const matrix_t<Scalar>& alpha,
-                                              const matrix_t<Scalar>& beta) {
-    matrix_t<T> W_0 = util::dirichlet_mat(alpha, 0).template cast<T>();
-    matrix_t<T> H_0 = util::dirichlet_mat(beta, 0).template cast<T>();
+template <typename T>
+std::tuple<matrix_t<T>, matrix_t<T>, vector_t<T>>
+init_S_xx(const matrix_t<T>& X_full, size_t z, const std::vector<size_t>& ii,
+          const std::vector<size_t>& jj) {
+    const auto x = static_cast<size_t>(X_full.rows());
+    const auto y = static_cast<size_t>(X_full.cols());
 
-    matrix_t<T> S_pjk =
-        ((W_0.transpose() * X_full).array() * H_0.array()).transpose();
-    matrix_t<T> S_ipk = (X_full * H_0.transpose()).array() * W_0.array();
+    matrix_t<T> S_pjk = matrix_t<T>::Zero(y, z);
+    matrix_t<T> S_ipk = matrix_t<T>::Zero(x, z);
+    vector_t<T> S_ppk = vector_t<T>::Zero(z);
 
-    return std::make_pair(S_pjk, S_ipk);
+    util::gsl_rng_wrapper rnd_gen(gsl_rng_alloc(gsl_rng_taus), gsl_rng_free);
+
+    vector_t<T> fiber(z);
+    vector_t<double> fiber_double(z);
+    vector_t<double> dirichlet_params = vector_t<double>::Constant(z, 1);
+    for (size_t t = 0; t < ii.size(); ++t) {
+        size_t i = ii[t], j = jj[t];
+
+        gsl_ran_dirichlet(rnd_gen.get(), z, dirichlet_params.data(), fiber_double.data());
+        fiber = fiber_double.template cast<T>();
+        fiber = fiber.array() * X_full(i, j);
+
+        S_pjk.row(j) = S_pjk.row(j) + fiber;
+        S_ipk.row(i) = S_ipk.row(i) + fiber;
+        S_ppk = S_ppk + fiber;
+    }
+
+    return std::make_tuple(S_pjk, S_ipk, S_ppk);
 }
 
 template <typename T, typename Scalar>
@@ -141,6 +158,7 @@ void update_allocation(const std::vector<size_t>& ii,
                        vector_t<T>& gammaln_max_fiber) {
 
     const auto z = static_cast<size_t>(log_p.cols());
+
     for (size_t t = 0; t < xx.size(); ++t) {
         const size_t i = ii[t];
         const size_t j = jj[t];
@@ -159,7 +177,7 @@ void update_allocation(const std::vector<size_t>& ii,
 
         res.S_pjk.row(j) += max_fiber;
         res.S_ipk.row(i) += max_fiber;
-        S_ppk = S_ppk.array() + max_fiber.array().sum();
+        S_ppk += max_fiber;
 
         for (size_t k = 0; k < z; ++k) {
             gammaln_max_fiber(k) = gsl_sf_lngamma(max_fiber(k) + 1);
