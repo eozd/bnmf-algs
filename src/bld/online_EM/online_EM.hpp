@@ -66,14 +66,16 @@ EMResult<T> online_EM(const matrix_t<T>& X,
     }
 
     // nonzero elems and indices (including NaN)
-    std::vector<size_t> ii, jj;
-    std::vector<T> xx;
+    // these are const, but no good way of making them so in C++14
+    /* const */ std::vector<size_t> ii, jj;
+    /* const */ std::vector<T> xx;
     std::tie(ii, jj, xx) = details::online_EM::find_nonzero(X);
 
     // init alpha and beta
-    matrix_t<Scalar> alpha, beta;
+    // these are const, but no good way of making them so in C++14
+    /* const */ matrix_t<Scalar> alpha, beta;
     std::tie(alpha, beta) = details::online_EM::init_alpha_beta(param_vec, y);
-    vector_t<Scalar> alpha_pk = alpha.colwise().sum();
+    const vector_t<Scalar> alpha_pk = alpha.colwise().sum();
 
     // init S sums
     vector_t<T> S_ppk;

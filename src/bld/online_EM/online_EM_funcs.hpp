@@ -172,6 +172,8 @@ init_S_xx(const matrix_t<T>& X_full, size_t z, const std::vector<size_t>& ii,
  *
  * @tparam T Type of the input matrix.
  * @tparam Scalar Type of the model parameters.
+ * @tparam PsiFunction Function/functor to compute psi (digamma) of a value.
+ *
  * @param alpha alpha matrix returned by init_alpha_beta.
  * @param S_ipk Sum of \f$S\f$ tensor along its second dim, i.e. \f$S_{i+k}\f$.
  * @param alpha_pk Vector containing column sums of alpha matrix.
@@ -180,10 +182,10 @@ init_S_xx(const matrix_t<T>& X_full, size_t z, const std::vector<size_t>& ii,
  * @param psi_fn Psi function to use.
  * @param logW logW matrix to update in-place.
  */
-template <typename T, typename Scalar>
+template <typename T, typename Scalar, typename PsiFunction>
 void update_logW(const matrix_t<Scalar>& alpha, const matrix_t<T>& S_ipk,
                  const vector_t<Scalar>& alpha_pk, const vector_t<T>& S_ppk,
-                 const std::function<T(T)>& psi_fn, matrix_t<T>& logW) {
+                 const PsiFunction& psi_fn, matrix_t<T>& logW) {
     const auto x = static_cast<size_t>(alpha.rows());
     const auto z = static_cast<size_t>(alpha.cols());
 
@@ -206,6 +208,8 @@ void update_logW(const matrix_t<Scalar>& alpha, const matrix_t<T>& S_ipk,
  *
  * @tparam T Type of the input matrix.
  * @tparam Scalar Type of the model parameters.
+ * @tparam PsiFunction Function/functor to compute psi (digamma) of a value.
+ *
  * @param beta beta matrix returned by init_alpha_beta.
  * @param S_pjk Sum of \f$S\f$ along its first dim, i.e. \f$S_{+jk}\f$.
  * @param b b model parameter passed to EM algorithm. (rate parameter of Gamma
@@ -213,9 +217,9 @@ void update_logW(const matrix_t<Scalar>& alpha, const matrix_t<T>& S_ipk,
  * @param psi_fn Psi function to use.
  * @param logH logH matrix to update in-place.
  */
-template <typename T, typename Scalar>
+template <typename T, typename Scalar, typename PsiFunction>
 void update_logH(const matrix_t<Scalar>& beta, const matrix_t<T>& S_pjk,
-                 const Scalar b, const std::function<T(T)>& psi_fn,
+                 const Scalar b, const PsiFunction& psi_fn,
                  matrix_t<T>& logH) {
     const auto z = static_cast<size_t>(beta.rows());
     const auto y = static_cast<size_t>(beta.cols());
