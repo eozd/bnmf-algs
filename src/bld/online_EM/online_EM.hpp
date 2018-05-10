@@ -14,6 +14,38 @@
 namespace bnmf_algs {
 namespace bld {
 
+/**
+ * @brief Complete a matrix containing unobserved values given as NaN using an
+ * EM procedure according to the allocation model proposed by
+ * \cite kurutmazbayesian .
+ *
+ * This procedure completes a matrix \f$X\f$ containing unobserved values as
+ * NaNs. The completion is performed using an EM procedure derived according to
+ * the allocation model. The hidden tensor described in \cite kurutmazbayesian
+ * is never stored explicitly; only its sums along its each dimension is stored.
+ * Therefore, space complexity of the method is \f$O(x \times y)\f$ for an
+ * input matrix \f$X_{x \times y}\f$.
+ *
+ * @tparam T Type of the matrix entries.
+ * @tparam Scalar Type of the parameters.
+ * @param X Incomplete matrix containing NaN values for every unobserved entry.
+ * @param param_vec Parameter vector of size \f$z\f$, the rank of the
+ * decomposition. Each entry of the parameter vector must be an
+ * alloc_model::Params object containing \f$x\f$ many \f$\alpha\f$ and \f$y\f$
+ * many \f$\beta\f$ values for the input matrix \f$X_{x \times y}\f$. Note that
+ * for this procedure, the rank of the decomposition is not given explicitly; it
+ * is inferred as the size of the parameter vector.
+ * @param max_iter Maximum number of iterations to run the EM procedure.
+ * @param use_psi_appr If true, use util::psi_appr function to compute the
+ * digamma function approximately. If false, compute the digamma function
+ * exactly.
+ *
+ * @return Results of the EM procedure as EMResult. See EMResult documentation
+ * for explanations of each result.
+ *
+ * @remark Throws assertion error if matrix X contains negative values, if the
+ * given parameter vector is not compatible with the given matrix.
+ */
 template <typename T, typename Scalar>
 EMResult<T> online_EM(const matrix_t<T>& X,
                       const std::vector<alloc_model::Params<Scalar>>& param_vec,
@@ -79,5 +111,6 @@ EMResult<T> online_EM(const matrix_t<T>& X,
 
     return res;
 }
+
 } // namespace bld
 } // namespace bnmf_algs

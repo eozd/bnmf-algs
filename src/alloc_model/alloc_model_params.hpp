@@ -84,11 +84,36 @@ template <typename Scalar> struct Params {
     Params() = default;
 };
 
+/**
+ * @brief Make default BLD solver parameters.
+ *
+ * This function makes default BLD parameters as specified in Params::Params.
+ *
+ * @tparam Scalar Type of the parameters.
+ * @param tensor_shape Shape of tensor \f$S_{x \times y \times z}\f$.
+ *
+ * @return Default parameters to be used with any BLD algorithm.
+ */
 template <typename Scalar>
 Params<Scalar> make_bld_params(const shape<3>& tensor_shape) {
     return Params<Scalar>(tensor_shape);
 }
 
+/**
+ * @brief Make default EM solver parameters.
+ *
+ * This function makes default EM algorithm (such as online_EM) parameters. Note
+ * that EM algorithms have a different parametrization than BLD solvers, i.e.
+ * there is a parameter for each entry of \f$W\f$ and \f$H\f$ matrices.
+ * Therefore, this function returns a vector of \f$z\f$ Params objects where
+ * \f$z\f$ is the rank of the decomposition (depth of the hidden tensor
+ * \f$S\f$.)
+ *
+ * @tparam Scalar Type of the parameters.
+ * @param tensor_shape Shape of tensor \f$S_{x \times y \times z}\f$.
+ *
+ * @return Default parameters to be used with EM algorithms.
+ */
 template <typename Scalar>
 std::vector<Params<Scalar>> make_EM_params(const shape<3>& tensor_shape) {
     Params<Scalar> bld_params(tensor_shape);

@@ -11,6 +11,9 @@
 
 namespace bnmf_algs {
 namespace details {
+/**
+ * @brief Namespace containing online_EM algorithm related functions.
+ */
 namespace online_EM {
 
 template <typename T> size_t init_nan_values(matrix_t<T>& X_full) {
