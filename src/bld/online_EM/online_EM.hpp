@@ -61,9 +61,6 @@ EMResult<T> online_EM(const matrix_t<T>& X,
                                     res.logH);
 
     // iteration variables
-    vector_t<T> gammaln_max_fiber(z);
-    vector_t<T> log_p(z);
-    vector_t<T> max_fiber(z);
     res.EM_bound = vector_t<T>::Constant(max_iter, 0);
 
     // EM
@@ -72,8 +69,7 @@ EMResult<T> online_EM(const matrix_t<T>& X,
         res.S_ipk.setZero();
         S_ppk.setZero();
 
-        details::online_EM::update_allocation(
-            ii, jj, xx, iter, res, S_ppk, log_p, max_fiber, gammaln_max_fiber);
+        details::online_EM::update_allocation(ii, jj, xx, iter, res, S_ppk);
 
         details::online_EM::update_logW(alpha, res.S_ipk, alpha_pk, S_ppk,
                                         psi_fn, res.logW);

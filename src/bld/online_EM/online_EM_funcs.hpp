@@ -19,6 +19,8 @@ template <typename T> size_t init_nan_values(matrix_t<T>& X_full) {
 
     T nonnan_sum = T();
     size_t nonnan_count = 0;
+
+    #pragma omp parallel for reduction(+:nonnan_sum,nonnan_count)
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             if (not std::isnan(X_full(i, j))) {
@@ -29,7 +31,9 @@ template <typename T> size_t init_nan_values(matrix_t<T>& X_full) {
     }
 
     if (nonnan_count != 0) {
-        T nonnan_mean = nonnan_sum / nonnan_count;
+        const T nonnan_mean = nonnan_sum / nonnan_count;
+
+        #pragma omp parallel for schedule(static)
         for (size_t i = 0; i < x; ++i) {
             for (size_t j = 0; j < y; ++j) {
                 if (std::isnan(X_full(i, j))) {
@@ -52,6 +56,7 @@ init_alpha_beta(const std::vector<alloc_model::Params<Scalar>>& param_vec,
     matrix_t<Scalar> alpha(x, z);
     matrix_t<Scalar> beta(z, y);
 
+    #pragma omp parallel for schedule(static)
     for (size_t k = 0; k < z; ++k) {
         for (size_t i = 0; i < x; ++i) {
             alpha(i, k) = param_vec[k].alpha[i];
@@ -78,19 +83,37 @@ init_S_xx(const matrix_t<T>& X_full, size_t z, const std::vector<size_t>& ii,
 
     util::gsl_rng_wrapper rnd_gen(gsl_rng_alloc(gsl_rng_taus), gsl_rng_free);
 
-    vector_t<T> fiber(z);
-    vector_t<double> fiber_double(z);
     vector_t<double> dirichlet_params = vector_t<double>::Constant(z, 1);
-    for (size_t t = 0; t < ii.size(); ++t) {
-        size_t i = ii[t], j = jj[t];
 
-        gsl_ran_dirichlet(rnd_gen.get(), z, dirichlet_params.data(), fiber_double.data());
-        fiber = fiber_double.template cast<T>();
-        fiber = fiber.array() * X_full(i, j);
+    #pragma omp parallel
+    {
+        vector_t<T> fiber(z);
+        vector_t<double> fiber_double(z);
 
-        S_pjk.row(j) = S_pjk.row(j) + fiber;
-        S_ipk.row(i) = S_ipk.row(i) + fiber;
-        S_ppk = S_ppk + fiber;
+        matrix_t<T> S_pjk_local = matrix_t<T>::Zero(y, z);
+        matrix_t<T> S_ipk_local = matrix_t<T>::Zero(x, z);
+        vector_t<T> S_ppk_local = vector_t<T>::Zero(z);
+
+        #pragma omp for
+        for (size_t t = 0; t < ii.size(); ++t) {
+            size_t i = ii[t], j = jj[t];
+
+            gsl_ran_dirichlet(rnd_gen.get(), z, dirichlet_params.data(),
+                              fiber_double.data());
+            fiber = fiber_double.template cast<T>();
+            fiber = fiber.array() * X_full(i, j);
+
+            S_pjk_local.row(j) += fiber;
+            S_ipk_local.row(i) += fiber;
+            S_ppk_local += fiber;
+        }
+
+        #pragma omp critical
+        {
+            S_pjk += S_pjk_local;
+            S_ipk += S_ipk_local;
+            S_ppk += S_ppk_local;
+        }
     }
 
     return std::make_tuple(S_pjk, S_ipk, S_ppk);
@@ -104,10 +127,12 @@ void update_logW(const matrix_t<Scalar>& alpha, const matrix_t<T>& S_ipk,
     const auto z = static_cast<size_t>(alpha.cols());
 
     vector_t<T> psi_of_sums(z);
+    #pragma omp parallel for schedule(static)
     for (size_t k = 0; k < z; ++k) {
         psi_of_sums(k) = psi_fn(alpha_pk(k) + S_ppk(k));
     }
 
+    #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < x; ++i) {
         for (size_t k = 0; k < z; ++k) {
             logW(i, k) = psi_fn(alpha(i, k) + S_ipk(i, k)) - psi_of_sums(k);
@@ -123,6 +148,8 @@ void update_logH(const matrix_t<Scalar>& beta, const matrix_t<T>& S_pjk,
     const auto y = static_cast<size_t>(beta.cols());
 
     const Scalar logb = std::log(b + 1);
+
+    #pragma omp parallel for schedule(static)
     for (size_t k = 0; k < z; ++k) {
         for (size_t j = 0; j < y; ++j) {
             logH(k, j) = psi_fn(beta(k, j) + S_pjk(j, k)) - logb;
@@ -153,38 +180,60 @@ find_nonzero(const matrix_t<T>& X) {
 template <typename T>
 void update_allocation(const std::vector<size_t>& ii,
                        const std::vector<size_t>& jj, const std::vector<T>& xx,
-                       size_t iter, bld::EMResult<T>& res, vector_t<T>& S_ppk,
-                       vector_t<T>& log_p, vector_t<T>& max_fiber,
-                       vector_t<T>& gammaln_max_fiber) {
+                       size_t iter, bld::EMResult<T>& res, vector_t<T>& S_ppk) {
 
-    const auto z = static_cast<size_t>(log_p.cols());
+    const auto x = static_cast<size_t>(res.X_full.rows());
+    const auto y = static_cast<size_t>(res.X_full.cols());
+    const auto z = static_cast<size_t>(S_ppk.cols());
 
-    for (size_t t = 0; t < xx.size(); ++t) {
-        const size_t i = ii[t];
-        const size_t j = jj[t];
-        const T orig_x_ij = xx[t];
+    #pragma omp parallel
+    {
+        matrix_t<T> S_pjk = matrix_t<T>::Zero(y, z);
+        matrix_t<T> S_ipk = matrix_t<T>::Zero(x, z);
+        vector_t<T> S_ppk_local = vector_t<T>::Zero(z);
 
-        log_p = res.logW.row(i) + res.logH.col(j).transpose();
-        const vector_t<T> log_p_exp = log_p.array().exp();
+        vector_t<T> gammaln_max_fiber(z);
+        vector_t<T> log_p(z);
+        vector_t<T> max_fiber(z);
 
-        // maximization step
-        if (std::isnan(orig_x_ij)) {
-            max_fiber = log_p_exp.array().floor();
-            res.X_full(i, j) = max_fiber.sum();
-        } else {
-            util::multinomial_mode(orig_x_ij, log_p_exp, max_fiber);
+        T EM_bound = T();
+
+        #pragma omp for
+        for (size_t t = 0; t < xx.size(); ++t) {
+            const size_t i = ii[t];
+            const size_t j = jj[t];
+            const T orig_x_ij = xx[t];
+
+            log_p = res.logW.row(i) + res.logH.col(j).transpose();
+            const vector_t<T> log_p_exp = log_p.array().exp();
+
+            // maximization step
+            if (std::isnan(orig_x_ij)) {
+                max_fiber = log_p_exp.array().floor();
+                res.X_full(i, j) = max_fiber.sum();
+            } else {
+                util::multinomial_mode(orig_x_ij, log_p_exp, max_fiber);
+            }
+
+            S_pjk.row(j) += max_fiber;
+            S_ipk.row(i) += max_fiber;
+            S_ppk_local += max_fiber;
+
+            for (size_t k = 0; k < z; ++k) {
+                gammaln_max_fiber(k) = gsl_sf_lngamma(max_fiber(k) + 1);
+            }
+            EM_bound +=
+                (max_fiber.array() * log_p.array() - gammaln_max_fiber.array())
+                    .sum();
         }
 
-        res.S_pjk.row(j) += max_fiber;
-        res.S_ipk.row(i) += max_fiber;
-        S_ppk += max_fiber;
-
-        for (size_t k = 0; k < z; ++k) {
-            gammaln_max_fiber(k) = gsl_sf_lngamma(max_fiber(k) + 1);
+        #pragma omp critical
+        {
+            res.S_pjk += S_pjk;
+            res.S_ipk += S_ipk;
+            S_ppk += S_ppk_local;
+            res.EM_bound(iter) += EM_bound;
         }
-        res.EM_bound(iter) +=
-            (max_fiber.array() * log_p.array() - gammaln_max_fiber.array())
-                .sum();
     }
 }
 
