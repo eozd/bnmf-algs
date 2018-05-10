@@ -101,7 +101,8 @@ EMResult<T> online_EM(const matrix_t<T>& X,
         res.S_ipk.setZero();
         S_ppk.setZero();
 
-        details::online_EM::update_allocation(ii, jj, xx, iter, res, S_ppk);
+        res.EM_bound(iter) =
+            details::online_EM::update_allocation(ii, jj, xx, res, S_ppk);
 
         details::online_EM::update_logW(alpha, res.S_ipk, alpha_pk, S_ppk,
                                         psi_fn, res.logW);
