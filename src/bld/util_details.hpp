@@ -3,6 +3,7 @@
 #include "alloc_model/alloc_model_params.hpp"
 #include "defs.hpp"
 #include <gsl/gsl_sf_psi.h>
+#include <vector>
 
 namespace bnmf_algs {
 namespace details {
@@ -24,6 +25,29 @@ void check_bld_params(const matrix_t<T>& X, size_t z,
         "Number of alpha parameters must be equal to number of rows of X");
     BNMF_ASSERT(model_params.beta.size() == static_cast<size_t>(z),
                 "Number of beta parameters must be equal to z");
+}
+
+/**
+ * @brief Do parameter checks on EM algorithms for solving the BLD problem.
+ *
+ * @tparam T type of the matrix entries.
+ * @tparam Scalar Type of the scalars used as model parameters.
+ *
+ * @remark Throws assertion error if the parameters are incorrect.
+ */
+template <typename T, typename Scalar>
+void check_EM_params(
+    const matrix_t<T>& X,
+    const std::vector<alloc_model::Params<Scalar>>& param_vec) {
+    BNMF_ASSERT((X.array() >= 0).all(), "X must be nonnegative");
+    for (const auto& param : param_vec) {
+        BNMF_ASSERT(
+            param.alpha.size() == static_cast<size_t>(X.rows()),
+            "Number of alpha parameters must be equal to number of rows of X");
+        BNMF_ASSERT(param.beta.size() == static_cast<size_t>(X.cols()),
+                    "Number of beta parameters must be equal to number of "
+                    "columns of X");
+    }
 }
 
 /**

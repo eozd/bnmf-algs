@@ -34,6 +34,7 @@ set(TEST_SRC_FILES
     test/util/test_util.cpp
     test/bld/test_bld_algs.cpp
     test/bld/bld_mult/test_bld_mult.cpp
+    test/bld/online_EM/test_online_EM.cpp
     test/allocation_model/test_alloc_model_params.cpp
     test/util/test_generator.cpp
     test/util/test_sampling.cpp)

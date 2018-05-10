@@ -19,6 +19,8 @@ EMResult<T> online_EM(const matrix_t<T>& X,
                       const std::vector<alloc_model::Params<Scalar>>& param_vec,
                       const size_t max_iter = 1000,
                       const bool use_psi_appr = false) {
+    details::check_EM_params(X, param_vec);
+
     const auto x = static_cast<size_t>(X.rows());
     const auto y = static_cast<size_t>(X.cols());
     const auto z = static_cast<size_t>(param_vec.size());

@@ -84,5 +84,19 @@ template <typename Scalar> struct Params {
     Params() = default;
 };
 
+template <typename Scalar>
+Params<Scalar> make_bld_params(const shape<3>& tensor_shape) {
+    return Params<Scalar>(tensor_shape);
+}
+
+template <typename Scalar>
+std::vector<Params<Scalar>> make_EM_params(const shape<3>& tensor_shape) {
+    Params<Scalar> bld_params(tensor_shape);
+    bld_params.beta =
+        std::vector<Scalar>(tensor_shape[1], static_cast<Scalar>(1));
+
+    return std::vector<Params<Scalar>>(tensor_shape[2], bld_params);
+}
+
 } // namespace alloc_model
 } // namespace bnmf_algs

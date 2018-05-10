@@ -146,7 +146,7 @@ void update_allocation(const std::vector<size_t>& ii,
         const size_t j = jj[t];
         const T orig_x_ij = xx[t];
 
-        log_p = res.logW.row(i).array() + res.logH.col(j).array();
+        log_p = res.logW.row(i) + res.logH.col(j).transpose();
         const vector_t<T> log_p_exp = log_p.array().exp();
 
         // maximization step
