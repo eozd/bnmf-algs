@@ -127,9 +127,9 @@ tensor_t<T, 3> bld_mult(const matrix_t<T>& X, const size_t z,
         S_ipk.device(thread_dev) = S.sum(shape<1>({1}));
         S_ijp.device(thread_dev) = S.sum(shape<1>({2}));
 #else
-        S_pjk_tensor = S.sum(shape<1>({0}));
-        S_ipk_tensor = S.sum(shape<1>({1}));
-        S_ijp_tensor = S.sum(shape<1>({2}));
+        S_pjk = S.sum(shape<1>({0}));
+        S_ipk = S.sum(shape<1>({1}));
+        S_ijp = S.sum(shape<1>({2}));
 #endif
 
         details::bld_mult::update_alpha_eph(S_ipk, alpha, alpha_eph);
