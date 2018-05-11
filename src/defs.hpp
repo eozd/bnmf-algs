@@ -16,7 +16,7 @@
     throw std::invalid_argument(msg)
 #else
 #include <cassert>
-#define BNMF_ASSERT(condition, msg) (assert(condition && msg))
+#define BNMF_ASSERT(condition, msg) (assert((condition) && msg))
 #endif
 
 namespace bnmf_algs {
