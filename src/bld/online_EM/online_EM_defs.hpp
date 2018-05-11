@@ -34,15 +34,15 @@ template <typename T> struct EMResult {
     /**
      * @brief Matrix whose \f$(i, j)^{th}\f$ entry contains \f$\log{W_{ij}}\f$.
      */
-    matrix_t<T> logW;
+    matrix_t<double> logW;
     /**
      * @brief Matrix whose \f$(i, j)^{th}\f$ entry contains \f$log{H_{ij}}\f$.
      */
-    matrix_t<T> logH;
+    matrix_t<double> logH;
     /**
      * @brief Vector containing EM bound computed after every iteration.
      */
-    vector_t<T> EM_bound;
+    vector_t<double> log_PS;
 
   public:
     /**
@@ -61,7 +61,7 @@ template <typename T> struct EMResult {
              matrix_t<T> logW, matrix_t<T> logH, vector_t<T> EM_bound)
         : S_pjk(std::move(S_pjk)), S_ipk(std::move(S_ipk)),
           X_full(std::move(X_full)), logW(std::move(logW)),
-          logH(std::move(logH)), EM_bound(std::move(EM_bound)) {}
+          logH(std::move(logH)), log_PS(std::move(log_PS)) {}
 };
 } // namespace bld
 } // namespace bnmf_algs

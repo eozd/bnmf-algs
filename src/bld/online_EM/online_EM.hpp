@@ -87,15 +87,15 @@ EMResult<T> online_EM(const matrix_t<T>& X,
         use_psi_appr ? util::psi_appr<T> : details::gsl_psi_wrapper<T>;
 
     // init logW and logH
-    res.logW = matrix_t<T>(x, z);
-    res.logH = matrix_t<T>(z, y);
+    res.logW = matrix_t<double>(x, z);
+    res.logH = matrix_t<double>(z, y);
     details::online_EM::update_logW(alpha, res.S_ipk, alpha_pk, S_ppk, psi_fn,
                                     res.logW);
     details::online_EM::update_logH(beta, res.S_pjk, param_vec[0].b, psi_fn,
                                     res.logH);
 
     // iteration variables
-    res.EM_bound = vector_t<T>::Constant(max_iter, 0);
+    res.log_PS = vector_t<double>::Constant(max_iter, 0);
 
     // EM
     for (size_t iter = 0; iter < max_iter; ++iter) {
@@ -103,13 +103,18 @@ EMResult<T> online_EM(const matrix_t<T>& X,
         res.S_ipk.setZero();
         S_ppk.setZero();
 
-        res.EM_bound(iter) =
+        double delta_log_PS =
             details::online_EM::update_allocation(ii, jj, xx, res, S_ppk);
+        res.log_PS(iter) += delta_log_PS;
 
         details::online_EM::update_logW(alpha, res.S_ipk, alpha_pk, S_ppk,
                                         psi_fn, res.logW);
         details::online_EM::update_logH(beta, res.S_pjk, param_vec[0].b, psi_fn,
                                         res.logH);
+
+        delta_log_PS = details::online_EM::delta_log_PS(
+            alpha, beta, res.S_ipk, res.S_pjk, alpha_pk, S_ppk, param_vec[0].b);
+        res.log_PS(iter) += delta_log_PS;
     }
 
     return res;

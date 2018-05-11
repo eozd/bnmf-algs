@@ -185,7 +185,7 @@ init_S_xx(const matrix_t<T>& X_full, size_t z, const std::vector<size_t>& ii,
 template <typename T, typename Scalar, typename PsiFunction>
 void update_logW(const matrix_t<Scalar>& alpha, const matrix_t<T>& S_ipk,
                  const vector_t<Scalar>& alpha_pk, const vector_t<T>& S_ppk,
-                 const PsiFunction& psi_fn, matrix_t<T>& logW) {
+                 const PsiFunction& psi_fn, matrix_t<double>& logW) {
     const auto x = static_cast<size_t>(alpha.rows());
     const auto z = static_cast<size_t>(alpha.cols());
 
@@ -220,7 +220,7 @@ void update_logW(const matrix_t<Scalar>& alpha, const matrix_t<T>& S_ipk,
 template <typename T, typename Scalar, typename PsiFunction>
 void update_logH(const matrix_t<Scalar>& beta, const matrix_t<T>& S_pjk,
                  const Scalar b, const PsiFunction& psi_fn,
-                 matrix_t<T>& logH) {
+                 matrix_t<double>& logH) {
     const auto z = static_cast<size_t>(beta.rows());
     const auto y = static_cast<size_t>(beta.cols());
 
@@ -279,18 +279,19 @@ find_nonzero(const matrix_t<T>& X) {
  * computed values.
  * @param S_ppk S_ppk vector that will be modified in-place.
  *
- * @return Expectation-maximization bound computed in this update.
+ * @return Difference in log_PS value after the update is completed.
  */
 template <typename T>
-T update_allocation(const std::vector<size_t>& ii,
-                    const std::vector<size_t>& jj, const std::vector<T>& xx,
-                    bld::EMResult<T>& res, vector_t<T>& S_ppk) {
+double update_allocation(const std::vector<size_t>& ii,
+                         const std::vector<size_t>& jj,
+                         const std::vector<T>& xx, bld::EMResult<T>& res,
+                         vector_t<T>& S_ppk) {
 
     const auto x = static_cast<size_t>(res.X_full.rows());
     const auto y = static_cast<size_t>(res.X_full.cols());
     const auto z = static_cast<size_t>(S_ppk.cols());
 
-    T EM_bound = T();
+    double delta_log_PS = 0;
 
     #pragma omp parallel
     {
@@ -302,7 +303,7 @@ T update_allocation(const std::vector<size_t>& ii,
         vector_t<T> log_p(z);
         vector_t<T> max_fiber(z);
 
-        T EM_bound_local = T();
+        double delta_log_PS_local = 0;
 
         #pragma omp for
         for (size_t t = 0; t < xx.size(); ++t) {
@@ -328,9 +329,7 @@ T update_allocation(const std::vector<size_t>& ii,
             for (size_t k = 0; k < z; ++k) {
                 gammaln_max_fiber(k) = gsl_sf_lngamma(max_fiber(k) + 1);
             }
-            EM_bound_local +=
-                (max_fiber.array() * log_p.array() - gammaln_max_fiber.array())
-                    .sum();
+            delta_log_PS_local -= gammaln_max_fiber.sum();
         }
 
         #pragma omp critical
@@ -338,11 +337,50 @@ T update_allocation(const std::vector<size_t>& ii,
             res.S_pjk += S_pjk;
             res.S_ipk += S_ipk;
             S_ppk += S_ppk_local;
-            EM_bound += EM_bound_local;
+            delta_log_PS += delta_log_PS_local;
         }
     }
 
-    return EM_bound;
+    return delta_log_PS;
+}
+
+/**
+ * @brief Compute the difference in log_PS value computed using the given
+ * model variables.
+ *
+ * @tparam T Type of the matrix entries.
+ * @tparam Scalar Type of the model parameters.
+ * @param alpha alpha matrix containing alpha model parameters.
+ * @param beta beta matrix containing beta model parameters.
+ * @param S_ipk Sum of S tensor along its 2nd axis.
+ * @param S_pjk Sum of S tensor along its 1st axis.
+ * @param alpha_pk Column sums of alpha matrix.
+ * @param S_ppk Sum of S tensor along its 1st and 2nd dimensions.
+ * @param b b model parameter
+ *
+ * @return Difference in log_PS value.
+ */
+template <typename T, typename Scalar>
+double delta_log_PS(const matrix_t<Scalar>& alpha, const matrix_t<Scalar>& beta,
+                    const matrix_t<T>& S_ipk, const matrix_t<T>& S_pjk,
+                    const vector_t<Scalar>& alpha_pk, const vector_t<T>& S_ppk,
+                    Scalar b) {
+    double delta = -(std::log(b + 1) * S_ppk.sum());
+
+    #pragma omp parallel for schedule(static) reduction(+:delta)
+    for (size_t k = 0; k < alpha.cols(); ++k) {
+        for (size_t i = 0; i < alpha.rows(); ++i) {
+            delta += gsl_sf_lngamma(alpha(i, k) + S_ipk(i, k));
+        }
+
+        for (size_t j = 0; j < beta.cols(); ++j) {
+            delta += gsl_sf_lngamma(beta(k, j) + S_pjk(j, k));
+        }
+
+        delta -= gsl_sf_lngamma(alpha_pk(k) + S_ppk(k));
+    }
+
+    return delta;
 }
 
 } // namespace online_EM
