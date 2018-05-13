@@ -10,27 +10,59 @@
 #endif
 
 namespace bnmf_algs {
-
 namespace details {
 
+// forward declaration needed to use this function in left_partition
 template <typename Integer>
-void right_partition(Integer k, typename std::vector<Integer>::iterator begin,
+void right_partition(typename std::vector<Integer>::iterator begin,
                      typename std::vector<Integer>::iterator end,
                      typename std::vector<Integer>::const_iterator all_begin,
                      typename std::vector<Integer>::const_iterator all_end,
                      std::vector<std::pair<size_t, size_t>>& change_indices);
 
+/**
+ * @brief Partition the number stored at the end of the given sequence towards
+ * the beginning of the sequence by computing new partitions using exactly
+ * one increment and one decrement operations.
+ *
+ * This function partitions the number given at the end of the given sequence,
+ * @code *(end - 1) @endcode, towards the beginning, @code *begin @endcode.
+ * The indices of the values incremented/decremented to compute a new partition
+ * is pushed to the back of the given output vector, change_indices.
+ *
+ * For @code n = *(end - 1) @endcode and @code k = end - begin @endcode, this
+ * function stores exactly \f${n + k - 1}\choose{k - 1}\f$ different partitions
+ * between begin and end iterators. Increment/decrement indices of each
+ * partition is stored in the given output vector.
+ *
+ * @tparam Integer Integer type to use.
+ * @param begin Beginning (leftmost iterator) of the sequence to store the
+ * partitions of the rightmost number.
+ * @param end End (rightmost past one) of the sequence to store the partitions
+ * of the rightmost number. The number to partition must reside on the iterator
+ * before end.
+ * @param all_begin Beginning of the whole sequence that stores complete
+ * partitions. This is the beginning iterator of the original vector that is
+ * modified to store various partitions of the original number.
+ * @param all_end End of the whole sequence that stores complete partitions.
+ * @param change_indices Output vector that stores increment/decrement index
+ * pairs to compute the next partition from previous one.
+ */
 template <typename Integer>
-void left_partition(Integer k, typename std::vector<Integer>::iterator begin,
+void left_partition(typename std::vector<Integer>::iterator begin,
                     typename std::vector<Integer>::iterator end,
                     typename std::vector<Integer>::const_iterator all_begin,
                     typename std::vector<Integer>::const_iterator all_end,
                     std::vector<std::pair<size_t, size_t>>& change_indices) {
 
+    const Integer k = end - begin;
     const Integer n = *(end - 1);
+
+    // base cases
     if (k == 1) {
         return;
     } else if (k == 2) {
+        // when k = 2, simple loop is enough.
         auto& rightmost = *(end - 1);
         auto& leftmost = *(end - 2);
 
@@ -43,6 +75,7 @@ void left_partition(Integer k, typename std::vector<Integer>::iterator begin,
             change_indices.emplace_back(rightmost_index, leftmost_index);
         }
     } else {
+        // compute partitions recursively
         auto& rightmost = *(end - 1);
         auto& leftmost = *begin;
         auto& leftmost_next = *(begin + 1);
@@ -52,8 +85,7 @@ void left_partition(Integer k, typename std::vector<Integer>::iterator begin,
         const size_t leftmost_next_index = (begin + 1) - all_begin;
 
         while (true) {
-            left_partition(k - 1, begin + 1, end, all_begin, all_end,
-                           change_indices);
+            left_partition(begin + 1, end, all_begin, all_end, change_indices);
             --leftmost_next;
             ++leftmost;
             change_indices.emplace_back(leftmost_next_index, leftmost_index);
@@ -62,8 +94,7 @@ void left_partition(Integer k, typename std::vector<Integer>::iterator begin,
                 break;
             }
 
-            right_partition(k - 1, begin + 1, end, all_begin, all_end,
-                            change_indices);
+            right_partition(begin + 1, end, all_begin, all_end, change_indices);
             --rightmost;
             ++leftmost;
             change_indices.emplace_back(rightmost_index, leftmost_index);
@@ -75,14 +106,45 @@ void left_partition(Integer k, typename std::vector<Integer>::iterator begin,
     }
 }
 
+/**
+ * @brief Partition the number stored at the beginning of the given sequence
+ * towards the end of the sequence by computing new partitions using exactly one
+ * increment and one decrement operations.
+ *
+ * This function partitions the number given at the beginning of the given
+ * sequence,
+ * @code *begin @endcode, towards the end, @code *(end - 1) @endcode.
+ * The indices of the values incremented/decremented to compute a new partition
+ * is pushed to the back of the given output vector, change_indices.
+ *
+ * For @code n = *begin @endcode and @code k = end - begin @endcode, this
+ * function stores exactly \f${n + k - 1}\choose{k - 1}\f$ different partitions
+ * between begin and end iterators. Increment/decrement indices of each
+ * partition is stored in the given output vector.
+ *
+ * @tparam Integer Integer type to use.
+ * @param begin Beginning (leftmost iterator) of the sequence to store the
+ * partitions of the leftmost number. (*begin)
+ * @param end End (rightmost past one) of the sequence to store the partitions
+ * of the rightmost number.
+ * @param all_begin Beginning of the whole sequence that stores complete
+ * partitions. This is the beginning iterator of the original vector that is
+ * modified to store various partitions of the original number.
+ * @param all_end End of the whole sequence that stores complete partitions.
+ * @param change_indices Output vector that stores increment/decrement index
+ * pairs to compute the next partition from previous one.
+ */
 template <typename Integer>
-void right_partition(Integer k, typename std::vector<Integer>::iterator begin,
+void right_partition(typename std::vector<Integer>::iterator begin,
                      typename std::vector<Integer>::iterator end,
                      typename std::vector<Integer>::const_iterator all_begin,
                      typename std::vector<Integer>::const_iterator all_end,
                      std::vector<std::pair<size_t, size_t>>& change_indices) {
 
+    const Integer k = end - begin;
     const Integer n = *begin;
+
+    // base cases
     if (k == 1) {
         return;
     } else if (k == 2) {
@@ -98,6 +160,7 @@ void right_partition(Integer k, typename std::vector<Integer>::iterator begin,
             change_indices.emplace_back(leftmost_index, rightmost_index);
         }
     } else {
+        // compute new partitions recursively
         auto& leftmost = *begin;
         auto& rightmost = *(end - 1);
         auto& rightmost_prev = *(end - 2);
@@ -107,8 +170,7 @@ void right_partition(Integer k, typename std::vector<Integer>::iterator begin,
         const size_t rightmost_prev_index = (end - 2) - all_begin;
 
         while (true) {
-            right_partition(k - 1, begin, end - 1, all_begin, all_end,
-                            change_indices);
+            right_partition(begin, end - 1, all_begin, all_end, change_indices);
             --rightmost_prev;
             ++rightmost;
             change_indices.emplace_back(rightmost_prev_index, rightmost_index);
@@ -117,8 +179,7 @@ void right_partition(Integer k, typename std::vector<Integer>::iterator begin,
                 break;
             }
 
-            left_partition(k - 1, begin, end - 1, all_begin, all_end,
-                           change_indices);
+            left_partition(begin, end - 1, all_begin, all_end, change_indices);
             --leftmost;
             ++rightmost;
             change_indices.emplace_back(leftmost_index, rightmost_index);
@@ -458,30 +519,111 @@ template <typename Real> Real psi_appr(Real x) {
     return res - extra;
 }
 
+/**
+ * @brief Compute the sequence of indices to be incremented and decremented to
+ * generate all partitions of number n into k bins.
+ *
+ * This function computes an index pair for each k length partition of number n.
+ * The pair holds the indices of the value to decrement by 1 and increment by 1,
+ * respectively. Starting from the initial partition, \f$(n, 0, \dots, 0)\f$,
+ * all k length partitions of number n can be generated by iteratively applying
+ * the decrement and increment operators on the returned indices. For example,
+ * this fuction returns the following index sequence when called with \f$n = 2,
+ * k = 3\f$.
+ *
+ * \f[
+ *     (0, 1)
+ *     (0, 1)
+ *     (1, 2)
+ *     (1, 0)
+ *     (0, 2)
+ * \f]
+ *
+ * Starting from initial partition, \f$(2, 0, 0)\f$, if we decrement the value
+ * at the 0th index and increment the value at 1st index, we generate all
+ * partitions:
+ *
+ * \f[
+ *     (2, 0, 0)
+ *     (1, 1, 0)
+ *     (0, 2, 0)
+ *     (0, 1, 1)
+ *     (1, 0, 1)
+ *     (0, 0, 2)
+ * \f]
+ *
+ * @tparam Integer Integer type to use.
+ * @param n Number to divide into k partitions.
+ * @param k Number of partitions.
+ * @return std::vector containing indices to decrement and increment as
+ * std::pair types. std::pair::first contains the index of element to decrement,
+ * and std::pair::second contains the index of element to increment.
+ *
+ * @throws assertion error if k is less than or equal to 0, if n is less than or
+ * equal to 0.
+ */
 template <typename Integer>
 std::vector<std::pair<size_t, size_t>> partition_change_indices(Integer n,
                                                                 Integer k) {
     BNMF_ASSERT(k > 0, "k must be greater than 0 in util::all_partitions");
     BNMF_ASSERT(n > 0, "n must be greater than 0 in util::all_partitions");
 
+    // initial partition
     std::vector<Integer> vec(k, 0);
     vec[0] = n;
+
+    // partition towards right
     std::vector<std::pair<size_t, size_t>> result;
-    details::right_partition(k, vec.begin(), vec.end(), vec.cbegin(),
-                             vec.cend(), result);
+    details::right_partition(vec.begin(), vec.end(), vec.cbegin(), vec.cend(),
+                             result);
 
     return result;
 }
 
+/**
+ * @brief Compute all possible k length partitions of given number n.
+ *
+ * This function computes all possible k length partitions of number n. There
+ * are exactly {N + k - 1}\choose{k - 1} many k length partitions of number n.
+ *
+ * The returned partition sequence has a special property: All consecutive
+ * partitions differ exactly by 1, i.e. <b>only one of the bins are decremented
+ * by 1 and only one of the bins are incremented by 1</b>. All the other bins
+ * remain unchanged.
+ *
+ *
+ * When called with \f$n = 2, k = 3\f$, this function returns:
+ *
+ * \f[
+ *     (2, 0, 0)
+ *     (1, 1, 0)
+ *     (0, 2, 0)
+ *     (0, 1, 1)
+ *     (1, 0, 1)
+ *     (0, 0, 2)
+ * \f]
+ *
+ * in the exacty same order.
+ *
+ * @tparam Integer Integer type to use.
+ * @param n Number to divide into k partitions.
+ * @param k Number of partitions.
+ * @return std::vector containing all k length partitions as std::vector types.
+ * All the partition vectors are of length k.
+ *
+ * @throws assertion error if k is less than or equal to 0, if n is less than or
+ * equal to 0.
+ */
 template <typename Integer>
 std::vector<std::vector<Integer>> all_partitions(Integer n, Integer k) {
+    // get indices to increment/decrement
     auto part_change_vec = partition_change_indices(n, k);
 
+    // compute partitions iteratively by applying increment/decrement operations
     std::vector<std::vector<Integer>> result;
     std::vector<Integer> partition(k, 0);
     partition[0] = n;
     result.push_back(partition);
-
     size_t decr_idx, incr_idx;
     for (const auto& change_idx : part_change_vec) {
         std::tie(decr_idx, incr_idx) = change_idx;
