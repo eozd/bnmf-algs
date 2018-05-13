@@ -368,12 +368,12 @@ double delta_log_PS(const matrix_t<Scalar>& alpha, const matrix_t<Scalar>& beta,
     double delta = -(std::log(b + 1) * S_ppk.sum());
 
     #pragma omp parallel for schedule(static) reduction(+:delta)
-    for (size_t k = 0; k < alpha.cols(); ++k) {
-        for (size_t i = 0; i < alpha.rows(); ++i) {
+    for (long k = 0; k < alpha.cols(); ++k) {
+        for (long i = 0; i < alpha.rows(); ++i) {
             delta += gsl_sf_lngamma(alpha(i, k) + S_ipk(i, k));
         }
 
-        for (size_t j = 0; j < beta.cols(); ++j) {
+        for (long j = 0; j < beta.cols(); ++j) {
             delta += gsl_sf_lngamma(beta(k, j) + S_pjk(j, k));
         }
 
@@ -383,6 +383,6 @@ double delta_log_PS(const matrix_t<Scalar>& alpha, const matrix_t<Scalar>& beta,
     return delta;
 }
 
-} // namespace online_EM
+} // namespace EM
 } // namespace details
 } // namespace bnmf_algs

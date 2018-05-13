@@ -72,8 +72,8 @@ tensor_t<T, 3> seq_greedy_bld(const matrix_t<T>& X, size_t z,
     matrix_t<T> S_ipk = matrix_t<T>::Zero(x, z); // S_{i+k}
     vector_t<T> S_ppk = vector_t<T>::Zero(z);    // S_{++k}
     matrix_t<T> S_pjk = matrix_t<T>::Zero(y, z); // S_{+jk}
-    Scalar sum_alpha = std::accumulate(model_params.alpha.begin(),
-                                       model_params.alpha.end(), 0.0);
+    const Scalar sum_alpha = std::accumulate(model_params.alpha.begin(),
+                                             model_params.alpha.end(), 0.0);
 
     // sample X matrix one by one
     auto matrix_sampler = util::sample_ones_noreplace(X);
