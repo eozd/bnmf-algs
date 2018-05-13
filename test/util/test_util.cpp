@@ -1,7 +1,6 @@
 #include "../catch2.hpp"
-#include <gsl/gsl_sf_psi.h>
 #include "util/util.hpp"
-#include <iostream>
+#include <gsl/gsl_sf_psi.h>
 
 using namespace bnmf_algs;
 
@@ -338,5 +337,202 @@ TEST_CASE("Test psi_appr", "[psi_appr]") {
         }
 
         REQUIRE(close);
+    }
+}
+
+TEST_CASE("Test partition_change_indices", "[partition_change_indices]") {
+
+    SECTION("Invalid parameters") {
+        int n = 5, k = 0;
+        REQUIRE_THROWS(util::partition_change_indices(n, k));
+
+        k = 1;
+        REQUIRE_NOTHROW(util::partition_change_indices(n, k));
+
+        n = 0;
+        REQUIRE_THROWS(util::partition_change_indices(n, k));
+
+        k = 0;
+        REQUIRE_THROWS(util::partition_change_indices(n, k));
+
+        n = 1, k = 1;
+        REQUIRE_NOTHROW(util::partition_change_indices(n, k));
+    }
+
+    SECTION("k = 1") {
+        int n = 5, k = 1;
+        auto change_vec = util::partition_change_indices(n, k);
+        REQUIRE(change_vec.empty());
+
+        n = 1;
+        change_vec = util::partition_change_indices(n, k);
+        REQUIRE(change_vec.empty());
+
+        n = 2406;
+        change_vec = util::partition_change_indices(n, k);
+        REQUIRE(change_vec.empty());
+    }
+
+    SECTION("k = 2") {
+        int n = 1, k = 2;
+        auto change_vec = util::partition_change_indices(n, k);
+
+        // decrement 0th, increment 1st index values always when k = 2
+        std::pair<size_t, size_t> expected_idx{0, 1};
+
+        std::vector<decltype(expected_idx)> expected_vec(n, expected_idx);
+        REQUIRE(change_vec == expected_vec);
+
+        n = 5;
+        change_vec = util::partition_change_indices(n, k);
+        expected_vec = decltype(expected_vec)(n, expected_idx);
+        REQUIRE(change_vec == expected_vec);
+
+        n = 24;
+        change_vec = util::partition_change_indices(n, k);
+        expected_vec = decltype(expected_vec)(n, expected_idx);
+        REQUIRE(change_vec == expected_vec);
+    }
+
+    SECTION("n = 2, k = 3") {
+        int n = 2, k = 3;
+        auto change_vec = util::partition_change_indices(n, k);
+
+        std::vector<std::pair<size_t, size_t>> expected_vec = {
+            {0, 1}, {0, 1}, {1, 2}, {1, 0}, {0, 2}};
+
+        REQUIRE(change_vec == expected_vec);
+    }
+
+    SECTION("n = 3, k = 3") {
+        int n = 3, k = 3;
+        auto change_vec = util::partition_change_indices(n, k);
+
+        std::vector<std::pair<size_t, size_t>> expected_vec = {
+            {0, 1}, {0, 1}, {0, 1}, {1, 2}, {1, 0},
+            {1, 0}, {0, 2}, {0, 1}, {1, 2}};
+
+        REQUIRE(change_vec == expected_vec);
+    }
+
+    SECTION("n = 5, k = 4") {
+        int n = 5, k = 4;
+        auto change_vec = util::partition_change_indices(n, k);
+
+        std::vector<std::pair<size_t, size_t>> expected_vec = {
+            {0, 1}, {0, 1}, {0, 1}, {0, 1}, {0, 1}, {1, 2}, {1, 0}, {1, 0},
+            {1, 0}, {1, 0}, {0, 2}, {0, 1}, {0, 1}, {0, 1}, {1, 2}, {1, 0},
+            {1, 0}, {0, 2}, {0, 1}, {1, 2}, {2, 3}, {2, 1}, {2, 1}, {2, 1},
+            {2, 1}, {1, 0}, {1, 2}, {1, 2}, {1, 2}, {2, 0}, {2, 1}, {2, 1},
+            {1, 0}, {1, 2}, {2, 0}, {0, 3}, {0, 1}, {0, 1}, {0, 1}, {1, 2},
+            {1, 0}, {1, 0}, {0, 2}, {0, 1}, {1, 2}, {2, 3}, {2, 1}, {2, 1},
+            {1, 0}, {1, 2}, {2, 0}, {0, 3}, {0, 1}, {1, 2}, {2, 3},
+        };
+
+        REQUIRE(change_vec == expected_vec);
+    }
+}
+
+TEST_CASE("Test all_partitions", "[all_partitions]") {
+
+    SECTION("Invalid parameters") {
+        int n = 5, k = 0;
+        REQUIRE_THROWS(util::all_partitions(n, k));
+
+        k = 1;
+        REQUIRE_NOTHROW(util::all_partitions(n, k));
+
+        n = 0;
+        REQUIRE_THROWS(util::all_partitions(n, k));
+
+        k = 0;
+        REQUIRE_THROWS(util::all_partitions(n, k));
+
+        n = 1, k = 1;
+        REQUIRE_NOTHROW(util::all_partitions(n, k));
+    }
+
+    SECTION("k = 1") {
+        int n = 5, k = 1;
+        std::vector<int> expected_partition(k, n);
+
+        auto part_vec = util::all_partitions(n, k);
+        REQUIRE(part_vec.size() == 1);
+        REQUIRE(part_vec[0] == expected_partition);
+
+        n = 1;
+        expected_partition[0] = n;
+        part_vec = util::all_partitions(n, k);
+        REQUIRE(part_vec.size() == 1);
+        REQUIRE(part_vec[0] == expected_partition);
+
+        n = 2406;
+        expected_partition[0] = n;
+        part_vec = util::all_partitions(n, k);
+        REQUIRE(part_vec.size() == 1);
+        REQUIRE(part_vec[0] == expected_partition);
+    }
+
+    SECTION("k = 2") {
+        int n = 1, k = 2;
+        auto part_vec = util::all_partitions(n, k);
+
+        std::vector<std::vector<int>> expected_partitions = {{1, 0}, {0, 1}};
+        REQUIRE(part_vec == expected_partitions);
+
+        n = 5;
+        part_vec = util::all_partitions(n, k);
+        expected_partitions = {{5, 0}, {4, 1}, {3, 2}, {2, 3}, {1, 4}, {0, 5}};
+        REQUIRE(part_vec == expected_partitions);
+
+        n = 10;
+        part_vec = util::all_partitions(n, k);
+        expected_partitions = {{10, 0}, {9, 1}, {8, 2}, {7, 3}, {6, 4}, {5, 5},
+                               {4, 6},  {3, 7}, {2, 8}, {1, 9}, {0, 10}};
+        REQUIRE(part_vec == expected_partitions);
+    }
+
+    SECTION("n = 2, k = 3") {
+        int n = 2, k = 3;
+        auto part_vec = util::all_partitions(n, k);
+
+        std::vector<std::vector<int>> expected_partitions = {
+            {2, 0, 0}, {1, 1, 0}, {0, 2, 0}, {0, 1, 1}, {1, 0, 1}, {0, 0, 2}};
+
+        REQUIRE(part_vec == expected_partitions);
+    }
+
+    SECTION("n = 3, k = 3") {
+        int n = 3, k = 3;
+        auto part_vec = util::all_partitions(n, k);
+
+        std::vector<std::vector<int>> expected_partitions = {
+            {3, 0, 0}, {2, 1, 0}, {1, 2, 0}, {0, 3, 0}, {0, 2, 1},
+            {1, 1, 1}, {2, 0, 1}, {1, 0, 2}, {0, 1, 2}, {0, 0, 3}};
+
+        REQUIRE(part_vec == expected_partitions);
+    }
+
+    SECTION("n = 5, k = 4") {
+        int n = 5, k = 4;
+        auto part_vec = util::all_partitions(n, k);
+
+        std::vector<std::vector<int>> expected_partitions = {
+            {5, 0, 0, 0}, {4, 1, 0, 0}, {3, 2, 0, 0}, {2, 3, 0, 0},
+            {1, 4, 0, 0}, {0, 5, 0, 0}, {0, 4, 1, 0}, {1, 3, 1, 0},
+            {2, 2, 1, 0}, {3, 1, 1, 0}, {4, 0, 1, 0}, {3, 0, 2, 0},
+            {2, 1, 2, 0}, {1, 2, 2, 0}, {0, 3, 2, 0}, {0, 2, 3, 0},
+            {1, 1, 3, 0}, {2, 0, 3, 0}, {1, 0, 4, 0}, {0, 1, 4, 0},
+            {0, 0, 5, 0}, {0, 0, 4, 1}, {0, 1, 3, 1}, {0, 2, 2, 1},
+            {0, 3, 1, 1}, {0, 4, 0, 1}, {1, 3, 0, 1}, {1, 2, 1, 1},
+            {1, 1, 2, 1}, {1, 0, 3, 1}, {2, 0, 2, 1}, {2, 1, 1, 1},
+            {2, 2, 0, 1}, {3, 1, 0, 1}, {3, 0, 1, 1}, {4, 0, 0, 1},
+            {3, 0, 0, 2}, {2, 1, 0, 2}, {1, 2, 0, 2}, {0, 3, 0, 2},
+            {0, 2, 1, 2}, {1, 1, 1, 2}, {2, 0, 1, 2}, {1, 0, 2, 2},
+            {0, 1, 2, 2}, {0, 0, 3, 2}, {0, 0, 2, 3}, {0, 1, 1, 3},
+            {0, 2, 0, 3}, {1, 1, 0, 3}, {1, 0, 1, 3}, {2, 0, 0, 3},
+            {1, 0, 0, 4}, {0, 1, 0, 4}, {0, 0, 1, 4}, {0, 0, 0, 5}};
+
+        REQUIRE(part_vec == expected_partitions);
     }
 }

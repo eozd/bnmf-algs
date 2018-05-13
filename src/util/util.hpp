@@ -5,9 +5,6 @@
 #include <cstddef>
 #include <utility>
 
-#include <iomanip>
-#include <iostream>
-
 #ifdef USE_OPENMP
 #include <thread>
 #endif
