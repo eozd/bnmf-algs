@@ -52,7 +52,6 @@ TEST_CASE("Algorithm checks on EM", "[EM]") {
 //        std::cout << X_expected << std::endl;
 //        std::cout << std::endl;
         matrixd W = em_res.logW.array().exp();
-        std::cout << em_res.log_PS.transpose() << std::endl;
 //        REQUIRE(em_res.X_full.isApprox(X_expected));
     }
 }

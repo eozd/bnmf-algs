@@ -13,11 +13,9 @@ namespace bnmf_algs {
 namespace details {
 
 // forward declaration needed to use this function in left_partition
-template <typename Integer>
-void right_partition(typename std::vector<Integer>::iterator begin,
-                     typename std::vector<Integer>::iterator end,
-                     typename std::vector<Integer>::const_iterator all_begin,
-                     typename std::vector<Integer>::const_iterator all_end,
+template <typename IntIterator>
+void right_partition(IntIterator begin, IntIterator end, IntIterator all_begin,
+                     IntIterator all_end,
                      std::vector<std::pair<size_t, size_t>>& change_indices);
 
 /**
@@ -48,15 +46,13 @@ void right_partition(typename std::vector<Integer>::iterator begin,
  * @param change_indices Output vector that stores increment/decrement index
  * pairs to compute the next partition from previous one.
  */
-template <typename Integer>
-void left_partition(typename std::vector<Integer>::iterator begin,
-                    typename std::vector<Integer>::iterator end,
-                    typename std::vector<Integer>::const_iterator all_begin,
-                    typename std::vector<Integer>::const_iterator all_end,
+template <typename IntIterator>
+void left_partition(IntIterator begin, IntIterator end, IntIterator all_begin,
+                    IntIterator all_end,
                     std::vector<std::pair<size_t, size_t>>& change_indices) {
 
-    const Integer k = end - begin;
-    const Integer n = *(end - 1);
+    const auto k = end - begin;
+    const auto n = *(end - 1);
 
     // base cases
     if (k == 1) {
@@ -134,15 +130,13 @@ void left_partition(typename std::vector<Integer>::iterator begin,
  * @param change_indices Output vector that stores increment/decrement index
  * pairs to compute the next partition from previous one.
  */
-template <typename Integer>
-void right_partition(typename std::vector<Integer>::iterator begin,
-                     typename std::vector<Integer>::iterator end,
-                     typename std::vector<Integer>::const_iterator all_begin,
-                     typename std::vector<Integer>::const_iterator all_end,
+template <typename IntIterator>
+void right_partition(IntIterator begin, IntIterator end, IntIterator all_begin,
+                     IntIterator all_end,
                      std::vector<std::pair<size_t, size_t>>& change_indices) {
 
-    const Integer k = end - begin;
-    const Integer n = *begin;
+    const auto k = end - begin;
+    const auto n = *begin;
 
     // base cases
     if (k == 1) {
@@ -574,7 +568,7 @@ std::vector<std::pair<size_t, size_t>> partition_change_indices(Integer n,
 
     // partition towards right
     std::vector<std::pair<size_t, size_t>> result;
-    details::right_partition(vec.begin(), vec.end(), vec.cbegin(), vec.cend(),
+    details::right_partition(vec.begin(), vec.end(), vec.begin(), vec.end(),
                              result);
 
     return result;
