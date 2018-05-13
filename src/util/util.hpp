@@ -5,11 +5,134 @@
 #include <cstddef>
 #include <utility>
 
+#include <iomanip>
+#include <iostream>
+
 #ifdef USE_OPENMP
 #include <thread>
 #endif
 
 namespace bnmf_algs {
+
+namespace details {
+
+template <typename Integer>
+void right_partition(Integer k, typename std::vector<Integer>::iterator begin,
+                     typename std::vector<Integer>::iterator end,
+                     typename std::vector<Integer>::const_iterator all_begin,
+                     typename std::vector<Integer>::const_iterator all_end,
+                     std::vector<std::pair<size_t, size_t>>& change_indices);
+
+template <typename Integer>
+void left_partition(Integer k, typename std::vector<Integer>::iterator begin,
+                    typename std::vector<Integer>::iterator end,
+                    typename std::vector<Integer>::const_iterator all_begin,
+                    typename std::vector<Integer>::const_iterator all_end,
+                    std::vector<std::pair<size_t, size_t>>& change_indices) {
+
+    const Integer n = *(end - 1);
+    if (k == 1) {
+        return;
+    } else if (k == 2) {
+        auto& rightmost = *(end - 1);
+        auto& leftmost = *(end - 2);
+
+        const size_t rightmost_index = (end - 1) - all_begin;
+        const size_t leftmost_index = (end - 2) - all_begin;
+
+        while (rightmost > 0) {
+            --rightmost;
+            ++leftmost;
+            change_indices.emplace_back(rightmost_index, leftmost_index);
+        }
+    } else {
+        auto& rightmost = *(end - 1);
+        auto& leftmost = *begin;
+        auto& leftmost_next = *(begin + 1);
+
+        const size_t rightmost_index = (end - 1) - all_begin;
+        const size_t leftmost_index = begin - all_begin;
+        const size_t leftmost_next_index = (begin + 1) - all_begin;
+
+        while (true) {
+            left_partition(k - 1, begin + 1, end, all_begin, all_end,
+                           change_indices);
+            --leftmost_next;
+            ++leftmost;
+            change_indices.emplace_back(leftmost_next_index, leftmost_index);
+
+            if (leftmost == n) {
+                break;
+            }
+
+            right_partition(k - 1, begin + 1, end, all_begin, all_end,
+                            change_indices);
+            --rightmost;
+            ++leftmost;
+            change_indices.emplace_back(rightmost_index, leftmost_index);
+
+            if (leftmost == n) {
+                break;
+            }
+        }
+    }
+}
+
+template <typename Integer>
+void right_partition(Integer k, typename std::vector<Integer>::iterator begin,
+                     typename std::vector<Integer>::iterator end,
+                     typename std::vector<Integer>::const_iterator all_begin,
+                     typename std::vector<Integer>::const_iterator all_end,
+                     std::vector<std::pair<size_t, size_t>>& change_indices) {
+
+    const Integer n = *begin;
+    if (k == 1) {
+        return;
+    } else if (k == 2) {
+        auto& leftmost = *begin;
+        auto& rightmost = *(begin + 1);
+
+        const size_t leftmost_index = begin - all_begin;
+        const size_t rightmost_index = (begin + 1) - all_begin;
+
+        while (leftmost > 0) {
+            --leftmost;
+            ++rightmost;
+            change_indices.emplace_back(leftmost_index, rightmost_index);
+        }
+    } else {
+        auto& leftmost = *begin;
+        auto& rightmost = *(end - 1);
+        auto& rightmost_prev = *(end - 2);
+
+        const size_t leftmost_index = begin - all_begin;
+        const size_t rightmost_index = (end - 1) - all_begin;
+        const size_t rightmost_prev_index = (end - 2) - all_begin;
+
+        while (true) {
+            right_partition(k - 1, begin, end - 1, all_begin, all_end,
+                            change_indices);
+            --rightmost_prev;
+            ++rightmost;
+            change_indices.emplace_back(rightmost_prev_index, rightmost_index);
+
+            if (rightmost == n) {
+                break;
+            }
+
+            left_partition(k - 1, begin, end - 1, all_begin, all_end,
+                           change_indices);
+            --leftmost;
+            ++rightmost;
+            change_indices.emplace_back(leftmost_index, rightmost_index);
+
+            if (rightmost == n) {
+                break;
+            }
+        }
+    }
+}
+} // namespace details
 
 /**
  * @brief Namespace for general purpose utility functions to be used by all
@@ -337,5 +460,41 @@ template <typename Real> Real psi_appr(Real x) {
 
     return res - extra;
 }
+
+template <typename Integer>
+std::vector<std::pair<size_t, size_t>> partition_change_indices(Integer n,
+                                                                Integer k) {
+    BNMF_ASSERT(k > 0, "k must be greater than 0 in util::all_partitions");
+    BNMF_ASSERT(n > 0, "n must be greater than 0 in util::all_partitions");
+
+    std::vector<Integer> vec(k, 0);
+    vec[0] = n;
+    std::vector<std::pair<size_t, size_t>> result;
+    details::right_partition(k, vec.begin(), vec.end(), vec.cbegin(),
+                             vec.cend(), result);
+
+    return result;
+}
+
+template <typename Integer>
+std::vector<std::vector<Integer>> all_partitions(Integer n, Integer k) {
+    auto part_change_vec = partition_change_indices(n, k);
+
+    std::vector<std::vector<Integer>> result;
+    std::vector<Integer> partition(k, 0);
+    partition[0] = n;
+    result.push_back(partition);
+
+    size_t decr_idx, incr_idx;
+    for (const auto& change_idx : part_change_vec) {
+        std::tie(decr_idx, incr_idx) = change_idx;
+        --partition[decr_idx];
+        ++partition[incr_idx];
+        result.push_back(partition);
+    }
+
+    return result;
+}
+
 } // namespace util
 } // namespace bnmf_algs
