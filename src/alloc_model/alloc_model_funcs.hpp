@@ -3,17 +3,26 @@
 #include "alloc_model/alloc_model_params.hpp"
 #include "defs.hpp"
 #include "util/generator.hpp"
+#include "util/util.hpp"
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_sf_gamma.h>
 #include <tuple>
 #include <vector>
 
 namespace bnmf_algs {
+namespace alloc_model {
+// forward declaration needed to use this in details functions
+template <typename T, typename Scalar>
+double log_marginal_S(const tensor_t<T, 3>& S,
+                      const Params<Scalar>& model_params);
+} // namespace alloc_model
+
 namespace details {
 
 /**
  * @brief Compute the first term of the sum when calculating log marginal of S.
  *
+ * @tparam Scalar Type of the model parameters.
  * @tparam T Value type of the tensor S.
  * @param S Tensor S.
  * @param alpha Parameter vector of Dirichlet prior for matrix \f$W\f$ of size
@@ -21,9 +30,9 @@ namespace details {
  *
  * @return Value of the first term
  */
-template <typename T>
+template <typename T, typename Scalar>
 double compute_first_term(const tensor_t<T, 3>& S,
-                          const std::vector<double>& alpha) {
+                          const std::vector<Scalar>& alpha) {
     const long x = S.dimension(0);
     const long y = S.dimension(1);
     const long z = S.dimension(2);
@@ -36,7 +45,7 @@ double compute_first_term(const tensor_t<T, 3>& S,
     std::vector<double> log_gamma_alpha(alpha.size());
     std::transform(
         alpha.begin(), alpha.end(), log_gamma_alpha.begin(),
-        [](const double alpha_i) { return gsl_sf_lngamma(alpha_i); });
+        [](const Scalar alpha_i) { return gsl_sf_lngamma(alpha_i); });
 
     const double sum_log_gamma =
         std::accumulate(log_gamma_alpha.begin(), log_gamma_alpha.end(), 0.0);
@@ -70,6 +79,7 @@ double compute_first_term(const tensor_t<T, 3>& S,
 /**
  * @brief Compute the second term of the sum when calculating log marginal of S.
  *
+ * @tparam Scalar Type of the model parameters.
  * @tparam T Value type of tensor S.
  * @param S Tensor S.
  * @param beta Parameter vector of Dirichlet prior for matrix \f$H\f$ of size
@@ -77,9 +87,9 @@ double compute_first_term(const tensor_t<T, 3>& S,
  *
  * @return Value of the second term
  */
-template <typename T>
+template <typename T, typename Scalar>
 double compute_second_term(const tensor_t<T, 3>& S,
-                           const std::vector<double>& beta) {
+                           const std::vector<Scalar>& beta) {
     const long x = S.dimension(0);
     const long y = S.dimension(1);
     const long z = S.dimension(2);
@@ -91,7 +101,7 @@ double compute_second_term(const tensor_t<T, 3>& S,
     // sum(loggamma(beta))
     std::vector<double> log_gamma_beta(beta.size());
     std::transform(beta.begin(), beta.end(), log_gamma_beta.begin(),
-                   [](const double beta) { return gsl_sf_lngamma(beta); });
+                   [](const Scalar beta) { return gsl_sf_lngamma(beta); });
 
     const double sum_log_gamma =
         std::accumulate(log_gamma_beta.begin(), log_gamma_beta.end(), 0.0);
@@ -124,15 +134,16 @@ double compute_second_term(const tensor_t<T, 3>& S,
 /**
  * @brief Compute the third term of the sum when calculating log marginal of S.
  *
- * @tparam T Valuet type of tensor S.
+ * @tparam Scalar Type of the model parameters.
+ * @tparam T Value type of tensor S.
  * @param S Tensor S.
  * @param a Shape parameter of Gamma distribution.
  * @param b Rate parameter of Gamma distribution.
  *
  * @return Value of the third term
  */
-template <typename T>
-double compute_third_term(const tensor_t<T, 3>& S, double a, double b) {
+template <typename T, typename Scalar>
+double compute_third_term(const tensor_t<T, 3>& S, Scalar a, Scalar b) {
     const long x = S.dimension(0);
     const long y = S.dimension(1);
     const long z = S.dimension(2);
@@ -181,6 +192,269 @@ template <typename T> double compute_fourth_term(const tensor_t<T, 3>& S) {
     }
     return fourth;
 }
+
+/**
+ * @brief Class to compute total logP(S) value for all possible tensor
+ * allocations while storing shared state between function invocations.
+ *
+ * @tparam Integer Integer types used in matrices/tensors.
+ * @tparam Scalar Model parameter types.
+ */
+template <typename Integer, typename Scalar> class TotalLogMarginalCalculator {
+  public:
+    /**
+     * @brief Construct the calculator class and initialize computation
+     * variables.
+     *
+     * @param X Matrix to allocate.
+     * @param model_params Model parameters.
+     */
+    TotalLogMarginalCalculator(const matrix_t<Integer>& X,
+                               const alloc_model::Params<Scalar>& model_params)
+        : X(X), model_params(model_params),
+          S(X.rows(), X.cols(), model_params.beta.size()) {
+        // initialize variables to use during recursive computation
+
+        // get all partitions for every nonzero element of X
+        const Integer z = model_params.beta.size();
+        for (long i = 0; i < X.rows(); ++i) {
+            for (long j = 0; j < X.cols(); ++j) {
+                if (X(i, j) != 0) {
+                    ii.push_back(i);
+                    jj.push_back(j);
+                    alloc_vec.push_back(
+                        util::partition_change_indices(X(i, j), z));
+                }
+            }
+        }
+
+        // initialize allocation tensors
+        S.setZero();
+        for (long i = 0; i < X.rows(); ++i) {
+            for (long j = 0; j < X.cols(); ++j) {
+                S(i, j, 0) = X(i, j);
+            }
+        }
+        S_pjk = S.sum(shape<1>({0}));
+        S_ipk = S.sum(shape<1>({1}));
+        S_ppk = S.sum(shape<2>({0, 1}));
+
+        sum_alpha = std::accumulate(model_params.alpha.begin(),
+                                    model_params.alpha.end(), Scalar());
+    }
+
+    /**
+     * @brief Calculate total \f$\log{P(S)}\f$ value by computing
+     * \f$\log{P(S_i)}\f$ for every possible allocation tensor \f$S_i\f$.
+     *
+     * @return \f$\sum_i \log{P(S_i)}\f$ for every possible allocation tensor
+     * \f$S_i\f$.
+     */
+    double calc_log_marginal() {
+        const double init_log_marginal =
+            alloc_model::log_marginal_S(S, model_params);
+
+        return log_marginal_recursive(0, init_log_marginal);
+    }
+
+  private:
+    /**
+     * @brief Calculate the difference in \f$\log{P(S)}\f$ value when element at
+     * tensor bin (i, j, k) is incremented by 1.
+     *
+     * @param i First index of the tensor.
+     * @param j Second index of the tensor.
+     * @param k Third index of the tensor.
+     * @return Change in log marginal when (i, j, k) element is incremented
+     * by 1.
+     */
+    double log_marginal_change_on_increment(size_t i, size_t j, size_t k) {
+        return std::log(model_params.alpha[i] + S_ipk(i, k)) -
+               std::log(sum_alpha + S_ppk(k)) - std::log(1 + S(i, j, k)) +
+               std::log(model_params.beta[k] + S_pjk(j, k));
+    }
+
+    /**
+     * @brief Calculate the difference in \f$\log{P(S)}\f$ value when element at
+     * tensor bin (i, j, k) is decremented by 1.
+     *
+     * @param i First index of the tensor.
+     * @param j Second index of the tensor.
+     * @param k Third index of the tensor.
+     * @return Change in log marginal when (i, j, k) element is decremented
+     * by 1.
+     */
+    double log_marginal_change_on_decrement(size_t i, size_t j, size_t k) {
+        return -(std::log(model_params.alpha[i] + S_ipk(i, k) - 1) -
+                 std::log(sum_alpha + S_ppk(k) - 1) -
+                 std::log(1 + S(i, j, k) - 1) +
+                 std::log(model_params.beta[k] + S_pjk(j, k) - 1));
+    }
+
+    /**
+     * @brief Recursively enumerate and sum \f$\log{P(S_i)}\f$ values for all
+     * possible allocation tensors \f$S_i\f$.
+     *
+     * This function recursively enumerates \f$\log{P(S_i)}\f$ values for all
+     * possible allocation tensors by trying all possible k length partitions
+     * of every nonzero element of \f$X\f$. Here, k is the rank of the
+     * decomposition (depth of tensor \f$S\f$). Log marginal values are
+     * computed using the "change in logPS" formulas, and are not computed from
+     * scratch for every possible \f$S\f$.
+     *
+     * @param fiber_index Index of the nonzero fiber of \f$S\f$ to allocate in
+     * this function invocation. Every possible partition of this fiber will be
+     * tried.
+     * @param prev_log_marginal Previous log marginal value to be used when
+     * calculating the new log marginal values by finding the difference.
+     *
+     * @return Total log marginal value calculated by trying every possible
+     * allocation tensor enumerated using all possible allocations of every
+     * fiber with index greater than or equal to the given index.
+     */
+    double log_marginal_recursive(const size_t fiber_index,
+                                  const double prev_log_marginal) {
+
+        // get current fiber partitions and indices
+        const auto& part_changes = alloc_vec[fiber_index];
+        const size_t i = ii[fiber_index];
+        const size_t j = jj[fiber_index];
+
+        double result = 0;
+        if (fiber_index == ii.size() - 1) {
+            result = prev_log_marginal;
+            // base case
+
+            // calculate log marginal of every possible tensor and accumulate
+            // results
+            size_t incr_idx, decr_idx;
+            double increment_change, decrement_change, new_log_marginal;
+            for (const auto& change_idx : part_changes) {
+                // indices of elements to decrement and increment
+                std::tie(decr_idx, incr_idx) = change_idx;
+
+                increment_change =
+                    log_marginal_change_on_increment(i, j, incr_idx);
+
+                // modify elements
+                ++S(i, j, incr_idx);
+                ++S_pjk(j, incr_idx);
+                ++S_ipk(i, incr_idx);
+                ++S_ppk(incr_idx);
+
+                decrement_change =
+                    log_marginal_change_on_decrement(i, j, decr_idx);
+
+                new_log_marginal =
+                    prev_log_marginal + increment_change + decrement_change;
+
+                // accumulate
+                result += new_log_marginal;
+
+                // make S same as before
+                --S(i, j, incr_idx);
+                --S_pjk(j, incr_idx);
+                --S_ipk(i, incr_idx);
+                --S_ppk(incr_idx);
+            }
+        } else {
+            // recursive part
+
+            result = log_marginal_recursive(fiber_index + 1, prev_log_marginal);
+
+            size_t incr_idx, decr_idx;
+            double increment_change, decrement_change, new_log_marginal;
+            for (const auto& change_idx : part_changes) {
+                // indices of elements to decrement and increment
+                std::tie(decr_idx, incr_idx) = change_idx;
+
+                increment_change =
+                    log_marginal_change_on_increment(i, j, incr_idx);
+
+                // modify elements
+                ++S(i, j, incr_idx);
+                ++S_pjk(j, incr_idx);
+                ++S_ipk(i, incr_idx);
+                ++S_ppk(incr_idx);
+
+                decrement_change =
+                    log_marginal_change_on_decrement(i, j, decr_idx);
+
+                // modify elements
+                --S(i, j, decr_idx);
+                --S_pjk(j, decr_idx);
+                --S_ipk(i, decr_idx);
+                --S_ppk(decr_idx);
+
+                new_log_marginal =
+                    prev_log_marginal + increment_change + decrement_change;
+
+                // accumulate
+                result +=
+                    log_marginal_recursive(fiber_index + 1, new_log_marginal);
+
+                // make S same as before
+                --S(i, j, incr_idx);
+                ++S(i, j, decr_idx);
+                --S_pjk(j, incr_idx);
+                ++S_pjk(j, decr_idx);
+                --S_ipk(i, incr_idx);
+                ++S_ipk(i, decr_idx);
+                --S_ppk(incr_idx);
+                ++S_ppk(decr_idx);
+            }
+        }
+
+        return result;
+    }
+
+  private:
+    /**
+     * @brief Matrix to try all possible allocations.
+     */
+    const matrix_t<Integer>& X;
+    /**
+     * @brief Model parameters.
+     */
+    const alloc_model::Params<Scalar>& model_params;
+    /**
+     * @brief Allocation tensor variable that will hold different possible
+     * allocations.
+     */
+    tensor_t<Integer, 3> S;
+    /**
+     * @brief \f$S_{+jk}\f$.
+     */
+    tensor_t<Integer, 2> S_pjk;
+    /**
+     * @brief \f$S_{i+k}\f$.
+     */
+    tensor_t<Integer, 2> S_ipk;
+    /**
+     * @brief \f$S_{++k}\f$.
+     */
+    tensor_t<Integer, 1> S_ppk;
+    /**
+     * @brief Sum of alpha parameters. (\f$sum_i \alpha_i\f$).
+     */
+    Scalar sum_alpha;
+    /**
+     * @brief Row indices of nonzero entries of X.
+     */
+    std::vector<size_t> ii;
+    /**
+     * @brief Column indices of nonzero entries of X.
+     */
+    std::vector<size_t> jj;
+    /**
+     * @brief std::vector holding every possible k length partitions of every
+     * nonzero element of X where k is the decomposition rank (depth of tensor
+     * S).
+     *
+     * The ordering of elements in alloc_vec is the same as vectors ii and jj.
+     */
+    std::vector<std::vector<std::pair<size_t, size_t>>> alloc_vec;
+};
 } // namespace details
 
 /**
@@ -198,7 +472,8 @@ namespace alloc_model {
  * \f$L_j \sim \mathcal{G}(a, b) \qquad W_{:k} \sim \mathcal{D}(\alpha)
  * \qquad H_{:j} \sim \mathcal{D}(\beta)\f$.
  *
- * @tparam Value type of the matrix/vector objects.
+ * @tparam T Value type of the matrix/vector objects.
+ * @tparam Scalar Type of the model parameters.
  * @param tensor_shape Shape of the sample tensor \f$x \times y \times z\f$.
  * @param model_params Allocation Model parameters. See
  * bnmf_algs::alloc_model::Params<double>.
@@ -208,9 +483,9 @@ namespace alloc_model {
  * @throws assertion error if number of alpha parameters is not \f$x\f$,
  * if number of beta parameters is not \f$z\f$.
  */
-template <typename T>
+template <typename T, typename Scalar>
 std::tuple<matrix_t<T>, matrix_t<T>, vector_t<T>>
-bnmf_priors(const shape<3>& tensor_shape, const Params<double>& model_params) {
+bnmf_priors(const shape<3>& tensor_shape, const Params<Scalar>& model_params) {
     size_t x = tensor_shape[0], y = tensor_shape[1], z = tensor_shape[2];
 
     BNMF_ASSERT(model_params.alpha.size() == x,
@@ -309,7 +584,8 @@ tensor_t<T, 3> sample_S(const matrix_t<T>& prior_W, const matrix_t<T>& prior_H,
  *
  * \f$\log{p(S)} = \log{p(W, H, L, S)} - \log{p(W, H, L | S)}\f$.
  *
- * @tparam Value type of tensor S.
+ * @tparam T value type of tensor S.
+ * @tparam Scalar Type of the model parameters.
  * @param S Tensor \f$S\f$ of size \f$x \times y \times z \f$.
  * @param model_params Allocation model parameters. See
  * bnmf_algs::alloc_model::Params<double>.
@@ -319,9 +595,9 @@ tensor_t<T, 3> sample_S(const matrix_t<T>& prior_W, const matrix_t<T>& prior_H,
  * @throws assertion error if number of alpha parameters is not equal to
  * S.dimension(0), if number of beta parameters is not equal to S.dimension(2).
  */
-template <typename T>
+template <typename T, typename Scalar>
 double log_marginal_S(const tensor_t<T, 3>& S,
-                      const Params<double>& model_params) {
+                      const Params<Scalar>& model_params) {
     BNMF_ASSERT(model_params.alpha.size() ==
                     static_cast<size_t>(S.dimension(0)),
                 "Number of alpha parameters must be equal to S.dimension(0)");
@@ -333,5 +609,32 @@ double log_marginal_S(const tensor_t<T, 3>& S,
            details::compute_third_term(S, model_params.a, model_params.b) -
            details::compute_fourth_term(S);
 }
+
+/**
+ * @brief Calculate total log marginal value, \f$\sum_i \log{P(S_i)}\f$ for
+ * every possible allocation tensor \f$S_i\f$ that can be generated from integer
+ * matrix \f$X\f$.
+ *
+ * @tparam Integer Type of the matrix entries (must be an integer type).
+ * @tparam Scalar Type of the model parameters.
+ * @param X Integer matrix whose every possible tensor allocation will be tried.
+ * @param model_params Model parameters.
+ *
+ * @return Sum of log marginals of all possible allocation tensors, i.e.
+ * \f$\sum_i \log{P(S_i)}\f$.
+ */
+template <typename Integer, typename Scalar>
+double total_log_marginal(const matrix_t<Integer>& X,
+                          const Params<Scalar>& model_params) {
+    BNMF_ASSERT((X.array() >= 0).all(),
+                "X must be nonnegative in alloc_model::total_log_marginal");
+    BNMF_ASSERT(static_cast<size_t>(X.rows()) == model_params.alpha.size(),
+                "Model parameters are incompatible with given matrix X in "
+                "alloc_model::total_log_marginal");
+
+    details::TotalLogMarginalCalculator<Integer, Scalar> calc(X, model_params);
+    return calc.calc_log_marginal();
+}
+
 } // namespace alloc_model
 } // namespace bnmf_algs

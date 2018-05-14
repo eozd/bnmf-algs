@@ -37,7 +37,8 @@ set(TEST_SRC_FILES
     test/bld/EM/test_online_EM.cpp
     test/allocation_model/test_alloc_model_params.cpp
     test/util/test_generator.cpp
-    test/util/test_sampling.cpp)
+    test/util/test_sampling.cpp
+    )
 
 set(BENCH_SRC_FILES
     benchmark/benchmark.cpp)

@@ -251,3 +251,56 @@ TEST_CASE("Algorithm checks on log marginal of S", "[log_marginal_S]") {
         REQUIRE(original_log_marginal > altered_log_marginal);
     }
 }
+
+TEST_CASE("Algorithm checks on total log marginal S", "[total_log_marginal]") {
+    SECTION("2x2 matrix with all 1's") {
+        size_t x = 2, y = 2, z = 2;
+        shape<3> tensor_shape{x, y, z};
+        matrix_t<int> X_int(x, y);
+        X_int << 1, 1, 1, 1;
+        auto model_params = alloc_model::make_bld_params<double>(tensor_shape);
+
+        double actual_result =
+            alloc_model::total_log_marginal(X_int, model_params);
+
+        // calculate expected result in a horrible way
+        double expected_result = 0;
+        tensor_t<int, 3> S(x, y, z);
+        S.setZero();
+        S.setValues({{{1, 0}, {1, 0}}, {{1, 0}, {1, 0}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{1, 0}, {1, 0}}, {{1, 0}, {0, 1}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{1, 0}, {1, 0}}, {{0, 1}, {1, 0}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{1, 0}, {1, 0}}, {{0, 1}, {0, 1}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{1, 0}, {0, 1}}, {{1, 0}, {1, 0}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{1, 0}, {0, 1}}, {{1, 0}, {0, 1}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{1, 0}, {0, 1}}, {{0, 1}, {1, 0}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{1, 0}, {0, 1}}, {{0, 1}, {0, 1}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{0, 1}, {1, 0}}, {{1, 0}, {1, 0}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{0, 1}, {1, 0}}, {{1, 0}, {0, 1}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{0, 1}, {1, 0}}, {{0, 1}, {1, 0}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{0, 1}, {1, 0}}, {{0, 1}, {0, 1}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{0, 1}, {0, 1}}, {{1, 0}, {1, 0}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{0, 1}, {0, 1}}, {{1, 0}, {0, 1}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{0, 1}, {0, 1}}, {{0, 1}, {1, 0}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+        S.setValues({{{0, 1}, {0, 1}}, {{0, 1}, {0, 1}}});
+        expected_result += alloc_model::log_marginal_S(S, model_params);
+
+        double eps = std::numeric_limits<double>::epsilon();
+        REQUIRE(std::abs(actual_result - expected_result) <= 1e-10);
+    }
+}
