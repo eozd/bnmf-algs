@@ -24,11 +24,11 @@ void right_partition(IntIterator begin, IntIterator end, IntIterator all_begin,
  * one increment and one decrement operations.
  *
  * This function partitions the number given at the end of the given sequence,
- * @code *(end - 1) @endcode, towards the beginning, @code *begin @endcode.
+ * <b> *(end - 1) </b>, towards the beginning, <b> *begin </b>.
  * The indices of the values incremented/decremented to compute a new partition
  * is pushed to the back of the given output vector, change_indices.
  *
- * For @code n = *(end - 1) @endcode and @code k = end - begin @endcode, this
+ * For <b> n = *(end - 1) </b> and <b> k = end - begin </b>, this
  * function stores exactly \f${n + k - 1}\choose{k - 1}\f$ different partitions
  * between begin and end iterators. Increment/decrement indices of each
  * partition is stored in the given output vector.
@@ -109,11 +109,11 @@ void left_partition(IntIterator begin, IntIterator end, IntIterator all_begin,
  *
  * This function partitions the number given at the beginning of the given
  * sequence,
- * @code *begin @endcode, towards the end, @code *(end - 1) @endcode.
+ * <b> *begin </b>, towards the end, <b> *(end - 1) </b>.
  * The indices of the values incremented/decremented to compute a new partition
  * is pushed to the back of the given output vector, change_indices.
  *
- * For @code n = *begin @endcode and @code k = end - begin @endcode, this
+ * For <b> n = *begin </b> and <b> k = end - begin </b>, this
  * function stores exactly \f${n + k - 1}\choose{k - 1}\f$ different partitions
  * between begin and end iterators. Increment/decrement indices of each
  * partition is stored in the given output vector.
