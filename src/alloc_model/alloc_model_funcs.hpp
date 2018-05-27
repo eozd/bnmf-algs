@@ -194,13 +194,14 @@ template <typename T> double compute_fourth_term(const tensor_t<T, 3>& S) {
 }
 
 /**
- * @brief Class to compute total logP(S) value for all possible tensor
- * allocations while storing shared state between function invocations.
+ * @brief Class to compute total \f$p(X|\Theta) = \sum_S p(X|S)p(S|\Theta)\f$
+ * for all possible allocation tensors while storing shared state between
+ * function invocations.
  *
  * @tparam Integer Integer types used in matrices/tensors.
  * @tparam Scalar Model parameter types.
  */
-template <typename Integer, typename Scalar> class TotalLogMarginalCalculator {
+template <typename Integer, typename Scalar> class TotalMarginalCalculator {
   public:
     /**
      * @brief Construct the calculator class and initialize computation
@@ -209,8 +210,8 @@ template <typename Integer, typename Scalar> class TotalLogMarginalCalculator {
      * @param X Matrix to allocate.
      * @param model_params Model parameters.
      */
-    TotalLogMarginalCalculator(const matrix_t<Integer>& X,
-                               const alloc_model::Params<Scalar>& model_params)
+    TotalMarginalCalculator(const matrix_t<Integer>& X,
+                            const alloc_model::Params<Scalar>& model_params)
         : X(X), model_params(model_params),
           S(X.rows(), X.cols(), model_params.beta.size()) {
         // initialize variables to use during recursive computation
@@ -244,17 +245,17 @@ template <typename Integer, typename Scalar> class TotalLogMarginalCalculator {
     }
 
     /**
-     * @brief Calculate total \f$\log{P(S)}\f$ value by computing
-     * \f$\log{P(S_i)}\f$ for every possible allocation tensor \f$S_i\f$.
+     * @brief Calculate total marginal by calculating
+     * \f$\sum_S p(X|S)p(S|\Theta)\f$ for every possible allocation tensor
+     * \f$S\f$.
      *
-     * @return \f$\sum_i \log{P(S_i)}\f$ for every possible allocation tensor
-     * \f$S_i\f$.
+     * @return Total marginal, \f$p(X|\Theta)\f$.
      */
-    double calc_log_marginal() {
+    double calc_marginal() {
         const double init_log_marginal =
             alloc_model::log_marginal_S(S, model_params);
 
-        return log_marginal_recursive(0, init_log_marginal);
+        return marginal_recursive(0, init_log_marginal);
     }
 
   private:
@@ -285,10 +286,12 @@ template <typename Integer, typename Scalar> class TotalLogMarginalCalculator {
      * by 1.
      */
     double log_marginal_change_on_decrement(size_t i, size_t j, size_t k) {
-        return -(std::log(model_params.alpha[i] + S_ipk(i, k) - 1) -
-                 std::log(sum_alpha + S_ppk(k) - 1) -
-                 std::log(1 + S(i, j, k) - 1) +
-                 std::log(model_params.beta[k] + S_pjk(j, k) - 1));
+        double result = -(std::log(model_params.alpha[i] + S_ipk(i, k) - 1) -
+                          std::log(sum_alpha + S_ppk(k) - 1) -
+                          std::log(1 + S(i, j, k) - 1) +
+                          std::log(model_params.beta[k] + S_pjk(j, k) - 1));
+
+        return result;
     }
 
     /**
@@ -312,98 +315,70 @@ template <typename Integer, typename Scalar> class TotalLogMarginalCalculator {
      * allocation tensor enumerated using all possible allocations of every
      * fiber with index greater than or equal to the given index.
      */
-    double log_marginal_recursive(const size_t fiber_index,
-                                  const double prev_log_marginal) {
+    double marginal_recursive(const size_t fiber_index,
+                              double prev_log_marginal) {
 
         // get current fiber partitions and indices
         const auto& part_changes = alloc_vec[fiber_index];
         const size_t i = ii[fiber_index];
         const size_t j = jj[fiber_index];
 
-        double result = 0;
-        if (fiber_index == ii.size() - 1) {
-            result = prev_log_marginal;
-            // base case
+        const Integer old_value = S(i, j, 0);
 
-            // calculate log marginal of every possible tensor and accumulate
-            // results
-            size_t incr_idx, decr_idx;
-            double increment_change, decrement_change, new_log_marginal;
-            for (const auto& change_idx : part_changes) {
-                // indices of elements to decrement and increment
-                std::tie(decr_idx, incr_idx) = change_idx;
+        // if true, then base case; else, recursive part.
+        const bool last_fiber = fiber_index == (ii.size() - 1);
 
-                increment_change =
-                    log_marginal_change_on_increment(i, j, incr_idx);
+        double result =
+            last_fiber ? std::exp(prev_log_marginal)
+                       : marginal_recursive(fiber_index + 1, prev_log_marginal);
 
-                // modify elements
-                ++S(i, j, incr_idx);
-                ++S_pjk(j, incr_idx);
-                ++S_ipk(i, incr_idx);
-                ++S_ppk(incr_idx);
+        // calculate log marginal of every possible tensor and accumulate
+        // results
+        size_t incr_idx, decr_idx;
+        double increment_change, decrement_change, new_log_marginal;
+        for (const auto& change_idx : part_changes) {
+            // indices of elements to decrement and increment
+            std::tie(decr_idx, incr_idx) = change_idx;
 
-                decrement_change =
-                    log_marginal_change_on_decrement(i, j, decr_idx);
+            decrement_change = log_marginal_change_on_decrement(i, j, decr_idx);
 
-                new_log_marginal =
-                    prev_log_marginal + increment_change + decrement_change;
+            // modify elements
+            --S(i, j, decr_idx);
+            --S_pjk(j, decr_idx);
+            --S_ipk(i, decr_idx);
+            --S_ppk(decr_idx);
 
-                // accumulate
-                result += new_log_marginal;
+            increment_change = log_marginal_change_on_increment(i, j, incr_idx);
 
-                // make S same as before
-                --S(i, j, incr_idx);
-                --S_pjk(j, incr_idx);
-                --S_ipk(i, incr_idx);
-                --S_ppk(incr_idx);
+            // modify elements
+            ++S(i, j, incr_idx);
+            ++S_pjk(j, incr_idx);
+            ++S_ipk(i, incr_idx);
+            ++S_ppk(incr_idx);
+
+            new_log_marginal =
+                prev_log_marginal + increment_change + decrement_change;
+
+            // accumulate
+            if (last_fiber) {
+                result += std::exp(new_log_marginal);
+            } else {
+                result += marginal_recursive(fiber_index + 1, new_log_marginal);
             }
-        } else {
-            // recursive part
 
-            result = log_marginal_recursive(fiber_index + 1, prev_log_marginal);
-
-            size_t incr_idx, decr_idx;
-            double increment_change, decrement_change, new_log_marginal;
-            for (const auto& change_idx : part_changes) {
-                // indices of elements to decrement and increment
-                std::tie(decr_idx, incr_idx) = change_idx;
-
-                increment_change =
-                    log_marginal_change_on_increment(i, j, incr_idx);
-
-                // modify elements
-                ++S(i, j, incr_idx);
-                ++S_pjk(j, incr_idx);
-                ++S_ipk(i, incr_idx);
-                ++S_ppk(incr_idx);
-
-                decrement_change =
-                    log_marginal_change_on_decrement(i, j, decr_idx);
-
-                // modify elements
-                --S(i, j, decr_idx);
-                --S_pjk(j, decr_idx);
-                --S_ipk(i, decr_idx);
-                --S_ppk(decr_idx);
-
-                new_log_marginal =
-                    prev_log_marginal + increment_change + decrement_change;
-
-                // accumulate
-                result +=
-                    log_marginal_recursive(fiber_index + 1, new_log_marginal);
-
-                // make S same as before
-                --S(i, j, incr_idx);
-                ++S(i, j, decr_idx);
-                --S_pjk(j, incr_idx);
-                ++S_pjk(j, decr_idx);
-                --S_ipk(i, incr_idx);
-                ++S_ipk(i, decr_idx);
-                --S_ppk(incr_idx);
-                ++S_ppk(decr_idx);
-            }
+            prev_log_marginal = new_log_marginal;
         }
+
+        // make S same as before
+        const auto last_index = S.dimension(2) - 1;
+        S(i, j, last_index) = 0;
+        S(i, j, 0) = old_value;
+        S_pjk(j, last_index) -= old_value;
+        S_pjk(j, 0) += old_value;
+        S_ipk(i, last_index) -= old_value;
+        S_ipk(i, 0) += old_value;
+        S_ppk(last_index) -= old_value;
+        S_ppk(0) += old_value;
 
         return result;
     }
@@ -611,17 +586,15 @@ double log_marginal_S(const tensor_t<T, 3>& S,
 }
 
 /**
- * @brief Calculate total log marginal value, \f$\sum_i \log{P(S_i)}\f$ for
- * every possible allocation tensor \f$S_i\f$ that can be generated from integer
- * matrix \f$X\f$.
+ * @brief Calculate total marginal value, \f$p(X|\Theta) = \sum_S
+ * p(X|S)p(S|\Theta)\f$ where \f$Theta\f$ is model parameters.
  *
  * @tparam Integer Type of the matrix entries (must be an integer type).
  * @tparam Scalar Type of the model parameters.
  * @param X Integer matrix whose every possible tensor allocation will be tried.
  * @param model_params Model parameters.
  *
- * @return Sum of log marginals of all possible allocation tensors, i.e.
- * \f$\sum_i \log{P(S_i)}\f$.
+ * @return Total marginal value \f$p(X|\Theta)\f$.
  */
 template <typename Integer, typename Scalar>
 double total_log_marginal(const matrix_t<Integer>& X,
@@ -632,8 +605,10 @@ double total_log_marginal(const matrix_t<Integer>& X,
                 "Model parameters are incompatible with given matrix X in "
                 "alloc_model::total_log_marginal");
 
-    details::TotalLogMarginalCalculator<Integer, Scalar> calc(X, model_params);
-    return calc.calc_log_marginal();
+    details::TotalMarginalCalculator<Integer, Scalar> calc(X, model_params);
+    double marginal = calc.calc_marginal();
+
+    return std::log(marginal);
 }
 
 } // namespace alloc_model

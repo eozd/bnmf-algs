@@ -22,8 +22,7 @@ namespace alloc_model {
  * @tparam Scalar Type of the parameters. Common choices are double and float,
  * but integer-like types can also be used.
  */
-template <typename Scalar> struct Params {
-    /**
+template <typename Scalar> struct Params { /**
      * @brief Shape parameter of Gamma distribution.
      */
     Scalar a;

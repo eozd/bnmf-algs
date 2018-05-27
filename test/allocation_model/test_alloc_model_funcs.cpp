@@ -268,39 +268,62 @@ TEST_CASE("Algorithm checks on total log marginal S", "[total_log_marginal]") {
         tensor_t<int, 3> S(x, y, z);
         S.setZero();
         S.setValues({{{1, 0}, {1, 0}}, {{1, 0}, {1, 0}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{1, 0}, {1, 0}}, {{1, 0}, {0, 1}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{1, 0}, {1, 0}}, {{0, 1}, {1, 0}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{1, 0}, {1, 0}}, {{0, 1}, {0, 1}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{1, 0}, {0, 1}}, {{1, 0}, {1, 0}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{1, 0}, {0, 1}}, {{1, 0}, {0, 1}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{1, 0}, {0, 1}}, {{0, 1}, {1, 0}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{1, 0}, {0, 1}}, {{0, 1}, {0, 1}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{0, 1}, {1, 0}}, {{1, 0}, {1, 0}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{0, 1}, {1, 0}}, {{1, 0}, {0, 1}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{0, 1}, {1, 0}}, {{0, 1}, {1, 0}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{0, 1}, {1, 0}}, {{0, 1}, {0, 1}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{0, 1}, {0, 1}}, {{1, 0}, {1, 0}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{0, 1}, {0, 1}}, {{1, 0}, {0, 1}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{0, 1}, {0, 1}}, {{0, 1}, {1, 0}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
         S.setValues({{{0, 1}, {0, 1}}, {{0, 1}, {0, 1}}});
-        expected_result += alloc_model::log_marginal_S(S, model_params);
+        expected_result += std::exp(alloc_model::log_marginal_S(S, model_params));
 
+        expected_result = std::log(expected_result);
         double eps = std::numeric_limits<double>::epsilon();
         REQUIRE(std::abs(actual_result - expected_result) <= 1e-10);
+    }
+}
+
+TEST_CASE("Total test", "[total_test]") {
+    SECTION("2x2 matrix with all 1's") {
+        matrixd X(3, 4);
+        X << 2, 1, 1, 0, 0, 0, 1, 2, 0, 0, 1, 1;
+        double gamma = 0.01;
+        size_t n_components = 5;
+
+        std::vector<double> alpha_dirichlet(X.rows(), gamma / n_components);
+        double a = std::accumulate(alpha_dirichlet.begin(),
+                                   alpha_dirichlet.end(), 0.0);
+        double b = a / X.sum();
+
+        std::vector<double> beta_dirichlet(n_components, gamma / n_components);
+        alloc_model::Params<double> params(a, b, alpha_dirichlet,
+                                           beta_dirichlet);
+        
+        double total = total_log_marginal(X, params);
+        
+        std::cout << total << std::endl;
     }
 }
