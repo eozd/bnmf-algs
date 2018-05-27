@@ -36,6 +36,7 @@ void update_S(const matrix_t<T>& orig_over_appr, const matrix_t<T>& nu,
     auto y = static_cast<size_t>(S.dimension(1));
     auto z = static_cast<size_t>(S.dimension(2));
 
+    #pragma omp parallel for schedule(static)
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             for (size_t k = 0; k < z; ++k) {
@@ -51,7 +52,8 @@ void update_alpha_eph(const vector_t<T>& alpha, const tensor_t<T, 3>& S,
     auto x = static_cast<size_t>(S.dimension(0));
     auto z = static_cast<size_t>(S.dimension(2));
 
-    tensor_t<T, 2> S_ipk_tensor = S.sum(shape<1>({1}));
+    tensor_t<T, 2> S_ipk_tensor(x, z);
+    S_ipk_tensor = S.sum(shape<1>({1}));
     Eigen::Map<matrix_t<T>> S_ipk(S_ipk_tensor.data(), x, z);
     alpha_eph = S_ipk.array().colwise() + alpha.transpose().array();
 }
@@ -74,11 +76,12 @@ void update_grad_plus(const matrix_t<T>& beta_eph, const tensor_t<T, 3>& S,
     auto y = static_cast<size_t>(grad_plus.dimension(1));
     auto z = static_cast<size_t>(grad_plus.dimension(2));
 
+    #pragma omp parallel for
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             for (size_t k = 0; k < z; ++k) {
                 grad_plus(i, j, k) =
-                    gsl_sf_psi(beta_eph(j, k)) - gsl_sf_psi(S(i, j, k) + 1);
+                    util::psi_appr(beta_eph(j, k)) - util::psi_appr(S(i, j, k) + 1);
             }
         }
     }
@@ -90,10 +93,11 @@ void update_grad_minus(const matrix_t<T>& alpha_eph, matrix_t<T>& grad_minus) {
     auto z = static_cast<size_t>(grad_minus.cols());
 
     vector_t<T> alpha_eph_sum = alpha_eph.colwise().sum();
+    #pragma omp parallel for
     for (size_t i = 0; i < x; ++i) {
         for (size_t k = 0; k < z; ++k) {
             grad_minus(i, k) =
-                gsl_sf_psi(alpha_eph_sum(k)) - gsl_sf_psi(alpha_eph(i, k));
+                util::psi_appr(alpha_eph_sum(k)) - util::psi_appr(alpha_eph(i, k));
         }
     }
 }
@@ -108,6 +112,7 @@ void update_nu(const matrix_t<T>& orig_over_appr,
     auto z = static_cast<size_t>(grad_plus.dimension(2));
 
     matrix_t<T> nom = matrix_t<T>::Zero(x, z);
+    #pragma omp parallel for
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             for (size_t k = 0; k < z; ++k) {
@@ -116,6 +121,7 @@ void update_nu(const matrix_t<T>& orig_over_appr,
             }
         }
     }
+    #pragma omp parallel for
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             for (size_t k = 0; k < z; ++k) {
@@ -127,6 +133,7 @@ void update_nu(const matrix_t<T>& orig_over_appr,
         }
     }
     matrix_t<T> denom = matrix_t<T>::Zero(x, z);
+    #pragma omp parallel for
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             for (size_t k = 0; k < z; ++k) {
@@ -135,6 +142,7 @@ void update_nu(const matrix_t<T>& orig_over_appr,
             }
         }
     }
+    #pragma omp parallel for
     for (size_t i = 0; i < x; ++i) {
         for (size_t j = 0; j < y; ++j) {
             for (size_t k = 0; k < z; ++k) {
@@ -146,7 +154,12 @@ void update_nu(const matrix_t<T>& orig_over_appr,
         }
     }
 
-    nu = nu.array() * nom.array() / (denom.array() + eps);
+    #pragma omp parallel for schedule(static)
+    for (size_t i = 0; i < x; ++i) {
+        for (size_t k = 0; k < z; ++k) {
+            nu(i, k) *= nom(i, k) / (denom(i, k) + eps);
+        }
+    }
 
     // normalize
     vector_t<T> nu_rowsum_plus_eps =
@@ -165,17 +178,19 @@ static void update_mu(const matrix_t<T>& orig_over_appr,
     auto z = static_cast<size_t>(grad_plus.dimension(2));
 
     matrix_t<T> nom = matrix_t<T>::Zero(z, y);
-    for (size_t i = 0; i < x; ++i) {
-        for (size_t j = 0; j < y; ++j) {
-            for (size_t k = 0; k < z; ++k) {
+    #pragma omp parallel for
+    for (size_t j = 0; j < y; ++j) {
+        for (size_t k = 0; k < z; ++k) {
+            for (size_t i = 0; i < x; ++i) {
                 nom(k, j) +=
                     orig_over_appr(i, j) * nu(i, k) * grad_plus(i, j, k);
             }
         }
     }
-    for (size_t i = 0; i < x; ++i) {
-        for (size_t j = 0; j < y; ++j) {
-            for (size_t k = 0; k < z; ++k) {
+    #pragma omp parallel for
+    for (size_t j = 0; j < y; ++j) {
+        for (size_t k = 0; k < z; ++k) {
+            for (size_t i = 0; i < x; ++i) {
                 for (size_t c = 0; c < z; ++c) {
                     nom(k, j) += orig_over_appr_squared(i, j) * nu(i, k) *
                                  nu(i, c) * mu(c, j) * grad_minus(i, c);
@@ -184,17 +199,19 @@ static void update_mu(const matrix_t<T>& orig_over_appr,
         }
     }
     matrix_t<T> denom = matrix_t<T>::Zero(z, y);
-    for (size_t i = 0; i < x; ++i) {
-        for (size_t j = 0; j < y; ++j) {
-            for (size_t k = 0; k < z; ++k) {
+    #pragma omp parallel for
+    for (size_t j = 0; j < y; ++j) {
+        for (size_t k = 0; k < z; ++k) {
+            for (size_t i = 0; i < x; ++i) {
                 denom(k, j) +=
                     orig_over_appr(i, j) * nu(i, k) * grad_minus(i, k);
             }
         }
     }
-    for (size_t i = 0; i < x; ++i) {
-        for (size_t j = 0; j < y; ++j) {
-            for (size_t k = 0; k < z; ++k) {
+    #pragma omp parallel for
+    for (size_t j = 0; j < y; ++j) {
+        for (size_t k = 0; k < z; ++k) {
+            for (size_t i = 0; i < x; ++i) {
                 for (size_t c = 0; c < z; ++c) {
                     denom(k, j) += orig_over_appr_squared(i, j) * nu(i, k) *
                                    nu(i, c) * mu(c, j) * grad_plus(i, j, c);
@@ -203,7 +220,12 @@ static void update_mu(const matrix_t<T>& orig_over_appr,
         }
     }
 
-    mu = mu.array() * nom.array() / (denom.array() + eps);
+    #pragma omp parallel for schedule(static)
+    for (size_t k = 0; k < z; ++k) {
+        for (size_t j = 0; j < y; ++j) {
+            mu(k, j) *= nom(k, j) / (denom(k, j) + eps);
+        }
+    }
 
     // normalize
     vector_t<T> mu_colsum_plus_eps =
