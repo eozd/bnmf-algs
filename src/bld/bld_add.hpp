@@ -96,43 +96,63 @@ tensor_t<T, 3> bld_add(const matrix_t<T>& X, size_t z,
     matrix_t<T> beta_eph(y, z);
     tensor_t<T, 3> grad_S(x, y, z);
     tensor_t<T, 3> eps_tensor(x, y, z);
+    tensor_t<T, 3> Z(x, y, z);
+    tensor_t<T, 2> S_mult(x, y);
     eps_tensor.setConstant(eps);
 
     const auto eta = [](const size_t step) -> double {
         return 0.1 / std::pow(step + 1, 0.55);
     };
 
+#ifdef USE_OPENMP
+        Eigen::ThreadPool tp(std::thread::hardware_concurrency());
+        Eigen::ThreadPoolDevice thread_dev(&tp,
+                                           std::thread::hardware_concurrency());
+#endif
+
     for (size_t eph = 0; eph < max_iter; ++eph) {
         // update S_pjk, S_ipk, S_ijp
+#ifdef USE_OPENMP
+        S_pjk.device(thread_dev) = S.sum(shape<1>({0}));
+        S_ipk.device(thread_dev) = S.sum(shape<1>({1}));
+#else
         S_pjk = S.sum(shape<1>({0}));
         S_ipk = S.sum(shape<1>({1}));
-        // update alpha_eph
-        for (int i = 0; i < x; ++i) {
-            for (size_t k = 0; k < z; ++k) {
+#endif
+        // update alpha_eph, beta_eph
+        #pragma omp parallel for schedule(static)
+        for (size_t k = 0; k < z; ++k) {
+            for (int i = 0; i < x; ++i) {
                 alpha_eph(i, k) = model_params.alpha[i] + S_ipk(i, k);
             }
-        }
-        // update beta_eph
-        for (int j = 0; j < y; ++j) {
-            for (size_t k = 0; k < z; ++k) {
+            for (int j = 0; j < y; ++j) {
                 beta_eph(j, k) = model_params.beta[k] + S_pjk(j, k);
             }
         }
+
         // update grad_S
         vector_t<T> alpha_eph_sum = alpha_eph.colwise().sum();
+        #pragma omp parallel for schedule(static)
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
                 for (size_t k = 0; k < z; ++k) {
-                    grad_S(i, j, k) = gsl_sf_psi(beta_eph(j, k)) -
-                                      gsl_sf_psi(S(i, j, k) + 1) -
-                                      gsl_sf_psi(alpha_eph_sum(k)) +
-                                      gsl_sf_psi(alpha_eph(i, k));
+                    grad_S(i, j, k) = util::psi_appr(beta_eph(j, k)) -
+                                      util::psi_appr(S(i, j, k) + 1) -
+                                      util::psi_appr(alpha_eph_sum(k)) +
+                                      util::psi_appr(alpha_eph(i, k));
                 }
             }
         }
         // construct Z
-        tensor_t<T, 3> Z = S.log() + eps_tensor;
-        tensor_t<T, 2> S_mult = (S * grad_S).sum(shape<1>({2}));
+#ifdef USE_OPENMP
+        Z.device(thread_dev) = S.log() + eps_tensor;
+        S_mult.device(thread_dev) = (S * grad_S).sum(shape<1>({2}));
+#else
+        Z = S.log() + eps_tensor;
+        S_mult = (S * grad_S).sum(shape<1>({2}));
+#endif
+
+        #pragma omp parallel for schedule(static)
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
                 for (size_t k = 0; k < z; ++k) {
@@ -141,9 +161,15 @@ tensor_t<T, 3> bld_add(const matrix_t<T>& X, size_t z,
                 }
             }
         }
+#ifdef USE_OPENMP
+        Z.device(thread_dev) = Z.exp();
+#else
         Z = Z.exp();
+#endif
         bnmf_algs::util::normalize(Z, 2, bnmf_algs::util::NormType::L1);
         // update S
+
+        #pragma omp parallel for schedule(static)
         for (int i = 0; i < x; ++i) {
             for (int j = 0; j < y; ++j) {
                 for (size_t k = 0; k < z; ++k) {
