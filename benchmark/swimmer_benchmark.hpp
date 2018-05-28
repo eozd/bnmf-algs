@@ -63,7 +63,8 @@ BASELINE(swimmer, bld_mult, 1, 1) {
 
     const auto& X = swimmer_mat();
     auto params = make_params<double>(x, y, r);
-    celero::DoNotOptimizeAway(bld::bld_mult(X, r, params, 250, true));
+    tensord<3> S;
+    celero::DoNotOptimizeAway(S = bld::bld_mult(X, r, params, 250, true));
 }
 
 BENCHMARK(swimmer, bld_mult_cuda, 1, 1) {
@@ -73,7 +74,8 @@ BENCHMARK(swimmer, bld_mult_cuda, 1, 1) {
 
     const auto& X = swimmer_mat();
     auto params = make_params<double>(x, y, r);
-    celero::DoNotOptimizeAway(bld::bld_mult_cuda(X, r, params, 250, true));
+    tensord<3> S;
+    celero::DoNotOptimizeAway(S = bld::bld_mult_cuda(X, r, params, 250, true));
 }
 
 BENCHMARK(swimmer, bld_add, 1, 1) {
@@ -83,7 +85,8 @@ BENCHMARK(swimmer, bld_add, 1, 1) {
 
     const auto& X = swimmer_mat();
     auto params = make_params<double>(x, y, r);
-    celero::DoNotOptimizeAway(bld::bld_add(X, r, params, 250, true));
+    tensord<3> S;
+    celero::DoNotOptimizeAway(S = bld::bld_add(X, r, params, 250, true));
 }
 
 BENCHMARK(swimmer, bld_appr, 1, 1) {
@@ -93,7 +96,9 @@ BENCHMARK(swimmer, bld_appr, 1, 1) {
 
     const auto& X = swimmer_mat();
     auto params = make_params<double>(x, y, r);
-    celero::DoNotOptimizeAway(bld::bld_appr(X, r, params, 250, true));
+    tensord<3> S;
+    matrixd _;
+    celero::DoNotOptimizeAway(std::tie(S, _, _) = bld::bld_appr(X, r, params, 250, true));
 }
 
 BENCHMARK(swimmer, seq_greedy_bld, 1, 1) {
@@ -103,7 +108,8 @@ BENCHMARK(swimmer, seq_greedy_bld, 1, 1) {
 
     const auto& X = swimmer_mat();
     auto params = make_params<double>(x, y, r);
-    celero::DoNotOptimizeAway(bld::seq_greedy_bld(X, r, params));
+    tensord<3> S;
+    celero::DoNotOptimizeAway(S = bld::seq_greedy_bld(X, r, params));
 }
 
 BENCHMARK(swimmer, collapsed_gibbs, 1, 1) {
@@ -113,7 +119,10 @@ BENCHMARK(swimmer, collapsed_gibbs, 1, 1) {
 
     const auto& X = swimmer_mat();
     auto params = make_params<double>(x, y, r);
-    celero::DoNotOptimizeAway(bld::collapsed_gibbs(X, r, params, 250));
+    auto gen = bld::collapsed_gibbs(X, r, params, 250);
+    for (const auto& _ : gen);
+
+    const auto S = *(gen.begin());
 }
 
 BENCHMARK(swimmer, collapsed_icm, 1, 1) {
@@ -123,7 +132,8 @@ BENCHMARK(swimmer, collapsed_icm, 1, 1) {
 
     const auto& X = swimmer_mat();
     auto params = make_params<double>(x, y, r);
-    celero::DoNotOptimizeAway(bld::collapsed_icm(X, r, params, 250));
+    tensord<3> S;
+    celero::DoNotOptimizeAway(S = bld::collapsed_icm(X, r, params, 250));
 }
 
 BENCHMARK(swimmer, online_EM, 1, 1) {
@@ -134,5 +144,6 @@ BENCHMARK(swimmer, online_EM, 1, 1) {
     const auto& X = swimmer_mat();
     shape<3> tensor_shape{x, y, r};
     auto param_vec = alloc_model::make_EM_params<double>(tensor_shape);
-    celero::DoNotOptimizeAway(bld::online_EM(X, param_vec, 250, true));
+    bld::EMResult<double> em_res;
+    celero::DoNotOptimizeAway(em_res = bld::online_EM(X, param_vec, 250, true));
 }
