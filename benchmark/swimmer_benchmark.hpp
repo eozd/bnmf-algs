@@ -11,12 +11,12 @@
 #include <string>
 
 namespace swimmer_bench_vars {
-    long x = 1024;
-    long y = 256;
+    size_t x = 1024;
+    size_t y = 256;
 
     bnmf_algs::matrixd read_mat(std::istream& input) {
         std::vector<double> data;
-        int n_rows = 0;
+        size_t n_rows = 0;
         std::string line;
         double value;
         while (std::getline(input, line)) {
@@ -35,8 +35,8 @@ namespace swimmer_bench_vars {
         auto n_cols = data.size() / n_rows;
 
         bnmf_algs::matrixd X(n_rows, n_cols);
-        for (int i = 0; i < n_rows; ++i) {
-            for (int j = 0; j < n_cols; ++j) {
+        for (size_t i = 0; i < n_rows; ++i) {
+            for (size_t j = 0; j < n_cols; ++j) {
                 X(i, j) = data[i*n_cols + j];
             }
         }

@@ -67,7 +67,7 @@ BENCHMARK(nmf_seq_elems, KL_0_to_200, 0, 1) {
     celero::DoNotOptimizeAway(nmf::nmf(X, r, beta, max_iter));
 }
 
-BASELINE(nmf_seq_elems, SEQ_0_to_5, 0, 1) {
+BENCHMARK(nmf_seq_elems, SEQ_0_to_5, 0, 1) {
     using namespace bnmf_algs;
     using namespace benchmark;
     using namespace nmf_seq_elems_bench_vars;
@@ -108,7 +108,7 @@ BENCHMARK(nmf_seq_elems, SEQ_0_to_200, 0, 1) {
     using namespace benchmark;
     using namespace nmf_seq_elems_bench_vars;
 
-    beg = 0, scale = 20;
+    beg = 0, scale = 200;
 
     auto params = make_params<double>(x, y, r);
     matrixd X = make_matrix(x, y, beg, scale);
